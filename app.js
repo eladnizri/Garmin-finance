@@ -3777,7 +3777,7 @@ $('range-filter').addEventListener('click', e => {
  * ומושך את הנתונים הטריים. דורש טוקן GitHub אישי שנשמר רק במכשיר (localStorage)
  * ונשלח אך ורק ל-api.github.com.
  * ========================================================================= */
-const GH = { owner: 'eladnizri', repo: 'Garmin-data', wf: 'sync-garmin.yml' };
+const GH = { owner: 'eladnizri', repo: 'Garmin-finance', wf: 'sync-garmin.yml' };
 const TOKEN_KEY = 'gh_token_v1';
 const ghToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
 const setGhToken = t => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch {} };
