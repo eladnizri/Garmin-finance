@@ -37,7 +37,7 @@
 2. תחת **Build and deployment ← Source** בחר **Deploy from a branch**.
 3. בחר את הענף הראשי (main) ותיקייה `/ (root)`, ולחץ **Save**.
 4. אחרי כדקה הדשבורד יהיה זמין בכתובת:
-   `https://<שם-המשתמש>.github.io/Garmin-data/`
+   `https://<שם-המשתמש>.github.io/Garmin-finance/`
 
 💡 **טיפ:** פתח את הכתובת בטלפון ובחר בדפדפן **"הוסף למסך הבית" (Add to Home Screen)** —
 תקבל אייקון שנפתח כמו אפליקציה.
