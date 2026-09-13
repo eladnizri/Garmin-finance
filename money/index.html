@@ -167,6 +167,14 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1p
 .badge.ok { color: var(--good-text); }
 .badge.over { color: var(--crit); }
 
+/* ---------- backup nudge: the only real defense against a wiped browser ---------- */
+.backup-nudge { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface)); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  margin-bottom: 10px; }
+.backup-nudge .bn-em { font-size: 20px; flex: none; }
+.backup-nudge .bn-txt { flex: 1; font-size: 13px; line-height: 1.4; }
+.backup-nudge button { flex: none; }
+
 /* ---------- month ---------- */
 .month-nav { display: flex; align-items: center; justify-content: space-between; margin: 4px 0; }
 .month-nav button { font-size: 22px; padding: 4px 14px; color: var(--ink-2); }
@@ -810,6 +818,7 @@ body {
 <!-- ================= MONTH ================= -->
 <section id="s-month" class="screen">
   <div class="scr-head"><div><div class="h-title">החודש שלי</div><div class="h-sub">סיכום והוצאות</div></div></div>
+  <div id="backup-nudge"></div>
   <div class="month-nav">
     <button id="m-prev">‹</button>
     <div class="cur-month" id="m-label"></div>
@@ -2467,10 +2476,37 @@ function download(filename, text, mime) {
   };
   doIt();
 }
-$("#backup-export").addEventListener("click", () => {
+/* backup nudges fire when the app is opened, since real background scheduling isn't
+   reliable in an installed PWA — the same limitation the reminder system already lives with */
+const BACKUP_KEY = "kesef-backup-meta";
+const backupMeta = () => { try { return JSON.parse(localStorage.getItem(BACKUP_KEY)) || {}; } catch { return {}; } };
+const setBackupMeta = (o) => localStorage.setItem(BACKUP_KEY, JSON.stringify(o));
+function exportBackup() {
   download(`kesef-backup-${new Date().toISOString().slice(0, 10)}.json`,
     JSON.stringify(S, null, 2), "application/json");
-});
+  setBackupMeta({ lastBackupAt: new Date().toISOString() });
+  renderBackupNudge();
+}
+/* the data lives only on this device, so a stretch with no export is a real risk — not
+   theoretical: renaming the GitHub repo alone shouldn't touch localStorage, but a device
+   losing site data for any reason (a manual "clear website data", iOS evicting storage for
+   a home-screen app that goes unopened) does, and there was nothing to restore from. */
+function renderBackupNudge() {
+  const el = $("#backup-nudge");
+  if (!S.tx.length) { el.innerHTML = ""; return; }
+  const meta = backupMeta();
+  const anchor = meta.lastBackupAt || [...S.tx].sort((a, b) => a.ts.localeCompare(b.ts))[0].ts;
+  const days = Math.floor((Date.now() - new Date(anchor).getTime()) / 864e5);
+  if (days < 7) { el.innerHTML = ""; return; }
+  el.innerHTML = `
+    <div class="backup-nudge">
+      <span class="bn-em">⚠️</span>
+      <span class="bn-txt">${meta.lastBackupAt ? `לא ייצאת גיבוי כבר ${days} ימים` : `${days} ימים בלי גיבוי אף פעם`} — הנתונים קיימים רק על המכשיר הזה.</span>
+      <button class="btn primary" id="bn-export">ייצוא עכשיו</button>
+    </div>`;
+  $("#bn-export").onclick = () => { exportBackup(); showToast("הגיבוי יוצא ✓", false); };
+}
+$("#backup-export").addEventListener("click", exportBackup);
 $("#backup-import").addEventListener("click", () => $("#import-file").click());
 $("#import-file").addEventListener("change", (e) => {
   const f = e.target.files[0]; if (!f) return;
@@ -2810,7 +2846,7 @@ function checkReminders() {
 /* ============================== render all =========================== */
 function render() {
   renderCats(); renderAmount(); syncBucketButtons(); updateBudgetStrip(); updateRepeatButton();
-  renderWeekend(); renderMonth(); renderSettings();
+  renderWeekend(); renderMonth(); renderSettings(); renderBackupNudge();
   postHubSummary();
 }
 
