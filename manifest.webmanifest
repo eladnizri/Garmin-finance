@@ -1,7 +1,7 @@
 {
-  "name": "בריאות וכסף",
-  "short_name": "בריאות וכסף",
-  "description": "מסך-מרכז אישי המאחד בריאות (Garmin) ובקרה כלכלית",
+  "name": "בריאות וכושר",
+  "short_name": "בריאות וכושר",
+  "description": "מעקב בריאות, שינה ואימוני כוח וריצה מנתוני Garmin",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

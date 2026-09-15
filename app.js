@@ -362,13 +362,14 @@ function miniRingSvg(grad, fillPct, anomalous, uid, size = 78) {
 }
 
 /* מדדי הטבעות הקטנות סביב המוכנות */
+/* page numbers here must track the pager's DOM order: 0 בית, 1 אימונים, 2 שינה, 3 לב, 4 פעילות */
 const DASH_METRICS = [
-  { key: 'sleep_hours', page: 1, label: 'שינה', ico: 'moon', grad: ['--ring-sleep-1', '--ring-sleep-2'], fill: true,
+  { key: 'sleep_hours', page: 2, label: 'שינה', ico: 'moon', grad: ['--ring-sleep-1', '--ring-sleep-2'], fill: true,
     goal: () => goalSleep(), disp: v => fmt(v, 1), sub: 'ש׳' },
-  { key: 'steps', page: 3, label: 'צעדים', ico: 'walk', grad: ['--ring-steps-1', '--ring-steps-2'], fill: true,
+  { key: 'steps', page: 4, label: 'צעדים', ico: 'walk', grad: ['--ring-steps-1', '--ring-steps-2'], fill: true,
     goal: () => goalSteps(), disp: v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : fmt(v), sub: '' },
-  { key: 'rhr', page: 2, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
-  { key: 'hrv', page: 2, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
+  { key: 'rhr', page: 3, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
+  { key: 'hrv', page: 3, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
 ];
 /* ברכה לפי שעת היום */
 function greeting() { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; }
@@ -3677,8 +3678,6 @@ function renderAll() {
     totalFloors > 0 && recCard(icon('floors', 22), fmt(totalFloors), 'קומות בתקופה'),
   ]);
 
-  // מודיע למסך-המרכז (hub.js) שהנתונים מוכנים/התעדכנו
-  document.dispatchEvent(new CustomEvent('health-ready'));
 }
 
 /* =========================================================================
@@ -3699,9 +3698,9 @@ function setActive(idx) {
   $('range-filter').classList.toggle('hidden', idx === 0);
 }
 /* גלילה אל עמוד — scrollBy על הפייג'ר בלבד, לפי הפרש המלבנים.
- * במכוון *לא* scrollIntoView: הוא מגלגל כל מכל-גלילה בשרשרת ההורים ולכן עלול
- * להזיז את #worlds של מסך-המרכז ולהוציא את העולם מהמסך. scrollBy נוגע רק
- * בפייג'ר, וההפרש נמדד בפיקסלים על המסך ולכן נכון גם ב-RTL וגם ב-LTR. */
+ * במכוון *לא* scrollIntoView: הוא מגלגל כל מכל-גלילה בשרשרת ההורים, ולכן
+ * עלול להזיז מכלים שלא היו אמורים לזוז. scrollBy נוגע רק בפייג'ר, וההפרש
+ * נמדד בפיקסלים על המסך ולכן נכון גם ב-RTL וגם ב-LTR. */
 function snapToPage(idx, smooth) {
   const delta = pages[idx].getBoundingClientRect().left - pager.getBoundingClientRect().left;
   if (!delta) return;

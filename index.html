@@ -4,22 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
   <meta name="theme-color" content="#eaf5ef">
-  <title>בריאות וכסף</title>
+  <title>בריאות וכושר</title>
 
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="בריאות וכסף">
+  <meta name="apple-mobile-web-app-title" content="בריאות וכושר">
   <link rel="icon" href="icons/icon-192.png">
 
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="shell.css">
   <script src="vendor/chart.umd.min.js"></script>
   <script src="common.js" defer></script>
   <script src="apple-health.js" defer></script>
   <script src="app.js" defer></script>
-  <script src="hub.js" defer></script>
 </head>
 <body>
 
@@ -28,18 +26,7 @@
     <div class="spinner"></div>
   </div>
 
-  <div id="shell">
-    <nav id="world-switch" class="world-switch" aria-label="מעבר בין עולמות">
-      <button class="ws-btn" data-world="health"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 3 12 2.5-8 2 5 2-3h3.5"/></svg>בריאות</button>
-      <button class="ws-btn active" data-world="hub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>מרכז</button>
-      <button class="ws-btn" data-world="money"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="3"/><path d="M3 10h18M7 15h4"/></svg>כסף</button>
-    </nav>
-
-    <div id="worlds">
-
-      <!-- ===== עולם הבריאות ===== -->
-      <section class="world" id="w-health">
-        <div id="app" class="app hidden">
+  <div id="app" class="app hidden">
 
     <!-- ===== סרגל עליון ===== -->
     <header class="topbar">
@@ -93,6 +80,24 @@
         <div id="home-body"></div>
       </section>
 
+      <!-- ========== אימונים ========== -->
+      <section class="page" data-title="אימונים" data-sub="כוח וריצה">
+        <!-- אימוני כוח — לוח V שבועי -->
+        <div id="strength-card"></div>
+
+        <!-- ניתוח אימון — תוכנית, מצב אימון ומעקב progressive overload -->
+        <div id="train-card"></div>
+
+        <!-- פעילות מומלצת לשבוע לפי המוכנות -->
+        <div id="activity-rec"></div>
+
+        <!-- ניתוח ריצות — סיווג לפי אזור מאמץ, השוואה וגרף שיפור -->
+        <div id="runs-card"></div>
+
+        <!-- יומן אימונים מאוחד — גרמין + כוח שדווח ידנית -->
+        <div id="workouts-card"></div>
+      </section>
+
       <!-- ========== שינה ========== -->
       <section class="page" data-title="שינה" data-sub="איכות הלילה">
         <div id="sleep-hero" class="stat-hero"></div>
@@ -142,28 +147,14 @@
       </section>
 
       <!-- ========== פעילות ========== -->
-      <section class="page" data-title="פעילות" data-sub="תנועה ואימונים">
+      <section class="page" data-title="פעילות" data-sub="צעדים ותנועה">
         <div id="steps-hero" class="stat-hero"></div>
-
-        <!-- אימוני כוח — לוח V שבועי -->
-        <div id="strength-card"></div>
-
-        <!-- ניתוח אימון — תוכנית, מצב אימון ומעקב progressive overload -->
-        <div id="train-card"></div>
-
-        <!-- פעילות מומלצת לשבוע לפי המוכנות -->
-        <div id="activity-rec"></div>
-
-        <!-- ניתוח ריצות — סיווג לפי אזור מאמץ, השוואה וגרף שיפור -->
-        <div id="runs-card"></div>
-
         <article class="card">
           <div class="card-head"><h2 class="ct" data-info="steps">צעדים<span class="info-i">ⓘ</span></h2><span class="unit" id="u-steps"></span></div>
           <div class="legend" id="legend-steps"></div>
           <div class="chart-wrap" dir="ltr"><canvas id="chart-steps"></canvas></div>
           <div id="tip-steps"></div>
         </article>
-        <div id="workouts-card"></div>
         <div id="steps-insight"></div>
         <div id="steps-records"></div>
       </section>
@@ -176,29 +167,20 @@
       <button class="tab" data-index="0" aria-label="בית">
         <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg><span>בית</span>
       </button>
-      <button class="tab" data-index="1" aria-label="שינה">
+      <button class="tab" data-index="1" aria-label="אימונים">
+        <svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M4 9v6M20 9v6M6.5 12h11"/></svg><span>אימונים</span>
+      </button>
+      <button class="tab" data-index="2" aria-label="שינה">
         <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg><span>שינה</span>
       </button>
-      <button class="tab" data-index="2" aria-label="לב והתאוששות">
+      <button class="tab" data-index="3" aria-label="לב והתאוששות">
         <svg viewBox="0 0 24 24"><path d="M2 12h4l2-6 3 12 2.5-8 2 5 2-3h3.5"/></svg><span>לב</span>
       </button>
-      <button class="tab" data-index="3" aria-label="פעילות">
+      <button class="tab" data-index="4" aria-label="פעילות">
         <svg viewBox="0 0 24 24"><path d="M13 4a2 2 0 1 0 0 .01M8.5 21l1.2-6.2 2.3 1.9V21M6 10l3.7-1 2 3.2 3.3.8"/></svg><span>פעילות</span>
       </button>
     </nav>
-        </div>
-      </section>
-
-      <!-- ===== מרכז ===== -->
-      <section class="world" id="w-hub"><div id="hub"></div></section>
-
-      <!-- ===== עולם הכסף ===== -->
-      <section class="world" id="w-money">
-        <iframe id="money-frame" src="money/" title="הכסף שלי" loading="eager"></iframe>
-      </section>
-
-    </div><!-- /#worlds -->
-  </div><!-- /#shell -->
+  </div><!-- /#app -->
 
     <!-- ===== פרופיל אישי ===== -->
     <div id="profile-modal" class="modal hidden">
