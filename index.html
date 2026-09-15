@@ -82,20 +82,29 @@
 
       <!-- ========== אימונים ========== -->
       <section class="page" data-title="אימונים" data-sub="כוח וריצה">
-        <!-- אימוני כוח — לוח V שבועי -->
-        <div id="strength-card"></div>
+        <div class="range-seg" id="train-seg" aria-label="כוח או אירובי">
+          <button class="seg-btn active" data-seg="strength">כוח</button>
+          <button class="seg-btn" data-seg="aerobic">אירובי</button>
+        </div>
 
-        <!-- ניתוח אימון — תוכנית, מצב אימון ומעקב progressive overload -->
-        <div id="train-card"></div>
+        <div id="train-strength">
+          <!-- אימוני כוח — לוח V שבועי + כיסוי שרירים -->
+          <div id="strength-card"></div>
 
-        <!-- פעילות מומלצת לשבוע לפי המוכנות -->
-        <div id="activity-rec"></div>
+          <!-- ניתוח אימון — תוכנית (A/B), מצב אימון ומעקב progressive overload -->
+          <div id="train-card"></div>
+        </div>
 
-        <!-- ניתוח ריצות — סיווג לפי אזור מאמץ, השוואה וגרף שיפור -->
-        <div id="runs-card"></div>
+        <div id="train-aerobic" class="hidden">
+          <!-- מירוץ יעד — תאריך, מרחק, קצב, והתקדמות מולו -->
+          <div id="race-card"></div>
 
-        <!-- יומן אימונים מאוחד — גרמין + כוח שדווח ידנית -->
-        <div id="workouts-card"></div>
+          <!-- ניתוח ריצות — סיווג לפי אזור מאמץ, השוואה וגרף שיפור -->
+          <div id="runs-card"></div>
+
+          <!-- אופניים והליכה — רישום קל בלבד -->
+          <div id="cardio-log"></div>
+        </div>
       </section>
 
       <!-- ========== שינה ========== -->
@@ -212,7 +221,7 @@
           </div>
           <div class="field-row">
             <label class="field">יעד ריצה שבועי (ק״מ)<input type="number" name="runGoalKm" min="1" max="200" step="0.5" inputmode="decimal" placeholder="לא חובה"></label>
-            <label class="field">קצב יעד (דק׳:שנ׳ לק״מ)<input type="text" name="runGoalPace" inputmode="numeric" placeholder="למשל 5:30"></label>
+            <label class="field">קצב יעד גיבוי (אם אין מירוץ מוגדר)<input type="text" name="runGoalPace" inputmode="numeric" placeholder="למשל 5:30"></label>
           </div>
           <div class="field-row">
             <label class="field">דופק מקסימלי אמיתי<input type="number" name="maxHrOverride" min="120" max="220" inputmode="numeric" placeholder="לא חובה — ברירת מחדל 220 פחות גיל"></label>

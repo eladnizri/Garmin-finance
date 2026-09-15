@@ -68,6 +68,7 @@ const ICONS = {
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   chartbars: '<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
   floors: '<path d="M3 20h4v-4h4v-4h4v-4h4V4"/>',
+  bike: '<circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM12 17.5V14l-3-3 4-3 2 3h3"/>',
 };
 function icon(name, size = 18, cls = '') {
   return `<svg class="ic ${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -984,48 +985,50 @@ function renderBreathing() {
     <span class="unit">מהמדידה האחרונה</span></div><ul class="rows">${rows.join('')}</ul></article>`;
 }
 
-const TRAINING_STATUS = {
-  PRODUCTIVE: 'מתקדם', PRODUCTIVE_1: 'מתקדם', MAINTAINING: 'שומר על הקיים',
-  MAINTAINING_1: 'שומר על הקיים', PEAKING: 'בשיא', OVERREACHING: 'יתר-אימון',
-  UNPRODUCTIVE: 'לא פורה', DETRAINING: 'ירידה בכושר', RECOVERY: 'התאוששות',
-  STRAINED: 'עומס יתר', NO_STATUS: 'אין סטטוס',
-};
+/* =========================================================================
+ * אופניים והליכה — רישום קל בלבד, בלי אזורי מאמץ או קצב: רק כמה וכמה זמן,
+ * כדי שהאירובי הכללי יהיה גלוי בלי להתחרות בעומק שריצה מקבלת.
+ * ========================================================================= */
+const CARDIO_LIGHT_TYPES = new Set(['walking', 'cycling', 'indoor_cycling']);
+const CARDIO_LABEL = { walking: 'הליכה', cycling: 'אופניים', indoor_cycling: 'אופניים' };
+const CARDIO_ICON = { walking: 'walk', cycling: 'bike', indoor_cycling: 'bike' };
 
-function renderWorkouts() {
-  const el = $('workouts-card');
+function renderCardioLog() {
+  const el = $('cardio-log');
   const rows = visibleRows();
-  // רצפת התאריך של הכרטיס: ב"הכל" אין רצפה, אחרת התאריך המוקדם ביותר שמוצג
-  const fromISO = state.range === 'all' ? '0000-00-00' : (rows.length ? rows[0].date : '0000-00-00');
   const all = [];
-  for (const r of rows) for (const w of (r.workouts || [])) all.push({ ...w, date: r.date, src: 'garmin' });
-  // אימוני הכוח שדווחו ידנית — באותו טווח תאריכים שמסונן בכרטיס
-  for (const s of (sessions || [])) {
-    if (s.date < fromISO) continue;
-    all.push({ src: 'manual', date: s.date, type: s.programName || 'אימון כוח',
-      exCount: (s.entries || []).length, setCount: sessionStats(s).sets });
-  }
+  for (const r of rows) for (const w of (r.workouts || []))
+    if (CARDIO_LIGHT_TYPES.has(w.type_key)) all.push({ ...w, date: r.date });
   if (!all.length) { el.innerHTML = ''; return; }
   all.sort((a, b) => a.date.localeCompare(b.date));
-  const recent = all.slice(-8).reverse();
-  const totalMin = all.reduce((a, w) => a + (w.minutes || 0), 0);
-  const items = recent.map(w => {
-    if (w.src === 'manual') {
-      return `<li><span class="r-ic">${icon('dumbbell', 18)}</span>
-        <span><span class="r-name">${w.type}<span class="r-tag">ידני</span></span><br>
-        <span class="r-sub">${shortDate(w.date)} · ${w.exCount} תרגילים</span></span>
-        <span class="r-val">${w.setCount}<small>סטים</small></span></li>`;
-    }
-    const bits = [];
-    if (w.km) bits.push(`${fmt(w.km, 2)} ק״מ`);
-    if (w.avg_hr) bits.push(`דופק ${w.avg_hr}`);
-    if (w.calories) bits.push(`${fmt(w.calories)} kcal`);
-    const wi = w.type_key && w.type_key.includes('strength') ? 'dumbbell' : 'run';
-    return `<li><span class="r-ic">${icon(wi, 18)}</span>
-      <span><span class="r-name">${w.type}</span><br><span class="r-sub">${shortDate(w.date)}${bits.length ? ' · ' + bits.join(' · ') : ''}</span></span>
-      <span class="r-val">${w.minutes ? `${w.minutes}<small>דק׳</small>` : ''}</span></li>`;
+
+  // סה״כ השבוע הנוכחי — התשובה המהירה ל"כמה זזתי חוץ מריצה וכוח"
+  const weekStart = weekStartISO(new Date(todayISO()));
+  const totals = {};
+  for (const w of all) {
+    if (w.date < weekStart) continue;
+    const key = CARDIO_LABEL[w.type_key];
+    const t = totals[key] || (totals[key] = { km: 0, min: 0 });
+    t.km += w.km || 0; t.min += w.minutes || 0;
+  }
+  const chips = Object.keys(totals).map(k => {
+    const t = totals[k];
+    return `<div class="chip"><b>${t.km ? fmt(t.km, 1) + ' ק״מ' : fmt(t.min) + ' דק׳'}</b><small>${k} השבוע</small></div>`;
   }).join('');
-  el.innerHTML = `<article class="card"><div class="card-head"><h2>אימונים</h2>
-    <span class="unit">${all.length} אימונים · ${fmt(totalMin)} דק׳ בתקופה</span></div>
+
+  const recent = all.slice(-6).reverse();
+  const items = recent.map(w => {
+    const bits = [];
+    if (w.km) bits.push(`${fmt(w.km, 1)} ק״מ`);
+    if (w.minutes) bits.push(`${w.minutes} דק׳`);
+    return `<li><span class="r-ic">${icon(CARDIO_ICON[w.type_key] || 'walk', 18)}</span>
+      <span><span class="r-name">${CARDIO_LABEL[w.type_key]}</span><br>
+      <span class="r-sub">${shortDate(w.date)}${bits.length ? ' · ' + bits.join(' · ') : ''}</span></span></li>`;
+  }).join('');
+
+  el.innerHTML = `<article class="card">
+    <div class="card-head"><h2>אופניים והליכה</h2></div>
+    ${chips ? `<div class="chips" style="margin-bottom:10px">${chips}</div>` : ''}
     <ul class="rows">${items}</ul></article>`;
 }
 
@@ -1274,8 +1277,8 @@ function renderRuns() {
     if (bits.length) cmp = `<p class="run-cmp">מול ה${t.label} הקודמת (${shortDateY(prevSame.date)}): ${bits.join(' · ')}.</p>`;
   }
 
-  // יעדים
-  const gKm = goalRunKm(), gPace = goalRunPace();
+  // יעד נפח שבועי — יעד הקצב עצמו עבר לכרטיס המירוץ, כדי שלא יופיע פעמיים
+  const gKm = goalRunKm();
   const weekKm = real.filter(r => r.date >= weekStartISO(new Date(todayISO()))).reduce((a, r) => a + (r.km || 0), 0);
   let goals = '';
   if (gKm) {
@@ -1283,11 +1286,6 @@ function renderRuns() {
     goals += `<div class="run-goal"><div class="rg-top"><span>נפח השבוע</span>
       <b>${fmt(weekKm, 1)} / ${fmt(gKm, 1)} ק״מ</b></div>
       <div class="rg-bar"><i style="width:${pct}%"></i></div></div>`;
-  }
-  if (gPace && last.pace) {
-    const d = last.pace - gPace;
-    goals += `<p class="run-cmp">יעד קצב ${paceTxt(gPace)} — הריצה האחרונה ${Math.abs(d) < 3
-      ? 'בדיוק על היעד' : `${paceTxt(Math.abs(d))} ${d < 0 ? 'מתחת ליעד' : 'מעל היעד'}`}.</p>`;
   }
 
   // הייבוא מהאייפון מביא שנתיים של ריצות — רשימה מלאה תהפוך את הכרטיס לאינסופי
@@ -1711,7 +1709,7 @@ $('run-sheet').addEventListener('click', e => {
     if (runTags[rsRunId] === 'intervals') delete runTags[rsRunId]; else runTags[rsRunId] = 'intervals';
     saveRunTags(); haptic(8);
     const id = rsRunId;
-    renderRuns(); renderActivityRec();
+    renderRuns(); renderRace();
     const r = runById(id);
     if (r) $('rs-body').innerHTML = runSheetHtml(r);
   }
@@ -1981,7 +1979,7 @@ function renderRunChart(runs) {
           win > 1 ? `. הקו העבה הוא ממוצע נע של ${win} ריצות` : ''}.</small>`;
   }
   legend('legend-runs', [[C.violet, 'יעילות אירובית'], [C.teal, 'קצב']]);
-  const gPace = goalRunPace();
+  const gPace = raceTargetPace() || goalRunPace();
   const labels = pts.map(r => shortDateY(r.date));
   const roll = key => pts.map((_, i) => {
     const from = Math.max(0, i - win + 1);
@@ -2580,7 +2578,7 @@ function finishWorkout() {
   strengthChecks[active.date] = true; saveStrength();
   active = null; saveActive();
   closeWorkout();
-  renderStrength(); renderTrain(); renderWorkouts();
+  renderStrength(); renderTrain();
   showSummary(rec);
 }
 
@@ -2958,7 +2956,7 @@ function openPastSession(sid) {
   if (c === 'מחק') {
     if (!confirm('למחוק את האימון הזה מההיסטוריה?')) return;
     sessions = sessions.filter(x => x.id !== sid);
-    saveSessions(); renderTrain(); renderWorkouts(); toast('האימון נמחק');
+    saveSessions(); renderTrain(); toast('האימון נמחק');
   } else if (c === 'הערה') {
     const n = prompt('הערה לאימון:', s.note || '');
     if (n === null) return;
@@ -3304,91 +3302,114 @@ function renderWeekSummary() {
 }
 
 /* =========================================================================
- * כושר ואימון מומלץ — כרטיס מאוחד: נתוני הכושר + ההמלצה של היום.
- * ההמלצה נגזרת גם מהמוכנות וגם מסטטוס האימון (המגמה), ובוחרת מסוגי
- * האימונים שאתה מבצע בפועל.
+ * מירוץ יעד — מירוץ יחיד שמחליף את עצמו כשמסתיים. הקצב הנגזר ממנו גובר
+ * על יעד הקצב הידני בפרופיל בכל השוואה, כל עוד הוא מוגדר.
  * ========================================================================= */
-const MY_WORKOUTS = {
-  zone2:    { ico: 'run', label: 'ריצת Zone 2', detail: '~5 ק״מ בקצב נוח (אפשר לנהל שיחה)' },
-  tempo:    { ico: 'bolt', label: 'ריצת טמפו',   detail: '~3 ק״מ בקצב מאמץ' },
-  strength: { ico: 'dumbbell', label: 'אימון כוח',   detail: 'פול-באדי' },
-  rest:     { ico: 'yoga', label: 'מנוחה פעילה',  detail: 'הליכה קלה, מתיחות או יוגה' },
-};
-/* בוחר את אימון היום לפי מוכנות + סטטוס אימון + יתרת יעד הכוח */
-function pickSession(score, statusKey, strLeft) {
-  const strained = ['STRAINED', 'OVERREACHING', 'UNPRODUCTIVE'].includes(statusKey);
-  if (score < 50 || strained)
-    return { key: 'rest', why: strained ? 'סטטוס האימון מצביע על עומס — תן לגוף להתאושש' : 'המוכנות נמוכה — עדיף יום מנוחה' };
-  if (score >= 70) {
-    if (strLeft > 0) return { key: 'strength', why: 'מוכנות טובה ונותרו אימוני כוח להשלים השבוע' };
-    return { key: 'tempo', why: 'מוכנות טובה — יום מצוין לאימון איכות' };
-  }
-  if (strLeft > 0) return { key: 'strength', why: 'מוכנות בינונית ונותרו אימוני כוח ליעד' };
-  return { key: 'zone2', why: 'מוכנות בינונית — יום טוב לבניית בסיס אירובי' };
+const RACE_KEY = 'target_race_v1';
+let race = null;
+function loadRace() { race = jsonGet(RACE_KEY, null); }
+function saveRace() { jsonSet(RACE_KEY, race); }
+/* "1:45:30" / "45:30" / "45" → שניות. קלט לא תקין → null */
+function parseRaceTime(txt) {
+  const parts = String(txt).trim().split(':').map(Number);
+  if (!parts.length || parts.some(n => !Number.isFinite(n) || n < 0)) return null;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return Math.round(parts[0] * 60);
 }
-/* המלצה לריצה הבאה: מודל 80/20 (רוב קל, מיעוט קשה) מוצלב עם מוכנות היום.
- * מוכנות נמוכה גוברת על האיזון — אין טעם באינטרוולים על גוף לא מאושש. */
-function nextRunAdvice(score) {
-  const runs = runsInRange().filter(r => r.real);
-  if (!runs.length) return null;
-  const recent = runs.slice(-10);
-  const hard = recent.filter(r => r.kind === 'tempo' || r.kind === 'intervals').length;
-  const hardPct = hard / recent.length * 100;
-  const daysSince = Math.round((new Date(todayISO()) - new Date(runs[runs.length - 1].date)) / 864e5);
-
-  if (score !== null && score < 50) return 'מוכנות נמוכה — ריצה קלה בזון 2, או יום מנוחה.';
-  if (hardPct > 25) return `<b>${Math.round(hardPct)}%</b> מהריצות האחרונות היו קשות (יעד ~20%) — הבאה קלה או נפח.`;
-  if (daysSince <= 1) return 'רצת אתמול — ריצה קלה או מנוחה.';
-  if (hardPct < 12 && score !== null && score >= 70) return 'האיזון נוטה לקל ומוכנות טובה — זה הזמן לטמפו או אינטרוולים.';
-  return 'האיזון בין קל לקשה תקין — המשך לפי התוכנית.';
+function raceTimeTxt(sec) {
+  if (sec == null) return '';
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s2 = Math.round(sec % 60);
+  return (h > 0 ? `${h}:${String(m).padStart(2, '0')}` : `${m}`) + `:${String(s2).padStart(2, '0')}`;
 }
+function raceTargetPace() { return race && race.km ? race.timeSec / race.km : null; }
 
-function renderActivityRec() {
-  const el = $('activity-rec');
-  const score = latest('readiness_score', 2) ?? heuristicReadiness();
-  if (score === null) { el.innerHTML = ''; return; }
-
-  // נתוני כושר ומגמה
-  const vo2 = latest('vo2max', 10), age = latest('fitness_age', 10), st = latest('training_status', 10);
-  const statusKey = st ? String(st).toUpperCase().replace(/[^A-Z_0-9]/g, '') : null;
-  const statusHeb = statusKey ? (TRAINING_STATUS[statusKey] || st) : null;
-  const chips = [];
-  if (vo2 !== null) chips.push(`<div class="chip"><span class="chip-ic">${icon('vo2', 18)}</span><b>${fmt(vo2, 1)}</b><small>VO2 Max</small></div>`);
-  if (age !== null) chips.push(`<div class="chip"><span class="chip-ic">${icon('calendar', 18)}</span><b>${fmt(age)}</b><small>גיל כושר</small></div>`);
-  if (statusHeb) chips.push(`<div class="chip"><span class="chip-ic">${icon('chart', 18)}</span><b style="font-size:.74rem">${statusHeb}</b><small>סטטוס אימון</small></div>`);
-
-  // יעדי השבוע
-  const cur = weekRows(0), auto = autoStrengthDates();
-  const strDone = strengthCountInWeek(cur, auto), strGoal = goalStrength();
-  const strLeft = Math.max(0, strGoal - strDone);
-  const intMin = cur.reduce((a, r) => a + (r.intensity_min || 0), 0), intGoal = 150;
-
-  // אימון היום
-  const pick = pickSession(score, statusKey, strLeft);
-  const w = MY_WORKOUTS[pick.key];
-  const tone = pick.key === 'rest' ? 'rest' : (score >= 70 ? 'go' : 'mod');
-
-  const targets = [];
-  targets.push(strLeft > 0
-    ? `${icon('dumbbell', 16)} עוד <b>${strLeft}</b> אימוני כוח השבוע (${strDone}/${strGoal})`
-    : `${icon('dumbbell', 16)} עמדת ביעד אימוני הכוח (${strDone}/${strGoal})`);
-  const intLeft = Math.max(0, intGoal - Math.round(intMin));
-  targets.push(intLeft > 0
-    ? `${icon('run', 16)} עוד <b>${intLeft}</b> דק׳ פעילות אינטנסיבית ליעד ה-150 השבועי`
-    : `${icon('run', 16)} מעל יעד ה-WHO (${Math.round(intMin)} דק׳)`);
-  const runRec = nextRunAdvice(score);
-  if (runRec) targets.push(`${icon('run', 16)} ${runRec}`);
-
-  el.innerHTML = `<article class="card rec-card rec-${tone}">
-    <div class="card-head"><h2>כושר ואימון מומלץ</h2><span class="unit">מוכנות ${score}</span></div>
-    ${chips.length ? `<div class="chips" style="margin-bottom:12px">${chips.join('')}</div>` : ''}
-    <div class="rec-session">
-      <span class="rec-emoji">${icon(w.ico, 24)}</span>
-      <div><div class="rec-title">היום: ${w.label}</div>
-        <div class="rec-detail">${w.detail}</div>
-        <div class="rec-why">${pick.why}</div></div>
+function raceForm(prefill) {
+  const r = prefill || {};
+  return `<div class="field-row">
+      <label class="field">שם המירוץ<input type="text" id="rc-name" value="${r.name || ''}" placeholder="למשל: חצי מרתון תל אביב"></label>
     </div>
-    <ul class="rec-list">${targets.map(t => `<li>${t}</li>`).join('')}</ul></article>`;
+    <div class="field-row">
+      <label class="field">תאריך<input type="date" id="rc-date" value="${r.date || ''}"></label>
+      <label class="field">מרחק (ק״מ)<input type="number" id="rc-km" min="0.1" step="0.1" value="${r.km || ''}" placeholder="21.1"></label>
+    </div>
+    <div class="field-row">
+      <label class="field">זמן יעד (שעה:דקה:שנייה)<input type="text" id="rc-time" value="${r.timeSec ? raceTimeTxt(r.timeSec) : ''}" placeholder="1:45:00"></label>
+    </div>
+    <div class="field-row">
+      <button type="button" class="btn-primary tr-wide" id="rc-save">שמירת מירוץ</button>
+      ${prefill ? '<button type="button" class="btn-ghost" id="rc-delete">מחיקה</button>' : ''}
+    </div>`;
+}
+function bindRaceForm() {
+  const save = $('rc-save'); if (!save) return;
+  save.onclick = () => {
+    const name = $('rc-name').value.trim();
+    const date = $('rc-date').value;
+    const km = Number($('rc-km').value);
+    const timeSec = parseRaceTime($('rc-time').value);
+    if (!date || !km || !timeSec) { toast('צריך תאריך, מרחק וזמן יעד'); return; }
+    race = { name, date, km, timeSec };
+    saveRace(); renderRace(); toast('המירוץ נשמר ✓');
+  };
+  const del = $('rc-delete');
+  if (del) del.onclick = () => { race = null; saveRace(); renderRace(); };
+}
+/* ממוצע קצב על מדגם ריצות — משמש רק להשוואה מול המירוץ, לא לתצוגה כללית */
+function avgPaceOf(runs) {
+  const withPace = runs.filter(r => r.pace);
+  return withPace.length ? withPace.reduce((a, r) => a + r.pace, 0) / withPace.length : null;
+}
+function renderRace() {
+  const el = $('race-card');
+  if (!race) {
+    el.innerHTML = `<article class="card">
+      <div class="card-head"><h2>${icon('trophy', 18)} מירוץ יעד</h2></div>
+      <p class="tr-empty">הגדר מירוץ שנרשמת אליו — התאריך, המרחק והזמן שאתה שואף אליו —
+        ותראה כאן איך הריצות שלך עומדות מולו.</p>
+      ${raceForm()}
+    </article>`;
+    bindRaceForm();
+    return;
+  }
+  const daysLeft = Math.ceil((new Date(`${race.date}T00:00:00`) - new Date(`${todayISO()}T00:00:00`)) / 864e5);
+  if (daysLeft < 0) {
+    el.innerHTML = `<article class="card">
+      <div class="card-head"><h2>${icon('trophy', 18)} מירוץ יעד</h2></div>
+      <p class="tr-note">"${race.name || 'המירוץ'}" (${shortDateY(race.date)}) כבר עבר. הגדר את המירוץ הבא:</p>
+      ${raceForm()}
+    </article>`;
+    bindRaceForm();
+    return;
+  }
+
+  const pace = raceTargetPace();
+  const runs = allRuns().filter(r => r.real);
+  const hardRuns = runs.filter(r => r.kind === 'tempo' || r.kind === 'intervals').slice(-5);
+  const sample = hardRuns.length ? hardRuns : runs.slice(-5);
+  const avgP = avgPaceOf(sample);
+  let compareTxt = '';
+  if (pace && avgP) {
+    const d = avgP - pace;
+    compareTxt = `<p class="tr-note">${hardRuns.length ? 'לפי 5 הריצות הקשות האחרונות' : 'לפי 5 הריצות האחרונות'}:
+      קצב ממוצע <b>${paceTxt(avgP)}</b> מול יעד <b>${paceTxt(pace)}</b> —
+      ${Math.abs(d) < 3 ? 'כמעט בדיוק על היעד' : `${paceTxt(Math.abs(d))} ${d < 0 ? 'מהיר מהיעד' : 'איטי מהיעד'}`}.</p>`;
+  }
+
+  el.innerHTML = `<article class="card">
+    <div class="card-head"><h2>${icon('trophy', 18)} ${race.name || 'מירוץ יעד'}</h2>
+      <button class="world-link" id="rc-toggle">עריכה ‹</button></div>
+    <div class="run-last">
+      <div class="rl-top"><span class="run-badge" style="--rc:var(--primary-500)">${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ</span>
+        <span class="rl-date">${longDateY(race.date)}</span></div>
+      <div class="rl-bits">יעד ${raceTimeTxt(race.timeSec)} · קצב ${paceTxt(pace)} דק׳/ק״מ</div>
+    </div>
+    <p class="tr-note"><b>${daysLeft}</b> ימים למירוץ</p>
+    ${compareTxt}
+    <div id="rc-form-wrap" class="hidden">${raceForm(race)}</div>
+  </article>`;
+  $('rc-toggle').onclick = () => $('rc-form-wrap').classList.toggle('hidden');
+  bindRaceForm();
 }
 
 /* =========================================================================
@@ -3645,11 +3666,11 @@ function renderAll() {
   statHero('steps-hero', 'steps');
   renderStrength();
   renderTrain();
-  renderActivityRec();
+  renderRace();
+  renderCardioLog();
   renderRuns();
   renderCharts();
   renderBreathing();
-  renderWorkouts();
   renderHrZones();
 
   verdictCard('sleep-insight', 'מה זה אומר', ['sleep_hours', 'sleep_score']);
@@ -3735,6 +3756,20 @@ function currentIndex() {
 }
 
 tabs.forEach(t => t.addEventListener('click', () => goTo(Number(t.dataset.index))));
+
+/* מתג כוח/אירובי בתוך טאב האימונים — נשמר בין פתיחות כמו שנשאר טווח הזמן */
+const TRAIN_SEG_KEY = 'train_seg_v1';
+function setTrainSeg(seg) {
+  jsonSet(TRAIN_SEG_KEY, seg);
+  document.querySelectorAll('#train-seg .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.seg === seg));
+  $('train-strength').classList.toggle('hidden', seg !== 'strength');
+  $('train-aerobic').classList.toggle('hidden', seg !== 'aerobic');
+}
+$('train-seg').addEventListener('click', e => {
+  const b = e.target.closest('[data-seg]'); if (!b) return;
+  haptic(6); setTrainSeg(b.dataset.seg);
+});
+setTrainSeg(jsonGet(TRAIN_SEG_KEY, 'strength'));
 $('dashboard').addEventListener('click', e => {
   const flip = e.target.closest('[data-flip]');
   if (flip) { flip.classList.toggle('flipped'); haptic(8); return; }
@@ -3898,6 +3933,7 @@ async function init() {
   loadWeights();
   loadStrength();
   loadTraining();
+  loadRace();
   loadRunTags();
   loadRunHistory();
   const [{ data, isDemo }] = await Promise.all([loadHealthData(), fetchRunHistory()]);
