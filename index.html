@@ -18,6 +18,7 @@
   <script src="common.js" defer></script>
   <script src="apple-health.js" defer></script>
   <script src="app.js" defer></script>
+  <script src="insights.js" defer></script>
 </head>
 <body>
 
@@ -61,6 +62,9 @@
         <!-- לוח טבעות — מוכנות במרכז + מדדים מסביב -->
         <div id="dashboard" class="dashboard"></div>
 
+        <!-- מה לעשות היום -->
+        <div id="today-card"></div>
+
         <!-- אזהרת עומס/מחלה — מופיע רק כשמצטלבים סימנים -->
         <div id="strain-warning"></div>
 
@@ -70,8 +74,8 @@
         <!-- השבוע שלי — סיכום מול השבוע הקודם -->
         <div id="week-summary"></div>
 
-        <!-- תובנה -->
-        <div id="insight-home"></div>
+        <!-- תובנות אישיות — דפוסים שנמצאו בנתונים שלי -->
+        <div id="insights-card"></div>
 
         <!-- מעקב משקל -->
         <div id="weight-card"></div>
@@ -287,6 +291,23 @@
             <button type="submit" class="btn-primary">שמירה</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ===== תיוג יום חריג ===== -->
+    <div id="tag-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-sheet" role="dialog" aria-label="תיוג יום חריג">
+        <div class="modal-head">
+          <h2>מה קרה ב<span id="tag-date"></span>?</h2>
+          <button class="icon-btn" data-close aria-label="סגור">✕</button>
+        </div>
+        <p class="modal-note">יום מתויג לא נספר בחישוב הבסיס האישי ובתובנות — כך שאירוע חד־פעמי לא מעוות את הממוצע שלך.</p>
+        <div id="tag-options" class="tag-opts"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="tag-clear">הסרת תיוג</button>
+          <button type="button" class="btn-ghost" data-close>ביטול</button>
+        </div>
       </div>
     </div>
 

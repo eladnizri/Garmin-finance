@@ -1107,3 +1107,71 @@ button.tm-v:active { color: var(--primary-500); }
 
 /* הערת גרף עם סייג קטן בשורה נפרדת */
 .tr-note small { display: block; margin-top: 3px; font-size: .68rem; color: var(--muted); }
+
+/* =========================================================================
+ * כרטיס "היום" — ההמלצה היחידה שפותחת את מסך הבית
+ * ========================================================================= */
+.today-card { padding: 15px 16px; border-inline-start: 4px solid var(--primary); }
+.today-card.tone-go   { border-inline-start-color: var(--ok); }
+.today-card.tone-easy { border-inline-start-color: var(--watch); }
+.today-card.tone-rest { border-inline-start-color: var(--alert); }
+.today-head { display: flex; gap: 12px; align-items: center; }
+.today-ic {
+  width: 42px; height: 42px; border-radius: 13px; flex: none;
+  display: grid; place-items: center; background: var(--surface-2); color: var(--primary-500);
+}
+.tone-easy .today-ic { color: var(--watch); }
+.tone-rest .today-ic { color: var(--alert); }
+.today-kicker {
+  display: block; font-size: .64rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted);
+}
+.today-title { font-size: 1.05rem; font-weight: 700; line-height: 1.35; }
+.today-detail { font-size: .85rem; line-height: 1.6; color: var(--ink-2); margin-top: 11px; }
+/* הנימוקים — המספרים שמאחורי ההמלצה, כדי שלא תיראה כמו הכרזה שרירותית */
+.today-why { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+.today-why span {
+  font-size: .71rem; font-weight: 600; color: var(--ink-2);
+  background: var(--surface-2); border-radius: 999px; padding: 4px 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* =========================================================================
+ * תובנות אישיות — ממצאים מתוך הנתונים עצמם
+ * ========================================================================= */
+.ins-row { display: flex; gap: 10px; align-items: flex-start; padding: 11px 0; border-top: 1px solid var(--line); }
+.ins-row:first-of-type { border-top: 0; padding-top: 4px; }
+.ins-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: none;
+  background: var(--primary); margin-top: 7px;
+}
+.ins-txt { font-size: .85rem; line-height: 1.6; color: var(--ink-2); }
+.ins-txt b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ins-meta { display: block; margin-top: 4px; font-size: .68rem; color: var(--muted); }
+.ins-note { margin-top: 10px; font-size: .68rem; color: var(--muted); line-height: 1.5; }
+
+/* =========================================================================
+ * תיוג יום חריג — למה הוא היה חריג, כדי שלא יזהם את הבסיס
+ * ========================================================================= */
+.anom-tag {
+  flex: none; margin-inline-start: auto; align-self: center;
+  font-size: .69rem; font-weight: 700; white-space: nowrap;
+  padding: 4px 9px; border-radius: 999px;
+  background: rgba(255, 255, 255, .55); color: inherit; opacity: .8; transition: .15s;
+}
+.anom-tag.on { background: var(--ink); color: #fff; opacity: 1; }
+.anom-tag:active { transform: scale(.94); }
+.tag-opts { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 4px; }
+.tag-opt {
+  font-size: .78rem; font-weight: 600; color: var(--ink-2);
+  background: var(--surface-2); border-radius: 999px; padding: 8px 13px; transition: .15s;
+}
+.tag-opt.on { background: var(--ink); color: #fff; }
+.tag-opt:active { transform: scale(.95); }
+
+/* הפוקוס לשבוע הבא — סוגר את הסיכום השבועי */
+.ws-focus {
+  margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line);
+  font-size: .82rem; line-height: 1.6; color: var(--ink-2);
+}
+.ws-focus b { font-weight: 700; color: var(--ink); }
