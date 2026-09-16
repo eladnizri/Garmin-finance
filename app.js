@@ -175,15 +175,17 @@ function visibleRows() { return state.range === 'all' ? state.data : state.data.
 const CUMULATIVE = new Set(['steps', 'calories', 'floors', 'intensity_min']);
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-function latest(key, within = 3) {
+/* הערך האחרון + היום שממנו נלקח — התאריך נחוץ כדי לתייג יום חריג */
+function latestAt(key, within = 3) {
   let end = state.data.length - 1;
   if (CUMULATIVE.has(key) && state.data[end]?.date === todayISO()) end--;  // דילוג על היום החלקי
   for (let i = end; i >= Math.max(0, end - within + 1); i--) {
     const v = state.data[i]?.[key];
-    if (v !== null && v !== undefined && v !== '') return v;
+    if (v !== null && v !== undefined && v !== '') return { v, date: state.data[i].date };
   }
-  return null;
+  return { v: null, date: null };
 }
+function latest(key, within = 3) { return latestAt(key, within).v; }
 const lastRow = () => state.data[state.data.length - 1] || {};
 function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
 
@@ -216,6 +218,11 @@ function baselineOf(key) {
   let rows = state.data.slice(-30);
   // היום החלקי לא נכנס לבסיס של מדד מצטבר
   if (CUMULATIVE.has(key) && rows[rows.length - 1]?.date === todayISO()) rows = rows.slice(0, -1);
+  // יום שתויג כחריג (טיסה, מחלה, אלכוהול) לא אמור להזיז את "הרגיל שלך"
+  if (typeof isTagged === 'function') {
+    const kept = rows.filter(r => !isTagged(r.date));
+    if (kept.length >= 5) rows = kept;
+  }
   const b = stdev(rows, key);
   return b && b.n >= 5 ? b : null;
 }
@@ -223,21 +230,22 @@ function baselineOf(key) {
 /* מצב מדד מול הבסיס האישי: ok | normal | watch | alert */
 function statusOf(key, value = null) {
   const def = METRICS[key];
-  const v = value ?? latest(key);
+  const at = value === null ? latestAt(key) : { v: value, date: null };
+  const v = at.v, date = at.date;
   if (v === null || !def) return null;
 
   // ל-HRV מעדיפים את הטווח המאוזן שגרמין מחשב עבורך
   if (key === 'hrv') {
     const lo = latest('hrv_base_low', 7), hi = latest('hrv_base_high', 7);
     if (lo !== null && hi !== null) {
-      if (v < lo) return { key, value: v, level: v < lo * 0.9 ? 'alert' : 'watch', text: 'מתחת לטווח המאוזן שלך', base: { lo, hi } };
-      if (v > hi) return { key, value: v, level: 'ok', text: 'מעל הטווח המאוזן שלך', base: { lo, hi } };
-      return { key, value: v, level: 'ok', text: 'בטווח המאוזן שלך', base: { lo, hi } };
+      if (v < lo) return { key, value: v, date, level: v < lo * 0.9 ? 'alert' : 'watch', text: 'מתחת לטווח המאוזן שלך', base: { lo, hi } };
+      if (v > hi) return { key, value: v, date, level: 'ok', text: 'מעל הטווח המאוזן שלך', base: { lo, hi } };
+      return { key, value: v, date, level: 'ok', text: 'בטווח המאוזן שלך', base: { lo, hi } };
     }
   }
 
   const b = baselineOf(key);
-  if (!b || b.sd === 0) return { key, value: v, level: 'normal', text: 'אין עדיין בסיס להשוואה' };
+  if (!b || b.sd === 0) return { key, value: v, date, level: 'normal', text: 'אין עדיין בסיס להשוואה' };
   const z = (v - b.mean) / b.sd;
   const good = def.goodUp ? z : -z;   // z בכיוון החיובי עבור המדד
   let level, text;
@@ -245,7 +253,7 @@ function statusOf(key, value = null) {
   else if (good > -1) { level = 'normal'; text = 'בטווח הרגיל שלך'; }
   else if (good > -2) { level = 'watch'; text = 'מתחת לרגיל שלך'; }
   else { level = 'alert'; text = 'חריג מהרגיל שלך'; }
-  return { key, value: v, level, text, z, base: b };
+  return { key, value: v, date, level, text, z, base: b };
 }
 
 const LEVEL_LABEL = { ok: 'טוב', normal: 'רגיל', watch: 'לשים לב', alert: 'חריג' };
@@ -481,86 +489,15 @@ function renderAnomalies() {
     const d = METRICS[s.key];
     const base = s.base && s.base.mean !== undefined
       ? ` (הרגיל שלך: ${fmt(s.base.mean, d.dec)})` : '';
+    // תיוג היום כחריג מוציא אותו מהבסיס האישי — אירוע חד-פעמי לא יעוות את הממוצע
+    const tagged = typeof isTagged === 'function' && s.date && isTagged(s.date);
+    const tag = s.date
+      ? `<button class="anom-tag${tagged ? ' on' : ''}" data-anom-date="${s.date}"
+           aria-label="תיוג היום כחריג">${tagged ? tagLabel(s.date) : '+ סיבה'}</button>`
+      : '';
     return `<div class="anom ${s.level}"><span class="anom-ic">${icon(s.level === 'alert' ? 'alert' : 'eye', 17)}</span>
-      <span><b>${d.label} ${valueText(s.key, s.value)}</b> — ${s.text}${base}.</span></div>`;
+      <span><b>${d.label} ${valueText(s.key, s.value)}</b> — ${s.text}${base}.</span>${tag}</div>`;
   }).join('')}</div>`;
-}
-
-/* =========================================================================
- * תובנה מהצלבת נתונים
- * ========================================================================= */
-const CORR = [
-  { a: 'sleep_hours', b: 'rhr',
-    neg: 'בלילות שבהם ישנת יותר, דופק המנוחה נטה להיות נמוך יותר — השינה תומכת בהתאוששות הלב.',
-    pos: 'יותר שעות שינה לוו בדופק מנוחה גבוה יותר — קשר לא שגרתי, שווה מעקב.' },
-  { a: 'sleep_hours', b: 'hrv',
-    pos: 'יותר שעות שינה הלכו יד ביד עם HRV גבוה יותר — שינה ארוכה משפרת את ההתאוששות.',
-    neg: 'יותר שעות שינה לוו ב-HRV נמוך יותר — קשר לא צפוי.' },
-  { a: 'stress_avg', b: 'sleep_score',
-    neg: 'בימים עם מתח גבוה, ציון השינה שלאחריהם נטה להיות נמוך יותר — מתח פוגע באיכות השינה.',
-    pos: 'מתח גבוה וציון שינה גבוה הופיעו יחד — קשר לא שגרתי.' },
-  { a: 'steps', b: 'sleep_score',
-    pos: 'בימים שבהם צעדת יותר, ציון השינה נטה להיות גבוה יותר — פעילות תומכת בשינה.',
-    neg: 'יותר צעדים לוו בציון שינה נמוך יותר — ייתכן שפעילות מאוחרת מדי משפיעה.' },
-  { a: 'rhr', b: 'stress_avg',
-    pos: 'בימים עם דופק מנוחה גבוה יותר, רמת המתח נטתה להיות גבוהה יותר — שני סימנים לעומס על הגוף.',
-    neg: 'דופק מנוחה גבוה ומתח נמוך הופיעו יחד — קשר לא שגרתי, שווה מעקב.' },
-];
-
-function bestCorrelation(rows) {
-  let best = null;
-  for (const p of CORR) {
-    const { r, n } = pearson(rows, p.a, p.b);
-    if (r !== null && Math.abs(r) >= 0.35 && (!best || Math.abs(r) > Math.abs(best.r))) best = { ...p, r, n };
-  }
-  return best;
-}
-
-/* זיהוי דפוסים רב-יומיים: רצף מתחת/מעל הבסיס, או מגמה מונוטונית */
-const PATTERN_KEYS = ['sleep_hours', 'hrv', 'rhr', 'stress_avg', 'sleep_score'];
-function detectPatterns() {
-  const recent = state.data.slice(-14);
-  let best = null; // {len, text}
-  for (const key of PATTERN_KEYS) {
-    const def = METRICS[key];
-    const b = baselineOf(key);
-    if (!b || b.sd === 0) continue;
-    const series = recent.map(r => r[key]).filter(v => v != null && !Number.isNaN(v));
-    if (series.length < 3) continue;
-
-    // רצף ימים אחרונים באותו צד של הבסיס (מעבר לחצי סטיית תקן)
-    let run = 0, side = 0;
-    for (let i = series.length - 1; i >= 0; i--) {
-      const dev = (series[i] - b.mean) / b.sd;
-      const s = dev > 0.5 ? 1 : dev < -0.5 ? -1 : 0;
-      if (s === 0) break;
-      if (side === 0) side = s;
-      if (s === side) run++; else break;
-    }
-    if (run >= 3) {
-      const bad = def.goodUp ? side < 0 : side > 0;
-      const dir = side < 0 ? 'מתחת ל' : 'מעל ה';
-      const suffix = bad ? ' — שווה תשומת לב.' : ' — מגמה חיובית!';
-      const text = `${def.label} ${dir}בסיס האישי שלך <b>${run} ימים ברצף</b>${suffix}`;
-      if (!best || run > best.len) best = { len: run, text };
-    }
-  }
-  return best;
-}
-
-function renderHomeInsight() {
-  const pattern = detectPatterns();
-  let text;
-  if (pattern) {
-    text = pattern.text;
-  } else {
-    const best = bestCorrelation(state.data.slice(-30));
-    text = best
-      ? (best.r < 0 ? best.neg : best.pos)
-      : 'ככל שיצטברו יותר ימי מדידה, כאן יופיעו תובנות אישיות מהצלבת הנתונים שלך.';
-  }
-  $('insight-home').innerHTML =
-    `<div class="insight"><span class="i-ic">${icon('bulb', 19)}</span><p><b>תובנה:</b> ${text}</p></div>`;
 }
 
 /* =========================================================================
@@ -3288,6 +3225,9 @@ function renderWeekSummary() {
   else bits.push('עמדת ביעד אימוני הכוח');
   if (kmGoal && kmC < kmGoal) bits.push(`נשארו ${fmt(kmGoal - kmC, 1)} ק״מ ליעד הריצה`);
   const prose = bits.length ? `<p class="ws-prose">${bits.join(', ')}.</p>` : '';
+  // הפוקוס לשבוע הבא — הפער היחיד שהכי שווה לסגור
+  const focus = typeof weekFocus === 'function' ? weekFocus() : null;
+  const focusLine = focus ? `<p class="ws-focus"><b>הפוקוס לשבוע הבא:</b> ${focus}</p>` : '';
 
   const st = weekStreak();
   const streak = st.current ? `<div class="ws-streak">
@@ -3298,7 +3238,7 @@ function renderWeekSummary() {
 
   el.innerHTML = `<article class="card"><div class="card-head"><h2>הסיכום השבועי שלך</h2>
     <span class="unit">מול השבוע הקודם</span></div>${prose}${streak}
-    <div class="ws-grid">${chips.join('')}</div></article>`;
+    <div class="ws-grid">${chips.join('')}</div>${focusLine}</article>`;
 }
 
 /* =========================================================================
@@ -3650,10 +3590,11 @@ function renderAll() {
 
   // בית
   renderDashboard();
+  if (typeof renderToday === 'function') renderToday();
   renderStrain();
   renderAnomalies();
   renderWeekSummary();
-  renderHomeInsight();
+  if (typeof renderInsights === 'function') renderInsights();
   renderWeight();
   renderBody();
 
@@ -3946,6 +3887,7 @@ async function init() {
 
   state.page = -1;
   setActive(0);
+  if (typeof initInsights === 'function') initInsights();
   renderAll();
   // התחלה בעמוד הבית (חשוב ב-RTL, שבו ההיסט ההתחלתי אינו בהכרח 0)
   requestAnimationFrame(() => snapToPage(0, false));
