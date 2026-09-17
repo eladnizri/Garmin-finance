@@ -2535,6 +2535,7 @@ function finishWorkout() {
   active = null; saveActive();
   closeWorkout();
   renderStrength(); renderTrain();
+  if (typeof renderLab === 'function') renderLab();
   showSummary(rec);
 }
 
@@ -3634,6 +3635,7 @@ function renderAll() {
   statHero('steps-hero', 'steps');
   renderStrength();
   renderTrain();
+  if (typeof renderLab === 'function') renderLab();
   renderRace();
   renderCardioLog();
   renderRuns();

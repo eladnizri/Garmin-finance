@@ -1273,3 +1273,37 @@ button.tm-v:active { color: var(--primary-500); }
 .race-phase.ph-raceweek { background: #fbe6e1; } .ph-raceweek .rp-tag { background: var(--alert); }
 .race-phase.ph-raceday  { background: #e3f3ea; } .ph-raceday .rp-tag  { background: var(--ok); }
 .race-phase.ph-recovery { background: #e3f3ea; } .ph-recovery .rp-tag { background: var(--ok); }
+
+/* =========================================================================
+ * מעבדת האימון — פלאטו לפי תרגיל, התאוששות והפרעה
+ * ========================================================================= */
+.lab-row { padding: 11px 0; border-top: 1px solid var(--line); }
+.lab-row:first-of-type { border-top: 0; padding-top: 2px; }
+.lab-top { display: flex; align-items: center; gap: 8px; }
+.lab-tag {
+  flex: none; font-size: .67rem; font-weight: 800; padding: 3px 8px;
+  border-radius: 999px; background: var(--surface-2); color: var(--ink-2);
+}
+.lab-row.flat .lab-tag { background: #fbefd8; color: #8a6a1e; }
+.lab-row.down .lab-tag { background: #fbe6e1; color: #a5493a; }
+.lab-name { font-size: .87rem; font-weight: 700; }
+.lab-pct { margin-inline-start: auto; font-size: .8rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.lab-row.down .lab-pct { color: var(--alert); }
+.lab-note { margin-top: 6px; font-size: .78rem; line-height: 1.6; color: var(--ink-2); }
+.lab-ok {
+  margin-top: 11px; padding: 10px 12px; border-radius: var(--r-md);
+  background: #e3f3ea; font-size: .78rem; line-height: 1.6; color: #2b6d4c;
+}
+.lab-ok b { font-weight: 700; }
+.lab-ok .ic { vertical-align: -2px; margin-inline-end: 3px; }
+
+/* בלוק שממתין לנתונים — מונה במקום כרטיס ריק */
+.lab-wait, .lab-rec {
+  margin-top: 11px; padding: 11px 12px; border-radius: var(--r-md);
+  background: var(--surface-2); font-size: .78rem; line-height: 1.6;
+}
+.lab-wait b, .lab-rec b { display: block; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.lab-wait span, .lab-rec span { color: var(--ink-2); }
+.lab-wait { opacity: .78; }
+.lab-rec { background: #eef5f1; }
+.lab-rec span b { display: inline; margin: 0; font-variant-numeric: tabular-nums; }
