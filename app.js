@@ -223,6 +223,15 @@ function baselineOf(key) {
     const kept = rows.filter(r => !isTagged(r.date));
     if (kept.length >= 5) rows = kept;
   }
+  // אם "הרגיל שלך" באמת השתנה (חזרה מחופשה, תקופת עומס), הבסיס נמדד מאז —
+  // אחרת האפליקציה משווה אותך לתקופה שכבר לא רלוונטית ומתריעה לשווא
+  if (typeof baselineCutoff === 'function') {
+    const cut = baselineCutoff();
+    if (cut) {
+      const after = rows.filter(r => r.date >= cut);
+      if (after.length >= 10) rows = after;
+    }
+  }
   const b = stdev(rows, key);
   return b && b.n >= 5 ? b : null;
 }
@@ -283,6 +292,11 @@ function anomalies() {
  * מסך הבית — ציון מרכזי
  * ========================================================================= */
 function heuristicReadiness() {
+  // כשיש מודל אישי, המשקלים נלמדו ממך ולא מנוסחה קבועה
+  if (typeof weightedReadiness === 'function') {
+    const w = weightedReadiness();
+    if (w !== null) return w;
+  }
   const recent = state.data.slice(-3);
   const parts = [];
   const s = avg(recent, 'sleep_score'); if (s !== null) parts.push({ w: .4, v: s });
@@ -2055,6 +2069,9 @@ function deltaChip(label, from) {
  * ========================================================================= */
 function renderStrain() {
   const el = $('strain-warning');
+  // model.js מרכיב את הכרטיס עם הסף האישי שנלמד מההיסטוריה שלך
+  if (typeof strainCard === 'function') { el.innerHTML = strainCard(); return; }
+
   const signals = [];
   const rhr = statusOf('rhr'); if (rhr && (rhr.level === 'watch' || rhr.level === 'alert')) signals.push('דופק מנוחה מוגבר');
   const hrv = statusOf('hrv'); if (hrv && (hrv.level === 'watch' || hrv.level === 'alert')) signals.push('HRV נמוך');
@@ -3225,6 +3242,9 @@ function renderWeekSummary() {
   else bits.push('עמדת ביעד אימוני הכוח');
   if (kmGoal && kmC < kmGoal) bits.push(`נשארו ${fmt(kmGoal - kmC, 1)} ק״מ ליעד הריצה`);
   const prose = bits.length ? `<p class="ws-prose">${bits.join(', ')}.</p>` : '';
+  // מה זז השבוע ומה זז יחד איתו — ההסבר מגיע מהמודל האישי
+  const why = typeof weekWhy === 'function' ? weekWhy() : null;
+  const whyLine = why ? `<p class="ws-why">${icon('gauge', 14)} ${why}</p>` : '';
   // הפוקוס לשבוע הבא — הפער היחיד שהכי שווה לסגור
   const focus = typeof weekFocus === 'function' ? weekFocus() : null;
   const focusLine = focus ? `<p class="ws-focus"><b>הפוקוס לשבוע הבא:</b> ${focus}</p>` : '';
@@ -3238,7 +3258,7 @@ function renderWeekSummary() {
 
   el.innerHTML = `<article class="card"><div class="card-head"><h2>הסיכום השבועי שלך</h2>
     <span class="unit">מול השבוע הקודם</span></div>${prose}${streak}
-    <div class="ws-grid">${chips.join('')}</div>${focusLine}</article>`;
+    <div class="ws-grid">${chips.join('')}</div>${whyLine}${focusLine}</article>`;
 }
 
 /* =========================================================================
@@ -3595,6 +3615,7 @@ function renderAll() {
   renderAnomalies();
   renderWeekSummary();
   if (typeof renderInsights === 'function') renderInsights();
+  if (typeof renderModel === 'function') renderModel();
   renderWeight();
   renderBody();
 

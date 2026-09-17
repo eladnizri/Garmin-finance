@@ -1175,3 +1175,62 @@ button.tm-v:active { color: var(--primary-500); }
   font-size: .82rem; line-height: 1.6; color: var(--ink-2);
 }
 .ws-focus b { font-weight: 700; color: var(--ink); }
+
+/* =========================================================================
+ * המודל האישי — דירוג המנופים שמזיזים את ההתאוששות
+ * ========================================================================= */
+.mdl-lead { font-size: .82rem; line-height: 1.6; color: var(--ink-2); margin-bottom: 14px; }
+.mdl-row { padding: 11px 0; border-top: 1px solid var(--line); }
+.mdl-row:first-of-type { border-top: 0; padding-top: 0; }
+.mdl-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.mdl-rank {
+  width: 19px; height: 19px; border-radius: 6px; flex: none;
+  display: grid; place-items: center; background: var(--surface-2);
+  font-size: .68rem; font-weight: 800; color: var(--ink-2);
+}
+.mdl-name { font-size: .88rem; font-weight: 700; }
+/* האחוז נדחף לקצה השורה כדי שכל האחוזים יתיישרו זה מתחת לזה */
+.mdl-pct { margin-inline-start: auto; font-size: .82rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--primary-500); }
+.mdl-bar { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+.mdl-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary-400), var(--primary)); }
+.mdl-note { margin-top: 7px; font-size: .78rem; line-height: 1.55; color: var(--ink-2); }
+.mdl-note b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+/* הודעת שינוי משטר — למה הבסיס האישי נמדד מתאריך מסוים */
+.mdl-regime {
+  margin-top: 13px; padding: 10px 12px; border-radius: var(--r-md);
+  background: var(--surface-2); font-size: .78rem; line-height: 1.6; color: var(--ink-2);
+}
+.mdl-regime b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mdl-regime .ic { vertical-align: -2px; margin-inline-end: 3px; }
+
+/* תקדים אישי בתוך אזהרת העומס */
+.strain-prec {
+  margin-top: 9px; padding-top: 9px; border-top: 1px solid rgba(169, 112, 26, .18);
+  font-size: .79rem; line-height: 1.55; color: #8a6a34;
+}
+.strain-prec b { font-weight: 800; color: #a9701a; font-variant-numeric: tabular-nums; }
+
+/* ההסבר השבועי — מה זז ומה זז יחד איתו */
+.ws-why {
+  margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--line);
+  font-size: .82rem; line-height: 1.6; color: var(--ink-2);
+}
+.ws-why b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ws-why .ic { vertical-align: -2px; margin-inline-end: 3px; color: var(--muted); }
+/* כששני המשפטים מופיעים יחד, רק הראשון נושא את הקו המפריד */
+.ws-why + .ws-focus { margin-top: 8px; padding-top: 0; border-top: 0; }
+.mdl-row.off { opacity: .5; }
+.mdl-row.off .mdl-pct { color: var(--muted); font-weight: 700; }
+.mdl-n { color: var(--muted); font-weight: 400; }
+/* קריאת העומס — ירוק כשהגוף סופג, כתום כשלא */
+.mdl-adapt {
+  margin-top: 13px; padding: 11px 12px; border-radius: var(--r-md);
+  font-size: .8rem; line-height: 1.6;
+}
+.mdl-adapt b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.mdl-adapt.good { background: #e3f3ea; color: #2b6d4c; }
+.mdl-adapt.warn { background: #fbefd8; color: #8a6a1e; }
+.mdl-none {
+  margin-top: 4px; padding: 10px 12px; border-radius: var(--r-md);
+  background: var(--surface-2); font-size: .78rem; line-height: 1.6; color: var(--ink-2);
+}
