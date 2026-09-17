@@ -454,7 +454,10 @@ function todayPlan() {
   const daysLeftInWeek = 7 - dow;
 
   const weekKm = (typeof weekRunKm === 'function') ? weekRunKm(cur) : 0;
-  const kmGoal = (typeof goalRunKm === 'function') ? goalRunKm() : null;
+  // יעד הנפח מותאם לשלב המירוץ — בטייפר הוא נמוך יותר בכוונה
+  const kmGoal = (typeof adjustedRunGoal === 'function') ? adjustedRunGoal()
+    : (typeof goalRunKm === 'function') ? goalRunKm() : null;
+  const phase = (typeof racePhase === 'function') ? racePhase() : null;
   const sinceRun = daysSinceLastRun(), sinceQuality = daysSinceQualityRun();
   const raceDays = (typeof race !== 'undefined' && race && race.date)
     ? Math.ceil((new Date(`${race.date}T00:00:00`) - new Date(`${todayISO()}T00:00:00`)) / 864e5) : null;
@@ -471,21 +474,38 @@ function todayPlan() {
     key = 'rest'; tone = 'rest'; title = 'יום מנוחה';
     detail = 'הגוף עוד לא חזר — אימון היום יעלה יותר ממה שייתן.';
     push(`ציון מוכנות ${Math.round(readiness)}`);
+  } else if (phase && phase.key === 'raceday') {
+    key = 'race'; tone = 'go'; title = `${race.name || 'המירוץ'} — היום`;
+    detail = `${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ בקצב יעד ${paceTxt(raceTargetPace())}. בהצלחה.`;
+    push(`יעד ${raceTimeTxt(race.timeSec)}`);
+  } else if (phase && phase.key === 'raceweek') {
+    key = 'easy'; tone = 'easy'; title = 'שבוע המירוץ — לשמור אנרגיה';
+    detail = `${phase.daysLeft} ימים למירוץ. ${phase.note}`;
+    push('בלי כוח כבד השבוע');
+  } else if (phase && phase.key === 'recovery') {
+    key = 'rest'; tone = 'rest'; title = 'התאוששות אחרי המירוץ';
+    detail = `עברו ${Math.abs(phase.daysLeft)} ימים מהמירוץ — ${phase.note}`;
   } else if (alerts.length) {
     key = 'easy'; tone = 'rest'; title = 'יום קל בלבד';
     detail = 'יש מדד שחורג משמעותית מהרגיל שלך — שווה לתת לו יום.';
     alerts.slice(0, 2).forEach(a => push(`${METRICS[a.key].label} ${valueText(a.key, a.value)} — ${a.text}`));
   } else if (strLeft > 0 && daysLeftInWeek <= strLeft + 1) {
-    key = 'strength'; tone = 'go'; title = 'אימון כוח — ולא לדחות';
-    detail = muscleTxt
-      ? `נשארו ${daysLeftInWeek} ימים בשבוע ו-${strLeft} אימונים ליעד. ${muscleTxt} עוד לא עבדו.`
-      : `נשארו ${daysLeftInWeek} ימים בשבוע ו-${strLeft} אימונים ליעד — אין הרבה מרווח.`;
+    key = 'strength'; tone = 'go';
+    title = phase && phase.key === 'taper' ? 'אימון כוח קל' : 'אימון כוח — ולא לדחות';
+    detail = phase && phase.key === 'taper'
+      ? `${phase.daysLeft} ימים למירוץ — כוח קל בלבד, בלי לרדת למשקלים כבדים.`
+      : muscleTxt
+        ? `נשארו ${daysLeftInWeek} ימים בשבוע ו-${strLeft} אימונים ליעד. ${muscleTxt} עוד לא עבדו.`
+        : `נשארו ${daysLeftInWeek} ימים בשבוע ו-${strLeft} אימונים ליעד — אין הרבה מרווח.`;
     push(`${strDone}/${strGoal} אימוני כוח השבוע`);
   } else if (raceDays !== null && raceDays >= 0 && raceDays <= 28
              && readiness !== null && readiness >= 70
              && (sinceQuality === null || sinceQuality >= 4)) {
-    key = 'quality'; tone = 'go'; title = 'ריצת איכות';
-    detail = `המירוץ בעוד ${raceDays} ימים והמוכנות גבוהה — זה היום לטמפו או אינטרוולים.`;
+    const tapering = phase && phase.key === 'taper';
+    key = 'quality'; tone = 'go'; title = tapering ? 'ריצה קצרה בקצב המירוץ' : 'ריצת איכות';
+    detail = tapering
+      ? `${raceDays} ימים למירוץ — שומרים חדות בנפח נמוך: כמה קילומטרים בקצב היעד ודי.`
+      : `המירוץ בעוד ${raceDays} ימים והמוכנות גבוהה — זה היום לטמפו או אינטרוולים.`;
     push(sinceQuality === null ? 'עוד לא תועדה ריצת איכות' : `${sinceQuality} ימים מאז ריצת איכות`);
     const gap = (typeof raceTargetPace === 'function') ? raceTargetPace() : null;
     if (gap) push(`קצב היעד ${paceTxt(gap)}`);
@@ -516,7 +536,7 @@ function todayPlan() {
   return { key, tone, title, detail, why, readiness };
 }
 
-const TODAY_ICON = { rest: 'yoga', easy: 'walk', strength: 'dumbbell', quality: 'bolt', volume: 'run', gap: 'dumbbell', maintain: 'yoga' };
+const TODAY_ICON = { rest: 'yoga', easy: 'walk', strength: 'dumbbell', quality: 'bolt', volume: 'run', gap: 'dumbbell', maintain: 'yoga', race: 'trophy' };
 function renderToday() {
   const el = $('today-card');
   if (!el) return;
@@ -542,9 +562,15 @@ function weekFocus() {
     const cur = weekRows(0);
     const strDone = strengthCountInWeek(cur, auto), strGoal = goalStrength();
     const missing = missingMuscles();
-    const kmGoal = (typeof goalRunKm === 'function') ? goalRunKm() : null;
+    const kmGoal = (typeof adjustedRunGoal === 'function') ? adjustedRunGoal()
+      : (typeof goalRunKm === 'function') ? goalRunKm() : null;
     const weekKm = (typeof weekRunKm === 'function') ? weekRunKm(cur) : 0;
     const trend = probeTrend();
+    const phase = (typeof racePhase === 'function') ? racePhase() : null;
+
+    // שלב המירוץ גובר: הוא ידוע מראש וקובע את כל השבוע
+    if (phase && ['raceweek', 'taper', 'raceday', 'recovery'].includes(phase.key))
+      return `${phase.label} — ${phase.note}`;
 
     if (strDone < strGoal && missing.length)
       return `להשלים ${strGoal - strDone === 1 ? 'אימון כוח אחד' : `${strGoal - strDone} אימוני כוח`}, ובאחד מהם לכלול ${missing.slice(0, 2).map(k => MUSCLES[k]).join(' ו')}.`;

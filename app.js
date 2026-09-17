@@ -2189,10 +2189,12 @@ function renderStrength() {
   }
   const streakLine = streak >= 2 ? `<div class="strength-streak">${icon('flame', 15)} ${streak} שבועות ברצף ביעד</div>` : '';
 
+  const routine = typeof routineLine === 'function' ? routineLine() : '';
+  const sug = typeof goalSuggestionCard === 'function' ? goalSuggestionCard() : '';
   el.innerHTML = `<article class="card">
     <div class="body-head"><h2>אימוני כוח</h2>
       <span class="strength-count"><b>${doneThisWeek}</b>/${goal} השבוע</span></div>
-    <div class="week-board">${days.join('')}</div>${streakLine}</article>`;
+    <div class="week-board">${days.join('')}</div>${streakLine}${routine}${sug}</article>`;
 }
 
 /* =========================================================================
@@ -3365,6 +3367,7 @@ function renderRace() {
       <div class="rl-bits">יעד ${raceTimeTxt(race.timeSec)} · קצב ${paceTxt(pace)} דק׳/ק״מ</div>
     </div>
     <p class="tr-note"><b>${daysLeft}</b> ימים למירוץ</p>
+    ${typeof racePhaseNote === 'function' ? racePhaseNote() : ''}
     ${compareTxt}
     <div id="rc-form-wrap" class="hidden">${raceForm(race)}</div>
   </article>`;
@@ -3464,6 +3467,9 @@ $('weight-form').addEventListener('submit', e => {
 
 /* --- סימון ידני של אימון כוח --- */
 $('strength-card').addEventListener('click', e => {
+  // הצעת עדכון היעד יושבת באותו כרטיס
+  const g = e.target.closest('[data-goal]');
+  if (g) { haptic(10); applyGoalSuggestion(g.dataset.goal); return; }
   const btn = e.target.closest('.wday');
   if (!btn || btn.disabled) return;
   const iso = btn.dataset.iso;
@@ -3909,6 +3915,7 @@ async function init() {
   state.page = -1;
   setActive(0);
   if (typeof initInsights === 'function') initInsights();
+  if (typeof loadGoalAdapt === 'function') loadGoalAdapt();
   renderAll();
   // התחלה בעמוד הבית (חשוב ב-RTL, שבו ההיסט ההתחלתי אינו בהכרח 0)
   requestAnimationFrame(() => snapToPage(0, false));
