@@ -3652,15 +3652,15 @@
  {
   "date": "2026-10-08",
   "rhr": 49,
-  "stress_avg": 8,
+  "stress_avg": 9,
   "body_battery_high": 100,
   "body_battery_low": 61,
   "body_battery_charged": 39,
-  "body_battery_drained": 0,
-  "steps": 19,
-  "calories": 721.0,
+  "body_battery_drained": 13,
+  "steps": 3167,
+  "calories": 1065.0,
   "floors": 0.0,
-  "intensity_min": 0,
+  "intensity_min": 35,
   "sleep_hours": 9.55,
   "deep_min": 81,
   "light_min": 312,
@@ -3684,6 +3684,21 @@
   "recovery_hours": 0,
   "respiration_avg": 13.0,
   "training_status": "RECOVERY_1",
-  "training_load": 115
+  "training_load": 185,
+  "workouts": [
+   {
+    "type": "ריצת הליכון",
+    "type_key": "treadmill_running",
+    "minutes": 16,
+    "km": 2.02,
+    "avg_hr": 157,
+    "calories": 198,
+    "max_hr": 193,
+    "pace_s": 469,
+    "cadence": 137,
+    "aerobic_te": 2.8,
+    "anaerobic_te": 1.6
+   }
+  ]
  }
 ]
