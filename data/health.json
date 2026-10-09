@@ -3700,5 +3700,18 @@
     "anaerobic_te": 1.6
    }
   ]
+ },
+ {
+  "date": "2026-10-09",
+  "rhr": null,
+  "stress_avg": null,
+  "body_battery_high": null,
+  "body_battery_low": null,
+  "body_battery_charged": null,
+  "body_battery_drained": null,
+  "steps": null,
+  "calories": 8.0,
+  "floors": 0.0,
+  "intensity_min": 0
  }
 ]
