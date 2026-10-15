@@ -3866,13 +3866,13 @@
  {
   "date": "2026-10-14",
   "rhr": 57,
-  "stress_avg": 14,
+  "stress_avg": 32,
   "body_battery_high": 81,
   "body_battery_low": 5,
-  "body_battery_charged": 76,
-  "body_battery_drained": 2,
-  "steps": 55,
-  "calories": 754.0,
+  "body_battery_charged": 83,
+  "body_battery_drained": 60,
+  "steps": 1445,
+  "calories": 2403.0,
   "floors": 0.0,
   "intensity_min": 0,
   "sleep_hours": 9.45,
@@ -3899,5 +3899,19 @@
   "respiration_avg": 13.0,
   "training_status": "RECOVERY_1",
   "training_load": 151
+ },
+ {
+  "date": "2026-10-15",
+  "rhr": 54,
+  "stress_avg": 15,
+  "body_battery_high": 81,
+  "body_battery_low": 28,
+  "body_battery_charged": 53,
+  "body_battery_drained": 0,
+  "steps": 67,
+  "calories": 562.0,
+  "floors": 0.0,
+  "intensity_min": 0,
+  "respiration_avg": 13.0
  }
 ]
