@@ -4051,15 +4051,15 @@
  {
   "date": "2026-10-19",
   "rhr": 51,
-  "stress_avg": 14,
+  "stress_avg": 18,
   "body_battery_high": 90,
   "body_battery_low": 20,
   "body_battery_charged": 70,
-  "body_battery_drained": 1,
-  "steps": 33,
-  "calories": 705.0,
-  "floors": 0.0,
-  "intensity_min": 0,
+  "body_battery_drained": 25,
+  "steps": 3430,
+  "calories": 1231.0,
+  "floors": 2.29987,
+  "intensity_min": 27,
   "sleep_hours": 8.67,
   "deep_min": 80,
   "light_min": 342,
@@ -4083,6 +4083,18 @@
   "recovery_hours": 1,
   "respiration_avg": 14.0,
   "training_status": "DETRAINING",
-  "training_load": 151
+  "training_load": 151,
+  "workouts": [
+   {
+    "type": "אופני כושר",
+    "type_key": "indoor_cycling",
+    "minutes": 15,
+    "avg_hr": 137,
+    "calories": 161,
+    "max_hr": 159,
+    "aerobic_te": 2.2,
+    "anaerobic_te": 0.4
+   }
+  ]
  }
 ]
