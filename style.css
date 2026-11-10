@@ -649,6 +649,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .btn-primary { flex: 2; background: var(--primary); color: #fff; font-weight: 700; padding: 12px; border-radius: 12px; }
 .btn-ghost { flex: 1; background: var(--surface-2); color: var(--ink-2); font-weight: 700; padding: 12px; border-radius: 12px; }
 
+.setup-advanced { margin-top: 6px; font-size: .8rem; color: var(--ink-2); }
+.setup-advanced summary { cursor: pointer; }
+.setup-advanced input { margin-top: 6px; }
+
 /* ===== כפתור סנכרון + הודעה צפה ===== */
 @keyframes syncspin { to { transform: rotate(360deg); } }
 .icon-btn.spinning svg { animation: syncspin .8s linear infinite; }

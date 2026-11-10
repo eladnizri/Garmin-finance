@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="style.css">
   <script src="vendor/chart.umd.min.js"></script>
   <script src="common.js" defer></script>
+  <script src="storage.js" defer></script>
+  <script src="garmin-api.js" defer></script>
   <script src="apple-health.js" defer></script>
   <script src="app.js" defer></script>
   <script src="insights.js" defer></script>
@@ -59,7 +61,7 @@
       <!-- ========== בית ========== -->
       <section class="page" data-title="בית" data-sub="תמונת מצב">
         <div id="demo-banner" class="banner hidden">
-          מציג <b>נתוני דמו</b> — הנתונים האמיתיים מתעדכנים אוטומטית מגרמין.
+          מציג <b>נתוני דמו</b> — לחץ על כפתור הסנכרון ⟲ כדי לחבר את חשבון הגרמין שלך.
         </div>
 
         <!-- לוח טבעות — מוכנות במרכז + מדדים מסביב -->
@@ -261,6 +263,9 @@
           </div>
         </form>
         <div class="backup-row">
+          <button type="button" class="btn-ghost" id="garmin-settings-btn">⚙️ הגדרות חיבור גרמין</button>
+        </div>
+        <div class="backup-row">
           <button type="button" class="btn-ghost" id="export-btn">⬇️ ייצוא גיבוי</button>
           <button type="button" class="btn-ghost" id="import-btn">⬆️ ייבוא</button>
           <input type="file" id="import-file" accept="application/json,.json" hidden>
@@ -320,27 +325,31 @@
       </div>
     </div>
 
-    <!-- ===== טוקן סנכרון מגרמין ===== -->
-    <div id="token-modal" class="modal hidden">
+    <!-- ===== הגדרות חיבור גרמין ===== -->
+    <div id="setup-modal" class="modal hidden">
       <div class="modal-backdrop" data-close></div>
-      <div class="modal-sheet" role="dialog" aria-label="סנכרון מגרמין">
+      <div class="modal-sheet" role="dialog" aria-label="חיבור לגרמין">
         <div class="modal-head">
-          <h2>סנכרון מגרמין</h2>
+          <h2>חיבור לגרמין</h2>
           <button class="icon-btn" data-close aria-label="סגור">✕</button>
         </div>
-        <p class="modal-note">🔒 כדי למשוך נתונים מגרמין בלחיצה, האפליקציה מפעילה את ה-GitHub Action שלך. לשם כך צריך טוקן GitHub אישי — הוא נשמר <b>רק במכשיר שלך</b> ונשלח אך ורק ל-GitHub.</p>
+        <p class="modal-note">🔒 הנתונים נשמרים <b>רק במכשיר שלך</b>. מפתח ה-API לא נשלח לשום שרת מלבד Garmin.</p>
         <ol class="token-steps">
-          <li>פתח <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">יצירת טוקן Fine-grained</a></li>
-          <li>Repository access → Only select repositories → <b>Garmin-finance</b></li>
-          <li>Permissions → Repository permissions → <b>Actions</b> → Read and write</li>
-          <li>Generate → העתק את הטוקן והדבק כאן</li>
+          <li>היכנס ל-<a href="https://developer.garmin.com/gc-developer-program/personal-api/" target="_blank" rel="noopener">Garmin Personal API</a></li>
+          <li>צור Consumer Key והעתק אותו לכאן</li>
         </ol>
-        <form id="token-form">
+        <form id="setup-form">
           <div class="field-row">
-            <label class="field">טוקן GitHub<input type="password" id="token-input" autocomplete="off" spellcheck="false" placeholder="github_pat_..." required></label>
+            <label class="field">Garmin API Key<input type="password" id="setup-key" autocomplete="off" spellcheck="false" placeholder="your-consumer-key" required></label>
           </div>
+          <details class="setup-advanced">
+            <summary>הגדרות מתקדמות</summary>
+            <div class="field-row">
+              <label class="field">Proxy URL<input type="url" id="setup-proxy" autocomplete="off" spellcheck="false" placeholder="ברירת מחדל — לא צריך לשנות"></label>
+            </div>
+          </details>
           <div class="modal-actions">
-            <button type="button" class="btn-ghost hidden" id="token-remove">מחק טוקן</button>
+            <button type="button" class="btn-ghost hidden" id="setup-remove">מחק הגדרות</button>
             <button type="submit" class="btn-primary">שמור וסנכרן</button>
           </div>
         </form>

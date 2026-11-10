@@ -1,11 +1,13 @@
 /* Service worker — מאפשר התקנה כאפליקציה ופתיחה מהירה גם ללא רשת.
  * אסטרטגיה: cache-first לקבצי המעטפת, network-first לנתונים (health.json). */
-const CACHE = 'health-app-v47';
+const CACHE = 'health-app-v49';
 const SHELL = [
   './',
   './index.html',
   './style.css',
   './common.js',
+  './storage.js',
+  './garmin-api.js',
   './apple-health.js',
   './app.js',
   './insights.js',
@@ -37,8 +39,8 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
-  // הנתונים: קודם רשת (טרי), נפילה למטמון אם אין קליטה
-  if (request.url.includes('health.json') || request.url.includes('runs_history.json')) {
+  // נתוני ריצות היסטוריים: קודם רשת, נפילה למטמון
+  if (request.url.includes('runs_history.json')) {
     event.respondWith(
       fetch(request).then(res => {
         const copy = res.clone();

@@ -3519,12 +3519,14 @@ $('pager').addEventListener('click', e => {
 $('info-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) $('info-modal').classList.add('hidden'); });
 
 /* --- ייצוא / ייבוא גיבוי (מקומי בלבד) --- */
-function exportBackup() {
+async function exportBackup() {
+  const healthRows = await dbGetAll().catch(() => []);
   const backup = {
-    version: 1, exportedAt: new Date().toISOString(),
+    version: 2, exportedAt: new Date().toISOString(),
     profile, weight_log_v1: weights, strength_checks_v1: strengthChecks,
     strength_programs_v1: programs, strength_sessions_v1: sessions, run_tags_v1: runTags,
     runs_history_v1: runHistLocal,
+    health_data_v1: healthRows,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -3535,7 +3537,7 @@ function exportBackup() {
 }
 function importBackup(file) {
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const b = JSON.parse(reader.result);
       if (typeof b !== 'object' || !b) throw new Error('bad');
@@ -3547,6 +3549,12 @@ function importBackup(file) {
       if (Array.isArray(b.strength_sessions_v1)) { sessions = b.strength_sessions_v1; saveSessions(); }
       if (b.run_tags_v1 && typeof b.run_tags_v1 === 'object') { runTags = b.run_tags_v1; saveRunTags(); }
       if (Array.isArray(b.runs_history_v1)) { runHistLocal = b.runs_history_v1; saveRunHistory(); }
+      if (Array.isArray(b.health_data_v1) && b.health_data_v1.length) {
+        await dbPutDays(b.health_data_v1);
+        state.data = await dbGetAll();
+        state.isDemo = false;
+        $('demo-banner').classList.add('hidden');
+      }
       loadProfile();
       closeProfile();
       renderAll();
@@ -3555,6 +3563,7 @@ function importBackup(file) {
   };
   reader.readAsText(file);
 }
+$('garmin-settings-btn').addEventListener('click', () => { closeProfile(); openSetup(); });
 $('export-btn').addEventListener('click', exportBackup);
 $('import-btn').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
@@ -3777,15 +3786,9 @@ $('range-filter').addEventListener('click', e => {
 });
 
 /* =========================================================================
- * סנכרון אמיתי מגרמין — מפעיל את ה-GitHub Action מהדפדפן, ממתין לסיומו,
- * ומושך את הנתונים הטריים. דורש טוקן GitHub אישי שנשמר רק במכשיר (localStorage)
- * ונשלח אך ורק ל-api.github.com.
+ * סנכרון מגרמין — דרך ה-Personal API הרשמי.
+ * המשתמש מכניס API key וכתובת proxy, הכל נשמר בדפדפן בלבד.
  * ========================================================================= */
-const GH = { owner: 'eladnizri', repo: 'Garmin-finance', wf: 'sync-garmin.yml' };
-const TOKEN_KEY = 'gh_token_v1';
-const ghToken = () => { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch { return ''; } };
-const setGhToken = t => { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY); } catch {} };
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 function toast(msg, sticky = false) {
   let t = $('toast');
@@ -3796,69 +3799,16 @@ function toast(msg, sticky = false) {
   if (!sticky) toast._t = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-function ghApi(path, opts = {}) {
-  return fetch(`https://api.github.com${path}`, {
-    ...opts,
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${ghToken()}`,
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(opts.headers || {}),
-    },
-  });
-}
-
-/* מפעיל את ה-Action וממתין שיסתיים; מחזיר true בהצלחה, זורק שגיאה אחרת */
-async function triggerGarminSync(onStatus) {
-  const disp = await ghApi(`/repos/${GH.owner}/${GH.repo}/actions/workflows/${GH.wf}/dispatches`,
-    { method: 'POST', body: JSON.stringify({ ref: 'main' }) });
-  if (disp.status === 401 || disp.status === 403) throw new Error('TOKEN');
-  if (disp.status !== 204) throw new Error('DISPATCH');
-  const since = Date.now() - 90000; // סובלנות להפרש שעונים
-  await sleep(4000);
-  for (let i = 0; i < 45; i++) { // עד ~4.5 דקות
-    const r = await ghApi(`/repos/${GH.owner}/${GH.repo}/actions/runs?event=workflow_dispatch&per_page=5`);
-    if (r.ok) {
-      const j = await r.json();
-      const run = (j.workflow_runs || []).find(w => new Date(w.created_at).getTime() >= since);
-      if (run) {
-        if (run.status === 'completed') {
-          if (run.conclusion === 'success') return true;
-          throw new Error('RUN_FAILED');
-        }
-        onStatus?.(run.status);
-      }
-    }
-    await sleep(6000);
-  }
-  throw new Error('TIMEOUT');
-}
-
-/* מושך את health.json העדכני ישירות דרך ה-API (עוקף את השהיית ה-CDN של Pages) */
-async function fetchHealthFromApi() {
-  const r = await ghApi(`/repos/${GH.owner}/${GH.repo}/contents/data/health.json?ref=main&t=${Date.now()}`);
-  if (!r.ok) return null;
-  const j = await r.json();
-  try {
-    const txt = decodeURIComponent(escape(atob((j.content || '').replace(/\n/g, ''))));
-    const arr = JSON.parse(txt);
-    return Array.isArray(arr) ? arr.filter(x => x.date).sort((a, b) => a.date.localeCompare(b.date)) : null;
-  } catch { return null; }
-}
-
 let syncing = false;
 async function syncNow() {
   if (syncing) return;
-  if (!ghToken()) { openToken(); return; }
+  if (!hasGarminSetup()) { openSetup(); return; }
   syncing = true;
   haptic(10);
   const btn = $('sync-btn');
   btn.classList.add('spinning');
-  toast('מסנכרן מגרמין… זה עשוי לקחת 1–2 דקות', true);
   try {
-    await triggerGarminSync(st => toast(st === 'in_progress' ? 'מושך נתונים מגרמין…' : 'הסנכרון בתור…', true));
-    let data = await fetchHealthFromApi();
-    if (!data) ({ data } = await loadHealthData());
+    const data = await syncGarminData(msg => msg ? toast(msg, true) : null);
     state.data = data;
     state.isDemo = false;
     $('demo-banner').classList.add('hidden');
@@ -3866,9 +3816,9 @@ async function syncNow() {
     const last = lastRow().date;
     toast(`הנתונים עודכנו · אחרון ${last ? shortDate(last) : ''}`);
   } catch (e) {
-    if (e.message === 'TOKEN') { setGhToken(''); toast('הטוקן לא תקין או חסר הרשאה — הזן מחדש'); openToken(); }
-    else if (e.message === 'RUN_FAILED') toast('הסנכרון בגרמין נכשל (אולי הגבלת קצב) — נסה שוב מאוחר יותר');
-    else if (e.message === 'TIMEOUT') toast('הסנכרון עדיין רץ — בדוק שוב בעוד רגע');
+    if (e.message === 'SETUP') { openSetup(); }
+    else if (e.message === 'INVALID_KEY') { toast('מפתח ה-API לא תקין — בדוק ונסה שוב'); openSetup(); }
+    else if (e.message === 'TOKEN_EXPIRED') { clearGarminToken(); toast('הטוקן פג — מסנכרן מחדש…'); syncNow(); }
     else toast('הסנכרון נכשל — בדוק חיבור לרשת');
   } finally {
     btn.classList.remove('spinning');
@@ -3877,23 +3827,32 @@ async function syncNow() {
 }
 $('sync-btn').addEventListener('click', syncNow);
 
-/* --- מודאל טוקן הסנכרון --- */
-function openToken() {
-  $('token-input').value = ghToken();
-  $('token-remove').classList.toggle('hidden', !ghToken());
-  $('token-modal').classList.remove('hidden');
+/* --- מודאל הגדרות חיבור גרמין --- */
+function openSetup() {
+  $('setup-key').value = garminApiKey();
+  $('setup-proxy').value = garminProxy();
+  $('setup-remove').classList.toggle('hidden', !garminApiKey());
+  $('setup-modal').classList.remove('hidden');
 }
-function closeToken() { $('token-modal').classList.add('hidden'); }
-$('token-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) closeToken(); });
-$('token-form').addEventListener('submit', e => {
+function closeSetup() { $('setup-modal').classList.add('hidden'); }
+$('setup-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) closeSetup(); });
+$('setup-form').addEventListener('submit', e => {
   e.preventDefault();
-  const t = $('token-input').value.trim();
-  if (!t) return;
-  setGhToken(t);
-  closeToken();
+  const key = $('setup-key').value.trim();
+  const proxy = $('setup-proxy').value.trim().replace(/\/+$/, '');
+  if (!key) return;
+  setGarminKey(key);
+  if (proxy) setGarminProxy(proxy);
+  clearGarminToken();
+  closeSetup();
   syncNow();
 });
-$('token-remove').addEventListener('click', () => { setGhToken(''); closeToken(); toast('הטוקן נמחק'); });
+$('setup-remove').addEventListener('click', () => {
+  setGarminKey('');
+  clearGarminToken();
+  closeSetup();
+  toast('ההגדרות נמחקו');
+});
 
 /* =========================================================================
  * אתחול
@@ -3906,7 +3865,20 @@ async function init() {
   loadRace();
   loadRunTags();
   loadRunHistory();
-  const [{ data, isDemo }] = await Promise.all([loadHealthData(), fetchRunHistory()]);
+
+  // Try IndexedDB first (Garmin Personal API data), fall back to health.json / demo
+  let data, isDemo = false;
+  try {
+    const stored = await dbGetAll();
+    if (stored.length > 0) {
+      data = stored;
+    } else {
+      ({ data, isDemo } = await loadHealthData());
+    }
+  } catch {
+    ({ data, isDemo } = await loadHealthData());
+  }
+  await fetchRunHistory();
   state.data = data;
   state.isDemo = isDemo;
 
