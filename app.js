@@ -3754,6 +3754,135 @@ function openHomeCardEditor() {
 }
 
 /* =========================================================================
+ * מגמת צעדים — גרף קו 30 יום במסך הבית
+ * ========================================================================= */
+function renderStepsHome() {
+  const el = $('steps-home');
+  if (!el) return;
+  const rows = state.data.slice(-30);
+  if (rows.length < 2) { el.innerHTML = ''; return; }
+  const labels = rows.map(r => shortDate(r.date));
+  const goal = goalSteps();
+  el.innerHTML = `<article class="card">
+    <div class="card-head"><h2 class="ct" data-info="steps">צעדים<span class="info-i">ⓘ</span></h2>
+      <span class="unit">30 ימים · יעד ${fmt(goal)}</span></div>
+    <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-steps-home"></canvas></div>
+  </article>`;
+  make('chart-steps-home', {
+    type: 'line',
+    data: { labels, datasets: [
+      line(rows, 'steps', C.violet), constLine(rows, goal, 'יעד', C.muted), maLine(rows, 'steps'),
+    ]},
+    options: opts({ beginAtZero: true }, i => `צעדים: ${fmt(i.raw.y)}`),
+  });
+}
+
+/* =========================================================================
+ * עריכת כרטיסים בדף הבית — סינון וסדר
+ * ========================================================================= */
+const HOME_CARDS_KEY = 'home_cards_v1';
+const HOME_CARD_DEFS = [
+  { id: 'dashboard', label: 'טבעות', fixed: true },
+  { id: 'today-card', label: 'מה לעשות היום' },
+  { id: 'strain-warning', label: 'אזהרת עומס' },
+  { id: 'anomalies', label: 'חריגים' },
+  { id: 'week-summary', label: 'סיכום שבועי' },
+  { id: 'insights-card', label: 'תובנות' },
+  { id: 'steps-home', label: 'צעדים' },
+  { id: 'weight-card', label: 'משקל' },
+];
+
+function loadHomeCards() {
+  const saved = jsonGet(HOME_CARDS_KEY, null);
+  if (!saved) return HOME_CARD_DEFS.map(c => ({ id: c.id, visible: true }));
+  const known = new Set(HOME_CARD_DEFS.map(c => c.id));
+  const result = saved.filter(s => known.has(s.id));
+  for (const def of HOME_CARD_DEFS) {
+    if (!result.find(r => r.id === def.id)) result.push({ id: def.id, visible: true });
+  }
+  return result;
+}
+
+function applyHomeCardOrder() {
+  const cards = loadHomeCards();
+  const parent = $('dashboard')?.parentElement;
+  if (!parent) return;
+  for (const c of cards) {
+    const el = $(c.id);
+    if (!el) continue;
+    el.style.display = c.visible ? '' : 'none';
+    parent.appendChild(el);
+  }
+  const body = $('home-body');
+  if (body) parent.appendChild(body);
+}
+
+function openHomeCardEditor() {
+  const cards = loadHomeCards();
+  const defs = Object.fromEntries(HOME_CARD_DEFS.map(d => [d.id, d]));
+  let html = '';
+  cards.forEach((c, i) => {
+    const def = defs[c.id] || { label: c.id };
+    const isFixed = def.fixed;
+    html += `<div class="card-row" data-id="${c.id}">
+      <label><input type="checkbox" ${c.visible ? 'checked' : ''} ${isFixed ? 'disabled' : ''} data-card="${c.id}"> ${def.label}</label>
+      ${!isFixed ? `<div class="card-arrows">
+        <button type="button" data-dir="up" data-idx="${i}">▲</button>
+        <button type="button" data-dir="down" data-idx="${i}">▼</button>
+      </div>` : ''}
+    </div>`;
+  });
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-head"><h2>עריכת כרטיסים</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      <div id="hce-list">${html}</div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="hce-cancel">ביטול</button>
+        <button type="button" class="btn-primary" id="hce-save">שמור</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
+  $('hce-cancel').onclick = close;
+
+  modal.addEventListener('click', e => {
+    const btn = e.target.closest('[data-dir]');
+    if (!btn) return;
+    const list = modal.querySelector('#hce-list');
+    const rows = [...list.querySelectorAll('.card-row')];
+    const idx = Number(btn.dataset.idx);
+    const row = rows[idx];
+    if (!row) return;
+    if (btn.dataset.dir === 'up' && idx > 0) {
+      list.insertBefore(row, rows[idx - 1]);
+    } else if (btn.dataset.dir === 'down' && idx < rows.length - 1) {
+      rows[idx + 1].after(row);
+    }
+    [...list.querySelectorAll('.card-row')].forEach((r, i) => {
+      r.querySelectorAll('[data-idx]').forEach(b => b.dataset.idx = i);
+    });
+  });
+
+  $('hce-save').onclick = () => {
+    const result = [...modal.querySelectorAll('.card-row')].map(row => ({
+      id: row.dataset.id,
+      visible: row.querySelector('input[type="checkbox"]').checked,
+    }));
+    jsonSet(HOME_CARDS_KEY, result);
+    close();
+    applyHomeCardOrder();
+    toast('סדר הכרטיסים נשמר');
+  };
+}
+
+/* =========================================================================
  * רינדור כולל
  * ========================================================================= */
 function renderAll() {
