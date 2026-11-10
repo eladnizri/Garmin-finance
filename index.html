@@ -52,14 +52,14 @@
         <p class="ob-desc">הפרטים עוזרים לנו להתאים את היעדים והתובנות עבורך.</p>
         <div class="ob-fields">
           <div class="field-row">
-            <label class="field">גיל<input type="number" id="ob-age" min="10" max="120" inputmode="numeric" placeholder="35"></label>
+            <label class="field">גיל<input type="number" id="ob-age" min="10" max="120" inputmode="numeric" autocomplete="off" placeholder="35"></label>
             <label class="field">מין
-              <select id="ob-sex"><option value="">—</option><option value="m">זכר</option><option value="f">נקבה</option></select>
+              <select id="ob-sex" autocomplete="sex"><option value="">—</option><option value="m">זכר</option><option value="f">נקבה</option></select>
             </label>
           </div>
           <div class="field-row">
-            <label class="field">גובה (ס״מ)<input type="number" id="ob-height" min="100" max="230" inputmode="numeric" placeholder="175"></label>
-            <label class="field">משקל (ק״ג)<input type="number" id="ob-weight" min="30" max="250" inputmode="numeric" placeholder="70"></label>
+            <label class="field">גובה (ס״מ)<input type="number" id="ob-height" min="100" max="230" inputmode="numeric" autocomplete="off" placeholder="175"></label>
+            <label class="field">משקל (ק״ג)<input type="number" id="ob-weight" min="30" max="250" inputmode="numeric" autocomplete="off" placeholder="70"></label>
           </div>
         </div>
       </div>
@@ -98,6 +98,7 @@
         <button class="btn-ghost ob-back hidden" id="ob-back">חזרה</button>
         <button class="btn-primary ob-next" id="ob-next">הבא</button>
       </div>
+      <button class="ob-skip" id="ob-skip">דלג על ההגדרה</button>
     </div>
   </div>
 

@@ -4016,6 +4016,7 @@ function showOnboarding() {
     if (step < steps.length - 1) show(step + 1);
     else finish();
   });
+  $('ob-skip').addEventListener('click', finish);
 
   show(0);
 }
