@@ -2,11 +2,11 @@
 
 /* =========================================================================
  * app.js — אפליקציית עמוד יחיד: בית · שינה · לב והתאוששות · פעילות.
- * מסתמך על common.js (C, loadHealthData, avg, vals, fmt, shortDate,
+ * מסתמך על common.js (C, avg, vals, fmt, shortDate,
  * longDate, minToHm, pearson, $).
  * ========================================================================= */
 
-const state = { data: [], isDemo: false, range: 30, page: 0 };
+const state = { data: [], range: 30, page: 0 };
 const charts = {};
 /* Chart.defaults מוגדרים ב-common.js (מקור יחיד) */
 
@@ -974,8 +974,7 @@ const runId = (date, i) => `${date}#${i}`;
  * שני מקורות — data/runs_history.json שנשמר בריפו (זמין בכל מכשיר), ו-
  * localStorage מייבוא שנעשה בטלפון עצמו. */
 const RUN_HIST_KEY = 'runs_history_v1';
-const RUN_HIST_URL = 'data/runs_history.json';
-let runHistLocal = [], runHistRepo = [];
+let runHistLocal = [];
 
 function loadRunHistory() {
   try { runHistLocal = JSON.parse(localStorage.getItem(RUN_HIST_KEY)) || []; } catch { runHistLocal = []; }
@@ -983,26 +982,11 @@ function loadRunHistory() {
 }
 function saveRunHistory() { try { localStorage.setItem(RUN_HIST_KEY, JSON.stringify(runHistLocal)); } catch {} }
 
-async function fetchRunHistory() {
-  try {
-    const res = await fetch(`${RUN_HIST_URL}?t=${Date.now()}`);
-    if (!res.ok) return;                       // הקובץ אופציונלי — אין ייבוא, אין בעיה
-    const rows = await res.json();
-    if (Array.isArray(rows)) runHistRepo = rows.filter(r => r && r.date && r.km && r.minutes);
-  } catch { /* ריצה מקומית בלי הקובץ, או אין רשת */ }
-}
-
-/* איחוד שני המקורות, בלי כפילויות, בסכמה של אימון רגיל */
 function historyRuns() {
-  const seen = new Set(), out = [];
-  for (const r of [...runHistRepo, ...runHistLocal]) {
-    if (!r?.date || !r.km || !r.minutes) continue;
-    const key = `${r.date}|${Math.round(r.km * 10)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push({ ...r, type: 'ריצה', type_key: 'running' });
-  }
-  return out.sort((a, b) => a.date.localeCompare(b.date));
+  return runHistLocal
+    .filter(r => r?.date && r.km && r.minutes)
+    .map(r => ({ ...r, type: 'ריצה', type_key: 'running' }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 /* ימים שכבר יש בהם ריצה מהגרמין — הגרמין תמיד מנצח, הוא מפורט יותר */
@@ -1096,7 +1080,7 @@ function runsInRange() {
   const taken = garminRunDates();
   historyRuns().forEach(h => {
     if (h.date < from || taken.has(h.date)) return;
-    out.push({ ...h, id: `apple#${h.date}#${Math.round(h.km * 10)}` });
+    out.push({ ...h, id: `hist#${h.date}#${Math.round(h.km * 10)}` });
   });
   out.sort((a, b) => a.date.localeCompare(b.date));
   for (const r of out) {
@@ -1128,7 +1112,7 @@ function allRuns() {
     });
   const taken = garminRunDates();
   for (const h of historyRuns())
-    if (!taken.has(h.date)) out.push({ ...h, id: `apple#${h.date}#${Math.round(h.km * 10)}` });
+    if (!taken.has(h.date)) out.push({ ...h, id: `hist#${h.date}#${Math.round(h.km * 10)}` });
   for (const r of out) { r.pace = runPace(r); r.real = isRealRun(r); }
   return out.sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -3622,8 +3606,6 @@ function importBackup(file) {
       if (Array.isArray(b.health_data_v1) && b.health_data_v1.length) {
         await dbPutDays(b.health_data_v1);
         state.data = await dbGetAll();
-        state.isDemo = false;
-        $('demo-banner').classList.add('hidden');
       }
       loadProfile();
       closeProfile();
@@ -3638,52 +3620,6 @@ $('export-btn').addEventListener('click', exportBackup);
 $('import-btn').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 
-/* --- ייבוא ריצות עבר מייצוא הבריאות של האייפון --- */
-const APPLE_YEARS_BACK = 2;   // ריצות ישנות מכך כבר לא מלמדות על הכושר של היום
-
-function downloadRunHistory() {
-  const blob = new Blob([JSON.stringify(runHistLocal, null, 1) + '\n'], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'runs_history.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-async function importAppleRuns(file) {
-  const st = $('apple-status');
-  const since = new Date();
-  since.setFullYear(since.getFullYear() - APPLE_YEARS_BACK);
-  const sinceISO = since.toISOString().slice(0, 10);
-
-  st.textContent = 'פותח את הקובץ…';
-  try {
-    const runs = await parseAppleRuns(file, {
-      sinceISO,
-      onProgress: (pct, found) => { st.textContent = `סורק… ${pct}% · ${found} ריצות עד כה`; },
-    });
-    if (!runs.length) {
-      st.textContent = `לא נמצאו ריצות מ-${APPLE_YEARS_BACK} השנים האחרונות בקובץ.
-        ודא שבחרת את export.xml מתוך תיקיית הייצוא.`;
-      return;
-    }
-    runHistLocal = runs;
-    saveRunHistory();
-    renderAll();
-    const taken = garminRunDates();
-    const fresh = runs.filter(r => !taken.has(r.date)).length;
-    st.innerHTML = `נשמרו <b>${runs.length}</b> ריצות מ-${shortDateY(runs[0].date)} ואילך
-      (${fresh} שאין עליהן נתוני גרמין). עבור לכרטיס הריצות ובחר "הכל" בסרגל הטווח.
-      <button type="button" class="btn-ghost" id="apple-dl">⬇️ הורדת הקובץ לשמירה בריפו</button>`;
-  } catch (err) {
-    console.warn('ייבוא Apple Health נכשל:', err);
-    st.textContent = 'קריאת הקובץ נכשלה. ודא שזה export.xml המקורי (לא ה-ZIP ולא export_cda.xml).';
-  }
-}
-
-$('apple-btn').addEventListener('click', () => $('apple-file').click());
-$('apple-file').addEventListener('change', e => { if (e.target.files[0]) importAppleRuns(e.target.files[0]); e.target.value = ''; });
-$('apple-status').addEventListener('click', e => { if (e.target.closest('#apple-dl')) downloadRunHistory(); });
 
 /* =========================================================================
  * מגמת צעדים — גרף קו 30 יום במסך הבית
@@ -3986,8 +3922,6 @@ async function syncNow() {
   try {
     const data = await syncGarminData(msg => msg ? toast(msg, true) : null);
     state.data = data;
-    state.isDemo = false;
-    $('demo-banner').classList.add('hidden');
     renderAll();
     const last = lastRow().date;
     toast(`הנתונים עודכנו · אחרון ${last ? shortDate(last) : ''}`);
@@ -4031,6 +3965,59 @@ $('setup-remove').addEventListener('click', () => {
 });
 
 /* =========================================================================
+ * אשף כניסה ראשונה — 4 שלבים
+ * ========================================================================= */
+function showOnboarding() {
+  const el = $('onboarding');
+  el.classList.remove('hidden');
+  let step = 0;
+  const steps = el.querySelectorAll('.ob-step');
+  const bar = $('ob-bar');
+  const backBtn = $('ob-back');
+  const nextBtn = $('ob-next');
+
+  function show(i) {
+    step = i;
+    steps.forEach((s, idx) => s.classList.toggle('hidden', idx !== i));
+    bar.style.width = `${((i + 1) / steps.length) * 100}%`;
+    backBtn.classList.toggle('hidden', i === 0);
+    nextBtn.textContent = i === steps.length - 1 ? 'סיום' : 'הבא';
+  }
+
+  function finish() {
+    const p = { ...profile };
+    const v = id => { const e = $(id); return e ? e.value.trim() : ''; };
+    if (v('ob-age')) p.age = v('ob-age');
+    if (v('ob-sex')) p.sex = v('ob-sex');
+    if (v('ob-height')) p.heightCm = v('ob-height');
+    if (v('ob-weight')) p.weightKg = v('ob-weight');
+    if (v('ob-sleep')) p.sleepGoal = v('ob-sleep');
+    if (v('ob-steps')) p.stepsGoal = v('ob-steps');
+    if (v('ob-strength')) p.strengthGoal = v('ob-strength');
+    if (v('ob-run')) p.runGoalKm = v('ob-run');
+    saveProfileObj(p);
+
+    const key = v('ob-garmin-key');
+    if (key) setGarminKey(key);
+
+    el.classList.add('hidden');
+    $('app').classList.remove('hidden');
+    renderAll();
+    requestAnimationFrame(() => snapToPage(0, false));
+
+    if (key) syncNow();
+  }
+
+  backBtn.addEventListener('click', () => { if (step > 0) show(step - 1); });
+  nextBtn.addEventListener('click', () => {
+    if (step < steps.length - 1) show(step + 1);
+    else finish();
+  });
+
+  show(0);
+}
+
+/* =========================================================================
  * אתחול
  * ========================================================================= */
 async function init() {
@@ -4042,25 +4029,20 @@ async function init() {
   loadRunTags();
   loadRunHistory();
 
-  // Try IndexedDB first (Garmin Personal API data), fall back to health.json / demo
-  let data, isDemo = false;
+  let data = [];
   try {
-    const stored = await dbGetAll();
-    if (stored.length > 0) {
-      data = stored;
-    } else {
-      ({ data, isDemo } = await loadHealthData());
-    }
-  } catch {
-    ({ data, isDemo } = await loadHealthData());
-  }
-  await fetchRunHistory();
+    data = await dbGetAll();
+  } catch { /* IndexedDB unavailable */ }
   state.data = data;
-  state.isDemo = isDemo;
 
   $('loading').classList.add('hidden');
-  $('app').classList.remove('hidden');
-  $('demo-banner').classList.toggle('hidden', !isDemo);
+
+  // אם אין נתונים ואין פרופיל — הצגת אשף כניסה ראשונה
+  if (!data.length && !profile.age) {
+    showOnboarding();
+  } else {
+    $('app').classList.remove('hidden');
+  }
 
   state.page = -1;
   setActive(0);
