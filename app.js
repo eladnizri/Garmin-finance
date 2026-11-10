@@ -2932,6 +2932,12 @@ $('train-card').addEventListener('change', e => {
   if (e.target.id === 'tr-ex') { state.trainEx = e.target.value; renderTrainChart(); }
 });
 
+$('planner-card').addEventListener('click', e => {
+  if (e.target.closest('#plan-setup') || e.target.closest('#plan-edit')) {
+    if (typeof openPlanSetup === 'function') openPlanSetup();
+  }
+});
+
 /* מצב אימון — כל הלחיצות דרך מאזין אחד על הכרטיס */
 $('tm-body').addEventListener('click', e => {
   if (!active) return;
@@ -3631,7 +3637,6 @@ function renderAll() {
   renderAnomalies();
   renderWeekSummary();
   if (typeof renderInsights === 'function') renderInsights();
-  if (typeof renderModel === 'function') renderModel();
   renderWeight();
   renderBody();
 
@@ -3642,6 +3647,7 @@ function renderAll() {
   statHero('sleep-hero', 'sleep_hours');
   statHero('heart-hero', 'hrv', hrvExtra());
   statHero('steps-hero', 'steps');
+  if (typeof renderPlanner === 'function') renderPlanner();
   renderStrength();
   renderTrain();
   if (typeof renderLab === 'function') renderLab();

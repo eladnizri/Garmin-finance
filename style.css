@@ -591,6 +591,30 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .strength-count { font-size: .8rem; color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
 .strength-count b { color: var(--ok); }
 
+/* ===== תוכנית שבועית (planner) ===== */
+.plan-aero { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.plan-sport-top { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 4px; }
+.plan-sport-name { font-weight: 600; }
+.plan-sport-num { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.plan-bar { height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.plan-bar i { display: block; height: 100%; border-radius: 3px; background: var(--primary); transition: width .3s; }
+.plan-sport.done .plan-bar i { background: var(--ok); }
+.plan-sport.done .plan-sport-num { color: var(--ok); }
+.plan-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 12px 0; text-align: center; }
+.plan-day { padding: 8px 2px; border-radius: 10px; background: var(--surface-2); font-size: .75rem; position: relative; }
+.plan-day small { display: block; color: var(--ink-2); margin-bottom: 2px; }
+.plan-prog { display: block; font-size: .68rem; font-weight: 600; line-height: 1.2; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-rest { color: var(--muted); }
+.plan-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
+.plan-day.done { background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.plan-check { color: var(--ok); font-style: normal; font-size: .7rem; }
+.plan-field { margin-bottom: 10px; }
+.plan-field label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 4px; }
+.plan-field input, .plan-field select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: .9rem; }
+.plan-day-field { display: inline-flex; flex-direction: column; width: calc(50% - 6px); margin-inline-end: 6px; }
+#plan-form h3 { font-size: .9rem; margin: 16px 0 8px; }
+#plan-form h3:first-of-type { margin-top: 4px; }
+
 /* ===== ניווט תחתון — עם גלולה מחליקה ===== */
 .tabbar {
   display: grid; grid-template-columns: repeat(5, 1fr);
