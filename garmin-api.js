@@ -45,7 +45,7 @@ async function getAccessToken() {
   const key = garminApiKey();
   if (!proxy || !key) throw new Error('SETUP');
 
-  const res = await fetch(`${proxy}/oauth/token`, {
+  const res = await fetch(`${proxy}/oauth-service/oauth/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ grant_type: 'client_credentials', client_id: key }),
