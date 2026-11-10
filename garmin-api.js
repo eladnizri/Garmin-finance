@@ -45,10 +45,9 @@ async function getAccessToken() {
   const key = garminApiKey();
   if (!proxy || !key) throw new Error('SETUP');
 
-  const res = await fetch(`${proxy}/oauth-service/oauth/token`, {
+  const res = await fetch(`${proxy}/personal-token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ grant_type: 'client_credentials', client_id: key }),
+    headers: { 'X-Api-Key': key },
   });
 
   if (!res.ok) {
@@ -57,7 +56,6 @@ async function getAccessToken() {
     throw new Error(`TOKEN_${res.status}: ${text.slice(0, 200)}`);
   }
 
-  // Garmin returns the token as plain text
   const accessToken = (await res.text()).trim();
   if (!accessToken) throw new Error('EMPTY_TOKEN');
 
