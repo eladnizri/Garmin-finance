@@ -3932,7 +3932,13 @@ async function syncNow() {
     if (e.message === 'SETUP') { openSetup(); }
     else if (e.message === 'INVALID_KEY') { toast('מפתח ה-API לא תקין — בדוק ונסה שוב'); openSetup(); }
     else if (e.message === 'TOKEN_EXPIRED') { clearGarminToken(); toast('הטוקן פג — מסנכרן מחדש…'); syncNow(); }
-    else toast('הסנכרון נכשל — בדוק חיבור לרשת');
+    else {
+      console.error('Garmin sync error:', e);
+      const msg = e.message || '';
+      if (msg.startsWith('TOKEN_') || msg.startsWith('GARMIN_') || msg === 'EMPTY_TOKEN')
+        toast(`שגיאת סנכרון: ${msg}`);
+      else toast('הסנכרון נכשל — בדוק חיבור לרשת');
+    }
   } finally {
     btn.classList.remove('spinning');
     syncing = false;
