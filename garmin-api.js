@@ -47,7 +47,7 @@ async function getAccessToken() {
 
   const res = await fetch(`${proxy}/personal-token`, {
     method: 'POST',
-    headers: { 'X-Api-Key': key },
+    headers: { 'Authorization': `ApiKey ${key}` },
   });
 
   if (!res.ok) {
