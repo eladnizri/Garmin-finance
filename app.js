@@ -3840,9 +3840,9 @@ $('setup-form').addEventListener('submit', e => {
   e.preventDefault();
   const key = $('setup-key').value.trim();
   const proxy = $('setup-proxy').value.trim().replace(/\/+$/, '');
-  if (!key || !proxy) return;
+  if (!key) return;
   setGarminKey(key);
-  setGarminProxy(proxy);
+  if (proxy) setGarminProxy(proxy);
   clearGarminToken();
   closeSetup();
   syncNow();

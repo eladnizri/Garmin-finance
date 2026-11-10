@@ -342,9 +342,12 @@
           <div class="field-row">
             <label class="field">Garmin API Key<input type="password" id="setup-key" autocomplete="off" spellcheck="false" placeholder="your-consumer-key" required></label>
           </div>
-          <div class="field-row">
-            <label class="field">Proxy URL<input type="url" id="setup-proxy" autocomplete="off" spellcheck="false" placeholder="https://garmin-proxy.your-name.workers.dev" required></label>
-          </div>
+          <details class="setup-advanced">
+            <summary>הגדרות מתקדמות</summary>
+            <div class="field-row">
+              <label class="field">Proxy URL<input type="url" id="setup-proxy" autocomplete="off" spellcheck="false" placeholder="ברירת מחדל — לא צריך לשנות"></label>
+            </div>
+          </details>
           <div class="modal-actions">
             <button type="button" class="btn-ghost hidden" id="setup-remove">מחק הגדרות</button>
             <button type="submit" class="btn-primary">שמור וסנכרן</button>

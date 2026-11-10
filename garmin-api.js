@@ -16,8 +16,7 @@ const GARMIN_KEY_LS   = 'garmin_api_key';
 const GARMIN_PROXY_LS = 'garmin_proxy_url';
 const GARMIN_TOKEN_LS = 'garmin_token';
 
-/* shortcut: default proxy URL can be set once at deploy time */
-const DEFAULT_PROXY = '';
+const DEFAULT_PROXY = 'https://gytxwjlicawlfdehszil.supabase.co/functions/v1/garmin-proxy';
 
 function garminApiKey()  { try { return localStorage.getItem(GARMIN_KEY_LS) || ''; } catch { return ''; } }
 function garminProxy()   { try { return localStorage.getItem(GARMIN_PROXY_LS) || DEFAULT_PROXY; } catch { return DEFAULT_PROXY; } }
