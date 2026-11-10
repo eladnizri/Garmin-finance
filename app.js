@@ -385,14 +385,14 @@ function miniRingSvg(grad, fillPct, anomalous, uid, size = 78) {
 }
 
 /* מדדי הטבעות הקטנות סביב המוכנות */
-/* page numbers here must track the pager's DOM order: 0 בית, 1 אימונים, 2 שינה, 3 לב, 4 פעילות */
+/* page numbers here must track the pager's DOM order: 0 בית, 1 כוח, 2 אירובי, 3 שינה, 4 לב */
 const DASH_METRICS = [
-  { key: 'sleep_hours', page: 2, label: 'שינה', ico: 'moon', grad: ['--ring-sleep-1', '--ring-sleep-2'], fill: true,
+  { key: 'sleep_hours', page: 3, label: 'שינה', ico: 'moon', grad: ['--ring-sleep-1', '--ring-sleep-2'], fill: true,
     goal: () => goalSleep(), disp: v => fmt(v, 1), sub: 'ש׳' },
-  { key: 'steps', page: 4, label: 'צעדים', ico: 'walk', grad: ['--ring-steps-1', '--ring-steps-2'], fill: true,
+  { key: 'steps', page: 0, label: 'צעדים', ico: 'walk', grad: ['--ring-steps-1', '--ring-steps-2'], fill: true,
     goal: () => goalSteps(), disp: v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : fmt(v), sub: '' },
-  { key: 'rhr', page: 3, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
-  { key: 'hrv', page: 3, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
+  { key: 'rhr', page: 4, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
+  { key: 'hrv', page: 4, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
 ];
 /* ברכה לפי שעת היום */
 function greeting() { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; }
@@ -419,8 +419,6 @@ function sleepStages() {
 
 function renderDashboard() {
   const el = $('dashboard');
-  const official = latest('readiness_score', 2);
-  const score = official ?? heuristicReadiness();
 
   // --- טבעות המדדים הקטנות ---
   const minis = DASH_METRICS.map((m, i) => {
@@ -452,29 +450,10 @@ function renderDashboard() {
   const last = lastRow();
   const dateLine = last.date ? `${greeting()} · ${longDate(last.date)}` : greeting();
 
-  if (score === null) {
-    el.innerHTML = `<div class="dash-center"><div class="dash-greet">${dateLine}</div>
-      <div class="dash-verdict">בהמתנה לנתונים</div>
-      <div class="dash-note">הסנכרון היומי ימלא את הנתונים.</div></div>
-      <div class="sec-title" style="margin-top:18px">מדדים</div><div class="dash-rings">${minis}</div>`;
-    animateRings(el);
-    return;
-  }
-
-  // --- מרכז: אבחון איכותי (בלי מספר — כדי לא להעמיס פסיכולוגית) ---
-  const level = latest('readiness_level', 2);
-  const feedbackTok = latest('readiness_feedback', 2);
-  const feedback = feedbackTok ? READINESS_FEEDBACK[feedbackTok] : null;
-  const note = feedback
-    || (official !== null && level ? `רמת מוכנות לפי גרמין: ${READINESS_LEVEL[level] || level}` : '');
-
   el.innerHTML = `
     <div class="dash-center">
       <div class="dash-greet">${dateLine}</div>
-      <div class="dash-verdict lvl-${verdictLevel(score)}">${verdictOf(score)}</div>
-      ${note ? `<div class="dash-note">${note}</div>` : ''}
     </div>
-    <div class="sec-title" style="margin-top:18px">מדדים</div>
     <div class="dash-rings">${minis}</div>`;
 
   animateRings(el);
@@ -717,15 +696,6 @@ function renderCharts() {
     type: 'line',
     data: { labels, datasets: [line(rows, 'stress_avg', C.orange), maLine(rows, 'stress_avg')] },
     options: opts({ min: 0, max: 100 }, i => `מתח: ${fmt(i.raw.y)}`),
-  });
-
-  /* --- פעילות --- */
-  $('u-steps').textContent = `יעד ${fmt(goalSteps())}`;
-  legend('legend-steps', [[C.violet, 'צעדים'], [C.ma, 'ממוצע נע 7 ימים']]);
-  make('chart-steps', {
-    type: 'bar',
-    data: { labels, datasets: [bar(rows, 'steps', C.violet), constLine(rows, goalSteps(), 'יעד', C.muted), maLine(rows, 'steps')] },
-    options: opts({ beginAtZero: true }, i => `צעדים: ${fmt(i.raw.y)}`),
   });
 
   renderChartTips();
@@ -2932,6 +2902,8 @@ $('train-card').addEventListener('change', e => {
   if (e.target.id === 'tr-ex') { state.trainEx = e.target.value; renderTrainChart(); }
 });
 
+$('home-edit-btn').addEventListener('click', openHomeCardEditor);
+
 $('planner-card').addEventListener('click', e => {
   if (e.target.closest('#plan-setup') || e.target.closest('#plan-edit')) {
     if (typeof openPlanSetup === 'function') openPlanSetup();
@@ -3318,7 +3290,7 @@ function bindRaceForm() {
     const km = Number($('rc-km').value);
     const timeSec = parseRaceTime($('rc-time').value);
     if (!date || !km || !timeSec) { toast('צריך תאריך, מרחק וזמן יעד'); return; }
-    race = { name, date, km, timeSec };
+    race = { name, date, km, timeSec, phases: race?.phases || [] };
     saveRace(); renderRace(); toast('המירוץ נשמר ✓');
   };
   const del = $('rc-delete');
@@ -3329,6 +3301,96 @@ function avgPaceOf(runs) {
   const withPace = runs.filter(r => r.pace);
   return withPace.length ? withPace.reduce((a, r) => a + r.pace, 0) / withPace.length : null;
 }
+/* =========================================================================
+ * שלבי אימון למירוץ — בסיס / בנייה / שיא / טייפר
+ * ========================================================================= */
+const PHASE_NAMES = ['בסיס', 'בנייה', 'שיא', 'טייפר'];
+
+function racePhaseNote() {
+  if (!race?.phases?.length) return `<button class="btn-ghost tr-wide" id="rc-phases-btn">הגדר שלבי אימון</button>`;
+  const today = todayISO();
+  const current = race.phases.find(p => today >= p.start && today <= p.end);
+  let html = '<div class="race-phases">';
+  for (const p of race.phases) {
+    const active = p === current;
+    html += `<div class="rp${active ? ' rp-active' : ''}">
+      <span class="rp-name">${p.name}</span>
+      <span class="rp-dates">${shortDate(p.start)}–${shortDate(p.end)}</span>
+      <span class="rp-km">${p.weeklyKm} ק״מ/שבוע</span>
+    </div>`;
+  }
+  html += '</div>';
+  if (current) {
+    const actuals = weekAeroActuals();
+    const weekKm = (actuals.running || 0) + (actuals.cycling || 0) + (actuals.swimming || 0);
+    html += `<p class="tr-note">שלב נוכחי: <b>${current.name}</b> · ${fmt(weekKm, 1)}/${current.weeklyKm} ק״מ השבוע</p>`;
+  }
+  html += `<button class="btn-ghost" id="rc-phases-btn" style="margin-top:6px">ערוך שלבים</button>`;
+  return html;
+}
+
+function openPhaseEditor() {
+  const phases = race?.phases || [];
+  let rows = '';
+  const addRow = (p, i) => `<div class="phase-row" data-i="${i}">
+    <select name="pn_${i}">${PHASE_NAMES.map(n => `<option${n === p.name ? ' selected' : ''}>${n}</option>`).join('')}</select>
+    <input type="date" name="ps_${i}" value="${p.start || ''}">
+    <input type="date" name="pe_${i}" value="${p.end || ''}">
+    <input type="number" name="pk_${i}" value="${p.weeklyKm || ''}" min="0" step="1" placeholder="ק״מ/שבוע">
+    <button type="button" class="btn-ghost phase-del" data-i="${i}">✕</button>
+  </div>`;
+  for (let i = 0; i < phases.length; i++) rows += addRow(phases[i], i);
+  if (!phases.length) rows = addRow({ name: PHASE_NAMES[0], start: '', end: '', weeklyKm: '' }, 0);
+
+  const modal = document.createElement('div');
+  modal.id = 'phase-modal';
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet tall">
+      <div class="modal-head"><h2>שלבי אימון</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      <form id="phase-form">
+        <div id="phase-rows">${rows}</div>
+        <button type="button" class="btn-ghost tr-wide" id="phase-add">+ שלב</button>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="phase-cancel">ביטול</button>
+          <button type="submit" class="btn-primary">שמור</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+
+  let nextIdx = Math.max(phases.length, 1);
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
+  $('phase-cancel').onclick = close;
+  $('phase-add').onclick = () => {
+    const div = document.createElement('div');
+    div.innerHTML = addRow({ name: PHASE_NAMES[Math.min(nextIdx, 3)], start: '', end: '', weeklyKm: '' }, nextIdx++);
+    $('phase-rows').appendChild(div.firstElementChild);
+  };
+  modal.addEventListener('click', e => {
+    if (e.target.classList.contains('phase-del')) e.target.closest('.phase-row').remove();
+  });
+
+  $('phase-form').onsubmit = e => {
+    e.preventDefault();
+    const newPhases = [];
+    for (const row of modal.querySelectorAll('.phase-row')) {
+      const i = row.dataset.i;
+      const name = e.target[`pn_${i}`]?.value;
+      const start = e.target[`ps_${i}`]?.value;
+      const end = e.target[`pe_${i}`]?.value;
+      const weeklyKm = Number(e.target[`pk_${i}`]?.value);
+      if (name && start && end && weeklyKm > 0) newPhases.push({ name, start, end, weeklyKm });
+    }
+    newPhases.sort((a, b) => a.start.localeCompare(b.start));
+    race.phases = newPhases;
+    saveRace(); close(); renderRace(); toast('שלבי אימון נשמרו');
+  };
+}
+
 function renderRace() {
   const el = $('race-card');
   if (!race) {
@@ -3380,6 +3442,8 @@ function renderRace() {
   </article>`;
   $('rc-toggle').onclick = () => $('rc-form-wrap').classList.toggle('hidden');
   bindRaceForm();
+  const phBtn = $('rc-phases-btn');
+  if (phBtn) phBtn.onclick = openPhaseEditor;
 }
 
 /* =========================================================================
@@ -3622,6 +3686,135 @@ $('apple-file').addEventListener('change', e => { if (e.target.files[0]) importA
 $('apple-status').addEventListener('click', e => { if (e.target.closest('#apple-dl')) downloadRunHistory(); });
 
 /* =========================================================================
+ * מגמת צעדים — גרף קו 30 יום במסך הבית
+ * ========================================================================= */
+function renderStepsHome() {
+  const el = $('steps-home');
+  if (!el) return;
+  const rows = state.data.slice(-30);
+  if (rows.length < 2) { el.innerHTML = ''; return; }
+  const labels = rows.map(r => shortDate(r.date));
+  const goal = goalSteps();
+  el.innerHTML = `<article class="card">
+    <div class="card-head"><h2 class="ct" data-info="steps">צעדים<span class="info-i">ⓘ</span></h2>
+      <span class="unit">30 ימים · יעד ${fmt(goal)}</span></div>
+    <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-steps-home"></canvas></div>
+  </article>`;
+  make('chart-steps-home', {
+    type: 'line',
+    data: { labels, datasets: [
+      line(rows, 'steps', C.violet), constLine(rows, goal, 'יעד', C.muted), maLine(rows, 'steps'),
+    ]},
+    options: opts({ beginAtZero: true }, i => `צעדים: ${fmt(i.raw.y)}`),
+  });
+}
+
+/* =========================================================================
+ * עריכת כרטיסים בדף הבית — סינון וסדר
+ * ========================================================================= */
+const HOME_CARDS_KEY = 'home_cards_v1';
+const HOME_CARD_DEFS = [
+  { id: 'dashboard', label: 'טבעות', fixed: true },
+  { id: 'today-card', label: 'מה לעשות היום' },
+  { id: 'strain-warning', label: 'אזהרת עומס' },
+  { id: 'anomalies', label: 'חריגים' },
+  { id: 'week-summary', label: 'סיכום שבועי' },
+  { id: 'insights-card', label: 'תובנות' },
+  { id: 'steps-home', label: 'צעדים' },
+  { id: 'weight-card', label: 'משקל' },
+];
+
+function loadHomeCards() {
+  const saved = jsonGet(HOME_CARDS_KEY, null);
+  if (!saved) return HOME_CARD_DEFS.map(c => ({ id: c.id, visible: true }));
+  const known = new Set(HOME_CARD_DEFS.map(c => c.id));
+  const result = saved.filter(s => known.has(s.id));
+  for (const def of HOME_CARD_DEFS) {
+    if (!result.find(r => r.id === def.id)) result.push({ id: def.id, visible: true });
+  }
+  return result;
+}
+
+function applyHomeCardOrder() {
+  const cards = loadHomeCards();
+  const parent = $('dashboard')?.parentElement;
+  if (!parent) return;
+  for (const c of cards) {
+    const el = $(c.id);
+    if (!el) continue;
+    el.style.display = c.visible ? '' : 'none';
+    parent.appendChild(el);
+  }
+  const body = $('home-body');
+  if (body) parent.appendChild(body);
+}
+
+function openHomeCardEditor() {
+  const cards = loadHomeCards();
+  const defs = Object.fromEntries(HOME_CARD_DEFS.map(d => [d.id, d]));
+  let html = '';
+  cards.forEach((c, i) => {
+    const def = defs[c.id] || { label: c.id };
+    const isFixed = def.fixed;
+    html += `<div class="card-row" data-id="${c.id}">
+      <label><input type="checkbox" ${c.visible ? 'checked' : ''} ${isFixed ? 'disabled' : ''} data-card="${c.id}"> ${def.label}</label>
+      ${!isFixed ? `<div class="card-arrows">
+        <button type="button" data-dir="up" data-idx="${i}">▲</button>
+        <button type="button" data-dir="down" data-idx="${i}">▼</button>
+      </div>` : ''}
+    </div>`;
+  });
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-head"><h2>עריכת כרטיסים</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      <div id="hce-list">${html}</div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="hce-cancel">ביטול</button>
+        <button type="button" class="btn-primary" id="hce-save">שמור</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
+  $('hce-cancel').onclick = close;
+
+  modal.addEventListener('click', e => {
+    const btn = e.target.closest('[data-dir]');
+    if (!btn) return;
+    const list = modal.querySelector('#hce-list');
+    const rows = [...list.querySelectorAll('.card-row')];
+    const idx = Number(btn.dataset.idx);
+    const row = rows[idx];
+    if (!row) return;
+    if (btn.dataset.dir === 'up' && idx > 0) {
+      list.insertBefore(row, rows[idx - 1]);
+    } else if (btn.dataset.dir === 'down' && idx < rows.length - 1) {
+      rows[idx + 1].after(row);
+    }
+    [...list.querySelectorAll('.card-row')].forEach((r, i) => {
+      r.querySelectorAll('[data-idx]').forEach(b => b.dataset.idx = i);
+    });
+  });
+
+  $('hce-save').onclick = () => {
+    const result = [...modal.querySelectorAll('.card-row')].map(row => ({
+      id: row.dataset.id,
+      visible: row.querySelector('input[type="checkbox"]').checked,
+    }));
+    jsonSet(HOME_CARDS_KEY, result);
+    close();
+    applyHomeCardOrder();
+    toast('סדר הכרטיסים נשמר');
+  };
+}
+
+/* =========================================================================
  * רינדור כולל
  * ========================================================================= */
 function renderAll() {
@@ -3637,51 +3830,41 @@ function renderAll() {
   renderAnomalies();
   renderWeekSummary();
   if (typeof renderInsights === 'function') renderInsights();
+  renderStepsHome();
   renderWeight();
   renderBody();
+  applyHomeCardOrder();
 
-  // עמודי פירוט
+  // כוח
+  renderStrength();
+  renderTrain();
+  if (typeof renderLab === 'function') renderLab();
+
+  // אירובי
+  if (typeof renderPlanner === 'function') renderPlanner();
+  renderRace();
+  renderCardioLog();
+  renderRuns();
+
+  // שינה
   renderSleepRec();
   renderSleepConsistency();
   renderSleepAnalysis();
   statHero('sleep-hero', 'sleep_hours');
-  statHero('heart-hero', 'hrv', hrvExtra());
-  statHero('steps-hero', 'steps');
-  if (typeof renderPlanner === 'function') renderPlanner();
-  renderStrength();
-  renderTrain();
-  if (typeof renderLab === 'function') renderLab();
-  renderRace();
-  renderCardioLog();
-  renderRuns();
   renderCharts();
   renderBreathing();
+
+  // לב
+  statHero('heart-hero', 'hrv', hrvExtra());
   renderHrZones();
 
   verdictCard('sleep-insight', 'מה זה אומר', ['sleep_hours', 'sleep_score']);
   verdictCard('heart-insight', 'מה זה אומר', ['rhr', 'hrv', 'stress_avg']);
-  verdictCard('steps-insight', 'מה זה אומר', ['steps']);
 
   const rows = visibleRows();
   const sleepStreak = trailingStreak(rows, r => r.sleep_score != null && r.sleep_score >= 80);
   renderRecords('sleep-records', [
     sleepStreak >= 2 && recCard(icon('flame', 22), `${sleepStreak}`, 'רצף לילות 80+'),
-  ]);
-
-  const bestSteps = extremeDay(rows, 'steps', 'max');
-  const stepStreak = trailingStreak(rows, r => r.steps != null && r.steps >= goalSteps());
-  const totalSteps = rows.reduce((a, r) => a + (r.steps || 0), 0);
-  // מדדים מצטברים — בלי היום החלקי (כמו ב-CUMULATIVE)
-  const fullRows = rows[rows.length - 1]?.date === todayISO() ? rows.slice(0, -1) : rows;
-  const calVals = vals(fullRows, 'calories');
-  const avgCal = calVals.length ? Math.round(calVals.reduce((a, b) => a + b, 0) / calVals.length) : null;
-  const totalFloors = fullRows.reduce((a, r) => a + (r.floors || 0), 0);
-  renderRecords('steps-records', [
-    bestSteps && recCard(icon('walk', 22), fmt(bestSteps.v), `היום הפעיל · ${shortDate(bestSteps.date)}`),
-    stepStreak >= 2 && recCard(icon('flame', 22), `${stepStreak}`, 'רצף ימים ביעד'),
-    totalSteps > 0 && recCard(icon('chartbars', 22), fmt(totalSteps), 'סה״כ בתקופה'),
-    avgCal && recCard(icon('flame', 22), fmt(avgCal), 'קק״ל ליום בממוצע'),
-    totalFloors > 0 && recCard(icon('floors', 22), fmt(totalFloors), 'קומות בתקופה'),
   ]);
 
 }
@@ -3700,8 +3883,8 @@ function setActive(idx) {
   $('tabbar').style.setProperty('--tab-idx', idx);
   $('page-title').textContent = pages[idx].dataset.title;
   $('page-sub').textContent = pages[idx].dataset.sub || '';
-  // בורר הטווח רלוונטי רק לעמודים עם גרפים
-  $('range-filter').classList.toggle('hidden', idx === 0);
+  // בורר הטווח רלוונטי רק לעמודים עם גרפים (לא בית ולא כוח)
+  $('range-filter').classList.toggle('hidden', idx === 0 || idx === 1);
 }
 /* גלילה אל עמוד — scrollBy על הפייג'ר בלבד, לפי הפרש המלבנים.
  * במכוון *לא* scrollIntoView: הוא מגלגל כל מכל-גלילה בשרשרת ההורים, ולכן
@@ -3742,19 +3925,6 @@ function currentIndex() {
 
 tabs.forEach(t => t.addEventListener('click', () => goTo(Number(t.dataset.index))));
 
-/* מתג כוח/אירובי בתוך טאב האימונים — נשמר בין פתיחות כמו שנשאר טווח הזמן */
-const TRAIN_SEG_KEY = 'train_seg_v1';
-function setTrainSeg(seg) {
-  jsonSet(TRAIN_SEG_KEY, seg);
-  document.querySelectorAll('#train-seg .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.seg === seg));
-  $('train-strength').classList.toggle('hidden', seg !== 'strength');
-  $('train-aerobic').classList.toggle('hidden', seg !== 'aerobic');
-}
-$('train-seg').addEventListener('click', e => {
-  const b = e.target.closest('[data-seg]'); if (!b) return;
-  haptic(6); setTrainSeg(b.dataset.seg);
-});
-setTrainSeg(jsonGet(TRAIN_SEG_KEY, 'strength'));
 $('dashboard').addEventListener('click', e => {
   const flip = e.target.closest('[data-flip]');
   if (flip) { flip.classList.toggle('flipped'); haptic(8); return; }
