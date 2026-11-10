@@ -1335,3 +1335,27 @@ button.tm-v:active { color: var(--primary-500); }
 .lab-wait { opacity: .78; }
 .lab-rec { background: #eef5f1; }
 .lab-rec span b { display: inline; margin: 0; font-variant-numeric: tabular-nums; }
+
+/* שלבי אימון למירוץ */
+.race-phases { display: flex; gap: 6px; margin: 8px 0; overflow-x: auto; }
+.rp { flex: 0 0 auto; padding: 6px 10px; border-radius: var(--r-md); background: var(--surface-2); font-size: .75rem; text-align: center; min-width: 70px; }
+.rp-active { background: var(--primary-500); color: #fff; }
+.rp-name { display: block; font-weight: 600; margin-bottom: 2px; }
+.rp-dates { display: block; font-size: .68rem; opacity: .8; }
+.rp-km { display: block; font-size: .68rem; margin-top: 2px; }
+.phase-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+.phase-row select, .phase-row input { font-size: .82rem; padding: 5px 6px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+.phase-row select { width: 70px; }
+.phase-row input[type="date"] { width: 120px; }
+.phase-row input[type="number"] { width: 80px; }
+.phase-del { padding: 2px 6px !important; min-width: auto !important; }
+
+/* עריכת כרטיסים בדף הבית */
+.home-edit-btn { position: absolute; top: 8px; left: 8px; z-index: 5; background: var(--surface-2); border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink-2); font-size: 1.1rem; }
+.home-edit-btn:hover { color: var(--ink); }
+.card-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.card-row:last-child { border-bottom: none; }
+.card-row label { flex: 1; font-size: .85rem; color: var(--ink); }
+.card-arrows { display: flex; gap: 2px; }
+.card-arrows button { background: none; border: none; color: var(--ink-2); cursor: pointer; font-size: 1rem; padding: 2px 4px; }
+.card-arrows button:hover { color: var(--ink); }
