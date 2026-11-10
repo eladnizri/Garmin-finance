@@ -18,7 +18,6 @@
   <script src="common.js" defer></script>
   <script src="storage.js" defer></script>
   <script src="garmin-api.js" defer></script>
-  <script src="apple-health.js" defer></script>
   <script src="app.js" defer></script>
   <script src="insights.js" defer></script>
   <script src="goals.js" defer></script>
@@ -30,6 +29,77 @@
   <div id="loading" class="loading">
     <img src="icons/icon-192.png" alt="" class="load-logo">
     <div class="spinner"></div>
+  </div>
+
+  <!-- ===== אשף כניסה ראשונה ===== -->
+  <div id="onboarding" class="onboarding hidden">
+    <div class="ob-container">
+      <div class="ob-progress"><div class="ob-bar" id="ob-bar"></div></div>
+
+      <!-- שלב 1: ברוכים הבאים -->
+      <div class="ob-step" data-step="0">
+        <div class="ob-icon">
+          <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 3 9 2-4h7"/></svg>
+        </div>
+        <h1 class="ob-title">בריאות וכושר</h1>
+        <p class="ob-desc">מעקב חכם אחרי השינה, הדופק, האימונים והריצות שלך — ישירות מהשעון של Garmin.</p>
+        <p class="ob-desc ob-small">כל הנתונים נשמרים רק במכשיר שלך ואינם נשלחים לשום מקום.</p>
+      </div>
+
+      <!-- שלב 2: פרטים אישיים -->
+      <div class="ob-step hidden" data-step="1">
+        <h2 class="ob-step-title">קצת עליך</h2>
+        <p class="ob-desc">הפרטים עוזרים לנו להתאים את היעדים והתובנות עבורך.</p>
+        <div class="ob-fields">
+          <div class="field-row">
+            <label class="field">גיל<input type="number" id="ob-age" min="10" max="120" inputmode="numeric" autocomplete="off" placeholder="35"></label>
+            <label class="field">מין
+              <select id="ob-sex" autocomplete="sex"><option value="">—</option><option value="m">זכר</option><option value="f">נקבה</option></select>
+            </label>
+          </div>
+          <div class="field-row">
+            <label class="field">גובה (ס״מ)<input type="number" id="ob-height" min="100" max="230" inputmode="numeric" autocomplete="off" placeholder="175"></label>
+            <label class="field">משקל (ק״ג)<input type="number" id="ob-weight" min="30" max="250" inputmode="numeric" autocomplete="off" placeholder="70"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- שלב 3: יעדים -->
+      <div class="ob-step hidden" data-step="2">
+        <h2 class="ob-step-title">היעדים שלך</h2>
+        <p class="ob-desc">תמיד אפשר לשנות בהמשך דרך הפרופיל.</p>
+        <div class="ob-fields">
+          <div class="field-row">
+            <label class="field">שעות שינה<input type="number" id="ob-sleep" min="4" max="12" step="0.5" inputmode="decimal" placeholder="8"></label>
+            <label class="field">צעדים ביום<input type="number" id="ob-steps" min="1000" max="30000" step="500" inputmode="numeric" placeholder="10000"></label>
+          </div>
+          <div class="field-row">
+            <label class="field">אימוני כוח בשבוע<input type="number" id="ob-strength" min="1" max="7" inputmode="numeric" placeholder="3"></label>
+            <label class="field">ריצה שבועית (ק״מ)<input type="number" id="ob-run" min="1" max="200" step="0.5" inputmode="decimal" placeholder="לא חובה"></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- שלב 4: חיבור גרמין -->
+      <div class="ob-step hidden" data-step="3">
+        <h2 class="ob-step-title">חיבור ל-Garmin</h2>
+        <p class="ob-desc">חבר את חשבון הגרמין שלך כדי להתחיל לקבל נתונים.</p>
+        <ol class="token-steps">
+          <li>היכנס ל-<a href="https://developer.garmin.com/gc-developer-program/personal-api/" target="_blank" rel="noopener">Garmin Personal API</a></li>
+          <li>צור Consumer Key והעתק אותו לכאן</li>
+        </ol>
+        <div class="ob-fields">
+          <label class="field">Garmin API Key<input type="password" id="ob-garmin-key" autocomplete="off" spellcheck="false" placeholder="your-consumer-key"></label>
+        </div>
+        <p class="ob-desc ob-small">אפשר גם לדלג ולחבר מאוחר יותר דרך הגדרות הפרופיל.</p>
+      </div>
+
+      <div class="ob-nav">
+        <button class="btn-ghost ob-back hidden" id="ob-back">חזרה</button>
+        <button class="btn-primary ob-next" id="ob-next">הבא</button>
+      </div>
+      <button class="ob-skip" id="ob-skip">דלג על ההגדרה</button>
+    </div>
   </div>
 
   <div id="app" class="app hidden">
@@ -61,9 +131,6 @@
       <!-- ========== בית ========== -->
       <section class="page" data-title="בית" data-sub="תמונת מצב" style="position:relative">
         <button class="home-edit-btn" id="home-edit-btn" aria-label="עריכת כרטיסים">⚙</button>
-        <div id="demo-banner" class="banner hidden">
-          מציג <b>נתוני דמו</b> — לחץ על כפתור הסנכרון ⟲ כדי לחבר את חשבון הגרמין שלך.
-        </div>
 
         <!-- לוח טבעות — מוכנות במרכז + מדדים מסביב -->
         <div id="dashboard" class="dashboard"></div>
@@ -244,12 +311,6 @@
           <button type="button" class="btn-ghost" id="export-btn">⬇️ ייצוא גיבוי</button>
           <button type="button" class="btn-ghost" id="import-btn">⬆️ ייבוא</button>
           <input type="file" id="import-file" accept="application/json,.json" hidden>
-        </div>
-        <div class="apple-row">
-          <button type="button" class="btn-ghost" id="apple-btn">🏃 ייבוא ריצות עבר מהאייפון</button>
-          <input type="file" id="apple-file" accept=".xml,text/xml,application/xml" hidden>
-          <p class="apple-status" id="apple-status">בריאות ← הפרופיל ← "ייצוא כל הנתונים", ואז בחר כאן את
-            <code>export.xml</code>. נקראות רק ריצות משנתיים האחרונות, והכול נשאר במכשיר.</p>
         </div>
       </div>
     </div>

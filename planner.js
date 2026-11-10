@@ -3,8 +3,8 @@
  * planner.js — תכנון אימונים קדימה: נפח אירובי שבועי + תוכנית כוח ליום.
  *
  * נתונים ב-localStorage:
- *   workout_plan_v1 — { aerobic: { running: km, swimming: km, cycling: km },
- *                       strength: [{ day: 0..6, programId }] }
+ *   workout_plan_v1 — { aerobic: { running: km, swimming: km, cycling: km } }
+ *   aero_plan_v1 — [{ day: 0..6, type: 'easy'|'tempo'|'intervals'|'long' }]
  * ========================================================================= */
 const PLAN_KEY = 'workout_plan_v1';
 const AERO_SPORTS = [
@@ -13,11 +13,25 @@ const AERO_SPORTS = [
   { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], icon: 'bike' },
 ];
 
+const AERO_PLAN_KEY = 'aero_plan_v1';
+const AERO_RUN_TYPES = [
+  { key: 'easy',      label: 'קלה' },
+  { key: 'tempo',     label: 'טמפו' },
+  { key: 'intervals', label: 'אינטרוולים' },
+  { key: 'long',      label: 'ריצה ארוכה' },
+  { key: 'rest',      label: 'מנוחה' },
+];
+
 function loadPlan() {
-  try { return JSON.parse(localStorage.getItem(PLAN_KEY)) || { aerobic: {}, strength: [] }; }
-  catch { return { aerobic: {}, strength: [] }; }
+  try { return JSON.parse(localStorage.getItem(PLAN_KEY)) || { aerobic: {} }; }
+  catch { return { aerobic: {} }; }
 }
 function savePlan(p) { try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch {} }
+
+function loadAeroPlan() {
+  try { return JSON.parse(localStorage.getItem(AERO_PLAN_KEY)) || []; } catch { return []; }
+}
+function saveAeroPlan(p) { try { localStorage.setItem(AERO_PLAN_KEY, JSON.stringify(p)); } catch {} }
 
 /* =========================================================================
  * נפח אירובי בפועל השבוע — מתוך workouts שגרמין שלח
@@ -44,13 +58,14 @@ function renderPlanner() {
   const el = $('planner-card');
   if (!el) return;
   const plan = loadPlan();
+  const aeroPlan = loadAeroPlan();
   const hasAero = AERO_SPORTS.some(s => plan.aerobic[s.key] > 0);
-  const hasStrength = plan.strength.length > 0;
+  const hasAeroPlan = aeroPlan.length > 0;
 
-  if (!hasAero && !hasStrength) {
+  if (!hasAero && !hasAeroPlan) {
     el.innerHTML = `<article class="card">
-      <div class="card-head"><h2>${icon('calendar', 18)} תוכנית שבועית</h2></div>
-      <p class="tr-empty">תכנן את השבוע: הגדר נפח אירובי לפי ענף, ושבץ אימוני כוח לפי יום.</p>
+      <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2></div>
+      <p class="tr-empty">תכנן את השבוע: הגדר נפח אירובי לפי ענף ותוכנית ריצות שבועית.</p>
       <button class="btn-primary tr-wide" id="plan-setup">הגדרת תוכנית</button>
     </article>`;
     return;
@@ -58,7 +73,7 @@ function renderPlanner() {
 
   let body = '';
 
-  // אירובי — נפח שבועי: יעד מול ביצוע
+  // נפח שבועי: יעד מול ביצוע
   if (hasAero) {
     const actuals = weekAeroActuals();
     body += '<div class="plan-aero">';
@@ -79,12 +94,12 @@ function renderPlanner() {
     body += '</div>';
   }
 
-  // כוח — שיבוץ לפי יום
-  if (hasStrength) {
+  // תוכנית ריצות שבועית — סוג ריצה לכל יום
+  if (hasAeroPlan) {
     const today = new Date(todayISO());
     const ws = new Date(weekStartISO(today));
-    const auto = typeof autoStrengthDates === 'function' ? autoStrengthDates() : new Set();
-    body += '<div class="plan-strength">';
+    const garminRuns = weekRunDates();
+    body += '<div class="plan-aero-week">';
     const daySlots = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(ws);
@@ -92,24 +107,33 @@ function renderPlanner() {
       const iso = d.toISOString().slice(0, 10);
       const isFuture = d > today;
       const isToday = iso === todayISO();
-      const planned = plan.strength.find(s => s.day === i);
-      const prog = planned && programs.find(p => p.id === planned.programId);
-      const done = typeof strengthDone === 'function' && strengthDone(iso, auto);
+      const planned = aeroPlan.find(s => s.day === i);
+      const typeInfo = planned && AERO_RUN_TYPES.find(t => t.key === planned.type);
+      const done = garminRuns.has(iso);
+      const isRest = !planned || planned.type === 'rest';
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
       daySlots.push(`<div class="plan-day ${cls}">
         <small>${DAY_NAMES[i][0]}</small>
-        ${prog ? `<span class="plan-prog">${prog.name}</span>` : '<span class="plan-rest">—</span>'}
-        ${done ? '<i class="plan-check">✓</i>' : ''}
+        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${typeInfo?.label || ''}</span>`}
+        ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
       </div>`);
     }
     body += `<div class="plan-week">${daySlots.join('')}</div></div>`;
   }
 
   el.innerHTML = `<article class="card">
-    <div class="card-head"><h2>${icon('calendar', 18)} תוכנית שבועית</h2>
+    <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2>
       <button class="world-link" id="plan-edit">עריכה ‹</button></div>
     ${body}
   </article>`;
+}
+
+function weekRunDates() {
+  const ws = weekStartISO(new Date(todayISO()));
+  const s = new Set();
+  for (const r of (state.data || []).filter(r => r.date >= ws))
+    for (const w of (r.workouts || [])) if (w.type_key === 'running') s.add(r.date);
+  return s;
 }
 
 /* =========================================================================
@@ -117,7 +141,7 @@ function renderPlanner() {
  * ========================================================================= */
 function openPlanSetup() {
   const plan = loadPlan();
-  const progs = typeof programs !== 'undefined' ? programs : [];
+  const aeroPlan = loadAeroPlan();
 
   let aeroFields = '';
   for (const sport of AERO_SPORTS) {
@@ -128,20 +152,17 @@ function openPlanSetup() {
     </div>`;
   }
 
-  let strengthFields = '';
-  if (progs.length) {
-    for (let i = 0; i < 7; i++) {
-      const planned = plan.strength.find(s => s.day === i);
-      strengthFields += `<div class="plan-field plan-day-field">
-        <label>${DAY_NAMES[i]}</label>
-        <select name="str_${i}">
-          <option value="">מנוחה</option>
-          ${progs.map(p => `<option value="${p.id}" ${planned?.programId === p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
-        </select>
-      </div>`;
-    }
-  } else {
-    strengthFields = '<p class="tr-empty">צור תוכנית אימוני כוח קודם, ואז תוכל לשבץ אותה לימים.</p>';
+  let weekFields = '';
+  for (let i = 0; i < 7; i++) {
+    const planned = aeroPlan.find(s => s.day === i);
+    weekFields += `<div class="plan-field plan-day-field">
+      <label>${DAY_NAMES[i]}</label>
+      <select name="aday_${i}">
+        <option value="rest">מנוחה</option>
+        ${AERO_RUN_TYPES.filter(t => t.key !== 'rest').map(t =>
+          `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
+      </select>
+    </div>`;
   }
 
   const modal = document.createElement('div');
@@ -149,13 +170,13 @@ function openPlanSetup() {
   modal.className = 'modal';
   modal.innerHTML = `<div class="modal-backdrop"></div>
     <div class="modal-sheet tall">
-      <div class="modal-head"><h2>תוכנית שבועית</h2>
+      <div class="modal-head"><h2>תוכנית אירובית</h2>
         <button class="close-btn" aria-label="סגירה">✕</button></div>
       <form id="plan-form">
-        <h3>נפח אירובי שבועי</h3>
+        <h3>נפח שבועי</h3>
         ${aeroFields}
-        <h3>אימוני כוח לפי יום</h3>
-        ${strengthFields}
+        <h3>סוג ריצה לפי יום</h3>
+        ${weekFields}
         <div class="modal-actions">
           <button type="button" class="btn-ghost" id="plan-cancel">ביטול</button>
           <button type="submit" class="btn-primary">שמור</button>
@@ -172,16 +193,18 @@ function openPlanSetup() {
   $('plan-form').onsubmit = e => {
     e.preventDefault();
     const f = e.target;
-    const newPlan = { aerobic: {}, strength: [] };
+    const newPlan = { aerobic: {} };
     for (const sport of AERO_SPORTS) {
       const v = Number(f[`aero_${sport.key}`]?.value);
       if (v > 0) newPlan.aerobic[sport.key] = v;
     }
+    const newAeroPlan = [];
     for (let i = 0; i < 7; i++) {
-      const pid = f[`str_${i}`]?.value;
-      if (pid) newPlan.strength.push({ day: i, programId: pid });
+      const type = f[`aday_${i}`]?.value;
+      if (type && type !== 'rest') newAeroPlan.push({ day: i, type });
     }
     savePlan(newPlan);
+    saveAeroPlan(newAeroPlan);
     close();
     renderPlanner();
     toast('התוכנית נשמרה');
