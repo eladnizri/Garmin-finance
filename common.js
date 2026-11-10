@@ -2,12 +2,8 @@
 
 /* =========================================================================
  * common.js — קוד משותף לכל העמודים (דשבורד + ניתוח)
- *
- * DATA_URL — מאיפה נטענים הנתונים. ברירת המחדל: קובץ ה-JSON שמתעדכן
- * אוטומטית ע"י ה-GitHub Action. אפשר להחליף לכתובת CSV ציבורית של
- * Google Sheets (File → Share → Publish to web → CSV) — הקוד מזהה לבד.
  * ========================================================================= */
-const DATA_URL = 'data/health.json';
+const DATA_URL = 'data/health.json'; // fallback for legacy/demo only
 const SLEEP_GOAL_HOURS = 8;
 const STEPS_GOAL = 10000;
 

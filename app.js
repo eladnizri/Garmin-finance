@@ -3519,12 +3519,14 @@ $('pager').addEventListener('click', e => {
 $('info-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) $('info-modal').classList.add('hidden'); });
 
 /* --- ייצוא / ייבוא גיבוי (מקומי בלבד) --- */
-function exportBackup() {
+async function exportBackup() {
+  const healthRows = await dbGetAll().catch(() => []);
   const backup = {
-    version: 1, exportedAt: new Date().toISOString(),
+    version: 2, exportedAt: new Date().toISOString(),
     profile, weight_log_v1: weights, strength_checks_v1: strengthChecks,
     strength_programs_v1: programs, strength_sessions_v1: sessions, run_tags_v1: runTags,
     runs_history_v1: runHistLocal,
+    health_data_v1: healthRows,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -3535,7 +3537,7 @@ function exportBackup() {
 }
 function importBackup(file) {
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const b = JSON.parse(reader.result);
       if (typeof b !== 'object' || !b) throw new Error('bad');
@@ -3547,6 +3549,12 @@ function importBackup(file) {
       if (Array.isArray(b.strength_sessions_v1)) { sessions = b.strength_sessions_v1; saveSessions(); }
       if (b.run_tags_v1 && typeof b.run_tags_v1 === 'object') { runTags = b.run_tags_v1; saveRunTags(); }
       if (Array.isArray(b.runs_history_v1)) { runHistLocal = b.runs_history_v1; saveRunHistory(); }
+      if (Array.isArray(b.health_data_v1) && b.health_data_v1.length) {
+        await dbPutDays(b.health_data_v1);
+        state.data = await dbGetAll();
+        state.isDemo = false;
+        $('demo-banner').classList.add('hidden');
+      }
       loadProfile();
       closeProfile();
       renderAll();
@@ -3555,6 +3563,7 @@ function importBackup(file) {
   };
   reader.readAsText(file);
 }
+$('garmin-settings-btn').addEventListener('click', () => { closeProfile(); openSetup(); });
 $('export-btn').addEventListener('click', exportBackup);
 $('import-btn').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });

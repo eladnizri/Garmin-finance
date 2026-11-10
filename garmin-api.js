@@ -167,11 +167,11 @@ const ACTIVITY_NAMES = {
 
 /* --- Main sync --------------------------------------------------------- */
 
-async function syncGarminData(onProgress) {
+async function syncGarminData(onProgress, backfillDays) {
   if (!hasGarminSetup()) throw new Error('SETUP');
 
   const existingCount = await dbCount();
-  const window = existingCount > 0 ? 7 : 30; // first run: 30 days, later: 7
+  const window = backfillDays || (existingCount > 0 ? 7 : 30);
   const today = new Date();
   const start = addDays(today, -window);
 
