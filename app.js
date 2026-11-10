@@ -3580,6 +3580,7 @@ async function exportBackup() {
     profile, weight_log_v1: weights, strength_checks_v1: strengthChecks,
     strength_programs_v1: programs, strength_sessions_v1: sessions, run_tags_v1: runTags,
     runs_history_v1: runHistLocal,
+    workout_plan_v1: loadPlan(), aero_plan_v1: loadAeroPlan(),
     health_data_v1: healthRows,
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -3603,6 +3604,8 @@ function importBackup(file) {
       if (Array.isArray(b.strength_sessions_v1)) { sessions = b.strength_sessions_v1; saveSessions(); }
       if (b.run_tags_v1 && typeof b.run_tags_v1 === 'object') { runTags = b.run_tags_v1; saveRunTags(); }
       if (Array.isArray(b.runs_history_v1)) { runHistLocal = b.runs_history_v1; saveRunHistory(); }
+      if (b.workout_plan_v1) savePlan(b.workout_plan_v1);
+      if (Array.isArray(b.aero_plan_v1)) saveAeroPlan(b.aero_plan_v1);
       if (Array.isArray(b.health_data_v1) && b.health_data_v1.length) {
         await dbPutDays(b.health_data_v1);
         state.data = await dbGetAll();
