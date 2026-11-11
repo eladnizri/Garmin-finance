@@ -1,26 +1,29 @@
 'use strict';
 /* =========================================================================
- * planner.js — תכנון אימונים קדימה: נפח אירובי שבועי + תוכנית כוח ליום.
+ * planner.js — תכנון אימונים קדימה: נפח אירובי שבועי + תוכנית יומית.
  *
  * נתונים ב-localStorage:
  *   workout_plan_v1 — { aerobic: { running: km, swimming: km, cycling: km } }
- *   aero_plan_v1 — [{ day: 0..6, type: 'easy'|'tempo'|'intervals'|'long' }]
+ *   aero_plan_v1 — [{ day: 0..6, sport: 'running'|'swimming'|'cycling', type: 'easy'|... }]
  * ========================================================================= */
 const PLAN_KEY = 'workout_plan_v1';
 const AERO_SPORTS = [
   { key: 'running',  label: 'ריצה',    typeKeys: ['running', 'treadmill_running', 'trail_running'], icon: 'run' },
-  { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'swim' },
+  { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'drop' },
   { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], icon: 'bike' },
 ];
 
 const AERO_PLAN_KEY = 'aero_plan_v1';
-const AERO_RUN_TYPES = [
+const AERO_WORKOUT_TYPES = [
   { key: 'easy',      label: 'קלה' },
+  { key: 'technique', label: 'טכניקה' },
   { key: 'tempo',     label: 'טמפו' },
   { key: 'intervals', label: 'אינטרוולים' },
-  { key: 'long',      label: 'ריצה ארוכה' },
+  { key: 'volume',    label: 'נפח' },
   { key: 'rest',      label: 'מנוחה' },
 ];
+// backward compat alias
+const AERO_RUN_TYPES = AERO_WORKOUT_TYPES;
 
 function loadPlan() {
   try { return JSON.parse(localStorage.getItem(PLAN_KEY)) || { aerobic: {} }; }
@@ -29,7 +32,11 @@ function loadPlan() {
 function savePlan(p) { try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch {} }
 
 function loadAeroPlan() {
-  try { return JSON.parse(localStorage.getItem(AERO_PLAN_KEY)) || []; } catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(AERO_PLAN_KEY)) || [];
+    // migrate old format: { day, type } → { day, sport: 'running', type }
+    return raw.map(s => s.sport ? s : { ...s, sport: 'running' });
+  } catch { return []; }
 }
 function saveAeroPlan(p) { try { localStorage.setItem(AERO_PLAN_KEY, JSON.stringify(p)); } catch {} }
 
@@ -65,7 +72,7 @@ function renderPlanner() {
   if (!hasAero && !hasAeroPlan) {
     el.innerHTML = `<article class="card">
       <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2></div>
-      <p class="tr-empty">תכנן את השבוע: הגדר נפח אירובי לפי ענף ותוכנית ריצות שבועית.</p>
+      <p class="tr-empty">תכנן את השבוע: הגדר נפח אירובי לפי ענף ותוכנית שבועית.</p>
       <button class="btn-primary tr-wide" id="plan-setup">הגדרת תוכנית</button>
     </article>`;
     return;
@@ -94,11 +101,11 @@ function renderPlanner() {
     body += '</div>';
   }
 
-  // תוכנית ריצות שבועית — סוג ריצה לכל יום
+  // תוכנית שבועית — ענף + סוג אימון לכל יום
   if (hasAeroPlan) {
     const today = new Date(todayISO());
     const ws = new Date(weekStartISO(today));
-    const garminRuns = weekRunDates();
+    const garminDates = weekActivityDates();
     body += '<div class="plan-aero-week">';
     const daySlots = [];
     for (let i = 0; i < 7; i++) {
@@ -108,13 +115,14 @@ function renderPlanner() {
       const isFuture = d > today;
       const isToday = iso === todayISO();
       const planned = aeroPlan.find(s => s.day === i);
-      const typeInfo = planned && AERO_RUN_TYPES.find(t => t.key === planned.type);
-      const done = garminRuns.has(iso);
+      const sportInfo = planned && AERO_SPORTS.find(s => s.key === planned.sport);
+      const typeInfo = planned && AERO_WORKOUT_TYPES.find(t => t.key === planned.type);
+      const done = garminDates.has(iso);
       const isRest = !planned || planned.type === 'rest';
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
       daySlots.push(`<div class="plan-day ${cls}">
         <small>${DAY_NAMES[i][0]}</small>
-        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${typeInfo?.label || ''}</span>`}
+        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${sportInfo?.label || ''}<br><small>${typeInfo?.label || ''}</small></span>`}
         ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
       </div>`);
     }
@@ -128,13 +136,17 @@ function renderPlanner() {
   </article>`;
 }
 
-function weekRunDates() {
+function weekActivityDates() {
   const ws = weekStartISO(new Date(todayISO()));
   const s = new Set();
   for (const r of (state.data || []).filter(r => r.date >= ws))
-    for (const w of (r.workouts || [])) if (w.type_key === 'running') s.add(r.date);
+    for (const w of (r.workouts || [])) {
+      if (AERO_SPORTS.some(sp => sp.typeKeys.includes(w.type_key))) s.add(r.date);
+    }
   return s;
 }
+// backward compat
+function weekRunDates() { return weekActivityDates(); }
 
 /* =========================================================================
  * מודאל הגדרת תוכנית
@@ -157,11 +169,17 @@ function openPlanSetup() {
     const planned = aeroPlan.find(s => s.day === i);
     weekFields += `<div class="plan-field plan-day-field">
       <label>${DAY_NAMES[i]}</label>
-      <select name="aday_${i}">
-        <option value="rest">מנוחה</option>
-        ${AERO_RUN_TYPES.filter(t => t.key !== 'rest').map(t =>
-          `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
-      </select>
+      <div class="plan-day-selects">
+        <select name="asport_${i}">
+          <option value="rest">מנוחה</option>
+          ${AERO_SPORTS.map(s =>
+            `<option value="${s.key}" ${planned?.sport === s.key ? 'selected' : ''}>${s.label}</option>`).join('')}
+        </select>
+        <select name="atype_${i}">
+          ${AERO_WORKOUT_TYPES.filter(t => t.key !== 'rest').map(t =>
+            `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
+        </select>
+      </div>
     </div>`;
   }
 
@@ -175,7 +193,7 @@ function openPlanSetup() {
       <form id="plan-form">
         <h3>נפח שבועי</h3>
         ${aeroFields}
-        <h3>סוג ריצה לפי יום</h3>
+        <h3>אימון לפי יום</h3>
         ${weekFields}
         <div class="modal-actions">
           <button type="button" class="btn-ghost" id="plan-cancel">ביטול</button>
@@ -200,8 +218,9 @@ function openPlanSetup() {
     }
     const newAeroPlan = [];
     for (let i = 0; i < 7; i++) {
-      const type = f[`aday_${i}`]?.value;
-      if (type && type !== 'rest') newAeroPlan.push({ day: i, type });
+      const sport = f[`asport_${i}`]?.value;
+      const type = f[`atype_${i}`]?.value;
+      if (sport && sport !== 'rest') newAeroPlan.push({ day: i, sport, type: type || 'easy' });
     }
     savePlan(newPlan);
     saveAeroPlan(newAeroPlan);
