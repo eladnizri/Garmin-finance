@@ -169,7 +169,7 @@ function weekStartISO(d) {
 /* =========================================================================
  * עזרי נתונים
  * ========================================================================= */
-function visibleRows() { return state.range === 'all' ? state.data : state.data.slice(-state.range); }
+function visibleRows() { return state.data; }
 
 /* מדדים מצטברים (צעדים, קלוריות...) חלקיים עד סוף היום — אין לשפוט אותם באמצע היום */
 const CUMULATIVE = new Set(['steps', 'calories', 'floors', 'intensity_min']);
@@ -1134,12 +1134,8 @@ function renderRuns() {
     const total = totalRunCount();
     el.innerHTML = `<article class="card">
       <div class="card-head"><h2>ריצות</h2></div>
-      <p class="tr-empty">${total
-        ? `אין ריצות בטווח הזמן שנבחר. יש <b>${total}</b> ריצות מוקדמות יותר —
-           החלף ל"הכל" בסרגל העליון כדי לראות אותן.`
-        : `ריצות שתתעד בגרמין יופיעו כאן — מסווגות לפי אזור מאמץ, עם השוואה בין ריצות וגרף השתפרות.
-           אפשר גם לייבא ריצות עבר מייצוא הבריאות של האייפון, דרך כרטיס הפרופיל.`}</p>
-      ${total ? '<button class="btn-primary tr-wide" id="runs-see-all">הצג את כל התקופה</button>' : ''}
+      <p class="tr-empty">ריצות שתתעד בגרמין יופיעו כאן — מסווגות לפי אזור מאמץ, עם השוואה בין ריצות וגרף השתפרות.
+           אפשר גם לייבא ריצות עבר מייצוא הבריאות של האייפון, דרך כרטיס הפרופיל.</p>
     </article>`;
     return;
   }
@@ -1238,7 +1234,7 @@ function renderRuns() {
 
     ${recordsSection()}
     ${cadenceSection()}
-    ${monthlyVolumeSection(real)}
+    ${weeklyVolumeSection(real)}
 
     <div class="tr-sec"><h3>היסטוריית ריצות</h3>
       <p class="run-hint">לחיצה על ריצה פותחת את הפירוט המלא שלה.</p>
@@ -1661,21 +1657,30 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && rsState !=
   panel.addEventListener('touchcancel', release, { passive: true });
 })();
 
-/* --- נפח חודשי --- */
-const monthKey = iso => iso.slice(0, 7);
-const monthLabel = ym => `${+ym.slice(5)}/${ym.slice(2, 4)}`;
+/* --- נפח שבועי --- */
+function weekMonday(iso) {
+  const d = new Date(`${iso}T12:00:00`);
+  const day = d.getDay() || 7;
+  d.setDate(d.getDate() - day + 1);
+  return d.toISOString().slice(0, 10);
+}
+function weekLabel(mon) { return `${+mon.slice(8)}/${+mon.slice(5, 7)}`; }
 
-/* ק״מ לחודש, כולל חודשים ריקים באמצע — בלעדיהם תקופת הפסקה נראית כרצף */
-function monthlyKm(real) {
+function weeklyKm(real) {
   if (!real.length) return [];
   const sum = new Map();
-  for (const r of real) sum.set(monthKey(r.date), (sum.get(monthKey(r.date)) || 0) + r.km);
+  for (const r of real) {
+    const w = weekMonday(r.date);
+    sum.set(w, (sum.get(w) || 0) + (r.km || 0));
+  }
+  const keys = [...sum.keys()].sort();
   const out = [];
-  const [y0, m0] = monthKey(real[0].date).split('-').map(Number);
-  const [y1, m1] = monthKey(real[real.length - 1].date).split('-').map(Number);
-  for (let y = y0, m = m0; y < y1 || (y === y1 && m <= m1); m === 12 ? (m = 1, y++) : m++) {
-    const ym = `${y}-${String(m).padStart(2, '0')}`;
-    out.push({ ym, km: sum.get(ym) || 0 });
+  let cur = new Date(`${keys[0]}T12:00:00`);
+  const last = new Date(`${keys[keys.length - 1]}T12:00:00`);
+  while (cur <= last) {
+    const k = cur.toISOString().slice(0, 10);
+    out.push({ w: k, km: sum.get(k) || 0 });
+    cur.setDate(cur.getDate() + 7);
   }
   return out;
 }
@@ -1794,10 +1799,10 @@ function renderCadence() {
   });
 }
 
-function monthlyVolumeSection(real) {
-  if (monthlyKm(real).length < 2) return '';
+function weeklyVolumeSection(real) {
+  if (weeklyKm(real).length < 2) return '';
   return `<div class="tr-sec">
-    <div class="tr-sec-head"><h3>נפח חודשי</h3></div>
+    <div class="tr-sec-head"><h3>ק״מ שבועי</h3></div>
     <div class="chart-wrap chart-xs" dir="ltr"><canvas id="chart-run-volume"></canvas></div>
     <p class="tr-note" id="run-vol-note"></p>
   </div>`;
@@ -1805,23 +1810,23 @@ function monthlyVolumeSection(real) {
 
 function renderRunVolume(real) {
   if (!$('chart-run-volume')) return;
-  const months = monthlyKm(real).slice(-12);
+  const weeks = weeklyKm(real).slice(-16);
   const note = $('run-vol-note');
   if (note) {
-    const active = months.filter(m => m.km > 0);
-    const mean = active.length ? active.reduce((a, m) => a + m.km, 0) / active.length : 0;
-    const best = months.reduce((a, m) => m.km > a.km ? m : a, months[0]);
-    note.innerHTML = `ממוצע <b>${fmt(mean, 1)}</b> ק״מ בחודש פעיל · השיא
-      ${fmt(best.km, 1)} ק״מ ב-${monthLabel(best.ym)}${months.some(m => !m.km)
-        ? ` · ${months.filter(m => !m.km).length} חודשים ללא ריצה` : ''}.`;
+    const active = weeks.filter(w => w.km > 0);
+    const mean = active.length ? active.reduce((a, w) => a + w.km, 0) / active.length : 0;
+    const best = weeks.reduce((a, w) => w.km > a.km ? w : a, weeks[0]);
+    note.innerHTML = `ממוצע <b>${fmt(mean, 1)}</b> ק״מ בשבוע פעיל · השיא
+      ${fmt(best.km, 1)} ק״מ בשבוע ${weekLabel(best.w)}${active.length < weeks.length
+        ? ` · ${weeks.length - active.length} שבועות ללא ריצה` : ''}.`;
   }
   make('chart-run-volume', {
     type: 'bar',
     data: {
-      labels: months.map(m => monthLabel(m.ym)),
+      labels: weeks.map(w => weekLabel(w.w)),
       datasets: [{
-        data: months.map(m => +m.km.toFixed(1)),
-        backgroundColor: months.map(m => m.km ? C.blue : 'rgba(0,0,0,.06)'),
+        data: weeks.map(w => +w.km.toFixed(1)),
+        backgroundColor: weeks.map(w => w.km ? C.blue : 'rgba(0,0,0,.06)'),
         borderRadius: 4, borderSkipped: false,
       }],
     },
@@ -1936,11 +1941,6 @@ function renderRunChart(runs) {
 }
 
 $('runs-card').addEventListener('click', e => {
-  if (e.target.closest('#runs-see-all')) {
-    state.range = 'all';
-    chartAnim = false; renderAll(); chartAnim = true;
-    return;
-  }
   if (e.target.closest('#runs-more')) {
     runHistOpen = true;
     chartAnim = false; renderRuns(); chartAnim = true;
@@ -2234,8 +2234,6 @@ function loadTraining() {
   active = jsonGet(ACTIVE_KEY, null);
   if (!Array.isArray(programs)) programs = [];
   if (!Array.isArray(sessions)) sessions = [];
-  // התקנה ראשונה: במקום מסך ריק, שתי התוכניות מוכנות לשימוש
-  if (!programs.length && !sessions.length) { programs = starterPrograms(); savePrograms(); }
   for (const p of programs) for (const ex of (p.exercises || [])) fillMuscles(ex);
   for (const s of sessions) for (const e of (s.entries || [])) fillMuscles(e);
   if (active) for (const e of (active.entries || [])) fillMuscles(e);
@@ -2705,14 +2703,6 @@ function renderTrain() {
     ${sug.length ? `<div class="tr-sugs"><h3>${icon('bolt', 15)} מוכן להעלות משקל</h3>
       <div class="tr-chips">${sug.map(s => `<span class="tr-chip">${s.name}
         <b>${fmt(s.from, s.from % 1 ? 1 : 0)}→${fmt(s.to, s.to % 1 ? 1 : 0)}</b></span>`).join('')}</div></div>` : ''}
-    ${names.length ? `<div class="tr-sec">
-      <div class="tr-sec-head"><h3>גרף השתפרות</h3>
-        <select id="tr-ex" class="tr-sel">${names.map(n =>
-          `<option value="${n}" ${n === state.trainEx ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-      <div class="legend" id="legend-train"></div>
-      <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-train"></canvas></div>
-      <p class="tr-note" id="tr-exnote"></p>
-    </div>` : ''}
     ${sessions.length ? `<div class="tr-sec"><h3>היסטוריה</h3>
       <div class="tr-hist">${sessions.slice(-8).reverse().map(s => {
         const st = sessionStats(s);
@@ -2723,51 +2713,8 @@ function renderTrain() {
           <span class="tr-go">›</span></button>`;
       }).join('')}</div></div>` : ''}
   </article>`;
-  renderTrainChart();
 }
 
-function renderTrainChart() {
-  const name = state.trainEx;
-  const h = name ? exerciseHistory(name) : [];
-  const note = $('tr-exnote');
-  if (!$('chart-train')) return;
-  const wrap = $('chart-train').closest('.chart-wrap');
-  const leg = $('legend-train');
-  if (h.length < 2) {
-    charts['chart-train']?.destroy(); delete charts['chart-train'];
-    // מקפלים את אזור הגרף — אחרת נשאר חלל ריק גדול בכרטיס
-    if (wrap) wrap.style.display = 'none';
-    if (leg) leg.style.display = 'none';
-    if (note) note.textContent = h.length === 1
-      ? 'אימון אחד תועד בתרגיל הזה — הגרף יופיע אחרי השני.'
-      : 'עוד לא תועדו אימונים בתרגיל הזה.';
-    return;
-  }
-  if (wrap) wrap.style.display = '';
-  if (leg) leg.style.display = '';
-  const first = h[0].best, lastB = h[h.length - 1].best;
-  const pct = first > 0 ? (lastB - first) / first * 100 : 0;
-  if (note) {
-    note.innerHTML = Math.abs(pct) < 1
-      ? `1RM משוער יציב סביב ${fmt(lastB, 1)} ק״ג.`
-      : `1RM משוער ${pct > 0 ? 'עלה' : 'ירד'} ב-<b>${fmt(Math.abs(pct), 1)}%</b>
-         מאז ${shortDate(h[0].date)} — מ-${fmt(first, 1)} ל-${fmt(lastB, 1)} ק״ג.`;
-  }
-  legend('legend-train', [[C.violet, '1RM משוער']]);
-  make('chart-train', {
-    type: 'line',
-    data: {
-      labels: h.map(x => shortDate(x.date)),
-      datasets: [{
-        label: '1RM משוער',
-        data: h.map(x => ({ x: shortDate(x.date), y: +x.best.toFixed(1), iso: x.date })),
-        borderColor: C.violet, borderWidth: 2.4, pointRadius: 3, pointBackgroundColor: C.violet,
-        tension: .3, fill: true, backgroundColor: gradFill(C.violet),
-      }],
-    },
-    options: opts({}, i => `${fmt(i.raw.y, 1)} ק״ג`),
-  });
-}
 
 /* ---------- עורך התוכניות ---------- */
 let pgDraft = null;   // התוכנית שבעריכה (עותק — נשמר רק ב"שמירה")
@@ -2883,10 +2830,8 @@ $('train-card').addEventListener('click', e => {
   if (row) openPastSession(row.dataset.sid);
 });
 $('train-card').addEventListener('change', e => {
-  if (e.target.id === 'tr-ex') { state.trainEx = e.target.value; renderTrainChart(); }
 });
 
-$('home-edit-btn').addEventListener('click', openHomeCardEditor);
 
 $('planner-card').addEventListener('click', e => {
   if (e.target.closest('#plan-setup') || e.target.closest('#plan-edit')) {
@@ -3378,56 +3323,47 @@ function openPhaseEditor() {
 function renderRace() {
   const el = $('race-card');
   if (!race) {
-    el.innerHTML = `<article class="card">
-      <div class="card-head"><h2>${icon('trophy', 18)} מירוץ יעד</h2></div>
-      <p class="tr-empty">הגדר מירוץ שנרשמת אליו — התאריך, המרחק והזמן שאתה שואף אליו —
-        ותראה כאן איך הריצות שלך עומדות מולו.</p>
-      ${raceForm()}
-    </article>`;
-    bindRaceForm();
+    el.innerHTML = `<button class="btn-ghost tr-wide" id="rc-open-form">${icon('trophy', 16)} הגדר מירוץ יעד</button>`;
+    $('rc-open-form').onclick = () => openRaceModal();
     return;
   }
   const daysLeft = Math.ceil((new Date(`${race.date}T00:00:00`) - new Date(`${todayISO()}T00:00:00`)) / 864e5);
   if (daysLeft < 0) {
-    el.innerHTML = `<article class="card">
-      <div class="card-head"><h2>${icon('trophy', 18)} מירוץ יעד</h2></div>
-      <p class="tr-note">"${race.name || 'המירוץ'}" (${shortDateY(race.date)}) כבר עבר. הגדר את המירוץ הבא:</p>
-      ${raceForm()}
-    </article>`;
-    bindRaceForm();
+    el.innerHTML = `<button class="btn-ghost tr-wide" id="rc-open-form">${icon('trophy', 16)} "${race.name || 'המירוץ'}" עבר — הגדר מירוץ חדש</button>`;
+    $('rc-open-form').onclick = () => openRaceModal();
     return;
   }
-
   const pace = raceTargetPace();
-  const runs = allRuns().filter(r => r.real);
-  const hardRuns = runs.filter(r => r.kind === 'tempo' || r.kind === 'intervals').slice(-5);
-  const sample = hardRuns.length ? hardRuns : runs.slice(-5);
-  const avgP = avgPaceOf(sample);
-  let compareTxt = '';
-  if (pace && avgP) {
-    const d = avgP - pace;
-    compareTxt = `<p class="tr-note">${hardRuns.length ? 'לפי 5 הריצות הקשות האחרונות' : 'לפי 5 הריצות האחרונות'}:
-      קצב ממוצע <b>${paceTxt(avgP)}</b> מול יעד <b>${paceTxt(pace)}</b> —
-      ${Math.abs(d) < 3 ? 'כמעט בדיוק על היעד' : `${paceTxt(Math.abs(d))} ${d < 0 ? 'מהיר מהיעד' : 'איטי מהיעד'}`}.</p>`;
-  }
+  el.innerHTML = `<button class="race-compact" id="rc-open-form">
+    <span class="race-c-ic">${icon('trophy', 18)}</span>
+    <span class="race-c-body"><b>${race.name || 'מירוץ יעד'}</b>
+      <small>${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ · ${daysLeft} ימים · קצב ${paceTxt(pace)}</small></span>
+    <span class="race-c-arrow">›</span>
+  </button>`;
+  $('rc-open-form').onclick = () => openRaceModal(race);
+}
 
-  el.innerHTML = `<article class="card">
-    <div class="card-head"><h2>${icon('trophy', 18)} ${race.name || 'מירוץ יעד'}</h2>
-      <button class="world-link" id="rc-toggle">עריכה ‹</button></div>
-    <div class="run-last">
-      <div class="rl-top"><span class="run-badge" style="--rc:var(--primary-500)">${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ</span>
-        <span class="rl-date">${longDateY(race.date)}</span></div>
-      <div class="rl-bits">יעד ${raceTimeTxt(race.timeSec)} · קצב ${paceTxt(pace)} דק׳/ק״מ</div>
-    </div>
-    <p class="tr-note"><b>${daysLeft}</b> ימים למירוץ</p>
-    ${typeof racePhaseNote === 'function' ? racePhaseNote() : ''}
-    ${compareTxt}
-    <div id="rc-form-wrap" class="hidden">${raceForm(race)}</div>
-  </article>`;
-  $('rc-toggle').onclick = () => $('rc-form-wrap').classList.toggle('hidden');
+function openRaceModal(existing) {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-head"><h2>${icon('trophy', 18)} מירוץ יעד</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      ${raceForm(existing)}
+      ${existing ? `<button class="btn-ghost tr-wide" id="rc-modal-del" style="color:var(--red);margin-top:12px">מחק מירוץ</button>` : ''}
+    </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
   bindRaceForm();
+  const origSave = $('rc-save')?.onclick;
+  if ($('rc-save')) $('rc-save').onclick = e => { origSave?.(e); close(); renderRace(); };
+  const del = $('rc-modal-del');
+  if (del) del.onclick = () => { race = null; saveRace(); close(); renderRace(); toast('המירוץ נמחק'); };
   const phBtn = $('rc-phases-btn');
-  if (phBtn) phBtn.onclick = openPhaseEditor;
+  if (phBtn) phBtn.onclick = () => { close(); openPhaseEditor(); };
 }
 
 /* =========================================================================
@@ -3486,7 +3422,6 @@ function closeProfile() { $('profile-modal').classList.add('hidden'); }
 
 $('profile-btn').addEventListener('click', openProfile);
 $('profile-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) closeProfile(); });
-$('home-body').addEventListener('click', e => { if (e.target.closest('#open-profile')) openProfile(); });
 $('profile-form').addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target, p = {};
@@ -3508,7 +3443,6 @@ function openWeight() {
   $('weight-modal').classList.remove('hidden');
 }
 function closeWeight() { $('weight-modal').classList.add('hidden'); }
-$('weight-card').addEventListener('click', e => { if (e.target.closest('#open-weight')) openWeight(); });
 $('weight-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) closeWeight(); });
 $('weight-form').addEventListener('submit', e => {
   e.preventDefault();
@@ -3517,7 +3451,7 @@ $('weight-form').addEventListener('submit', e => {
   addWeight(date, kg);
   haptic(12);
   closeWeight();
-  renderWeight(); renderBody(); renderWeekSummary();
+  renderWeekSummary();
 });
 
 /* --- סימון ידני של אימון כוח --- */
@@ -3624,263 +3558,7 @@ $('import-btn').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
 
 
-/* =========================================================================
- * מגמת צעדים — גרף קו 30 יום במסך הבית
- * ========================================================================= */
-function renderStepsHome() {
-  const el = $('steps-home');
-  if (!el) return;
-  const rows = state.data.slice(-30);
-  if (rows.length < 2) { el.innerHTML = ''; return; }
-  const labels = rows.map(r => shortDate(r.date));
-  const goal = goalSteps();
-  el.innerHTML = `<article class="card">
-    <div class="card-head"><h2 class="ct" data-info="steps">צעדים<span class="info-i">ⓘ</span></h2>
-      <span class="unit">30 ימים · יעד ${fmt(goal)}</span></div>
-    <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-steps-home"></canvas></div>
-  </article>`;
-  make('chart-steps-home', {
-    type: 'line',
-    data: { labels, datasets: [
-      line(rows, 'steps', C.violet), constLine(rows, goal, 'יעד', C.muted), maLine(rows, 'steps'),
-    ]},
-    options: opts({ beginAtZero: true }, i => `צעדים: ${fmt(i.raw.y)}`),
-  });
-}
 
-/* =========================================================================
- * עריכת כרטיסים בדף הבית — סינון וסדר
- * ========================================================================= */
-const HOME_CARDS_KEY = 'home_cards_v1';
-const HOME_CARD_DEFS = [
-  { id: 'dashboard', label: 'טבעות', fixed: true },
-  { id: 'today-card', label: 'מה לעשות היום' },
-  { id: 'strain-warning', label: 'אזהרת עומס' },
-  { id: 'anomalies', label: 'חריגים' },
-  { id: 'week-summary', label: 'סיכום שבועי' },
-  { id: 'insights-card', label: 'תובנות' },
-  { id: 'steps-home', label: 'צעדים' },
-  { id: 'weight-card', label: 'משקל' },
-];
-
-function loadHomeCards() {
-  const saved = jsonGet(HOME_CARDS_KEY, null);
-  if (!saved) return HOME_CARD_DEFS.map(c => ({ id: c.id, visible: true }));
-  const known = new Set(HOME_CARD_DEFS.map(c => c.id));
-  const result = saved.filter(s => known.has(s.id));
-  for (const def of HOME_CARD_DEFS) {
-    if (!result.find(r => r.id === def.id)) result.push({ id: def.id, visible: true });
-  }
-  return result;
-}
-
-function applyHomeCardOrder() {
-  const cards = loadHomeCards();
-  const parent = $('dashboard')?.parentElement;
-  if (!parent) return;
-  for (const c of cards) {
-    const el = $(c.id);
-    if (!el) continue;
-    el.style.display = c.visible ? '' : 'none';
-    parent.appendChild(el);
-  }
-  const body = $('home-body');
-  if (body) parent.appendChild(body);
-}
-
-function openHomeCardEditor() {
-  const cards = loadHomeCards();
-  const defs = Object.fromEntries(HOME_CARD_DEFS.map(d => [d.id, d]));
-  let html = '';
-  cards.forEach((c, i) => {
-    const def = defs[c.id] || { label: c.id };
-    const isFixed = def.fixed;
-    html += `<div class="card-row" data-id="${c.id}">
-      <label><input type="checkbox" ${c.visible ? 'checked' : ''} ${isFixed ? 'disabled' : ''} data-card="${c.id}"> ${def.label}</label>
-      ${!isFixed ? `<div class="card-arrows">
-        <button type="button" data-dir="up" data-idx="${i}">▲</button>
-        <button type="button" data-dir="down" data-idx="${i}">▼</button>
-      </div>` : ''}
-    </div>`;
-  });
-
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = `<div class="modal-backdrop"></div>
-    <div class="modal-sheet">
-      <div class="modal-head"><h2>עריכת כרטיסים</h2>
-        <button class="close-btn" aria-label="סגירה">✕</button></div>
-      <div id="hce-list">${html}</div>
-      <div class="modal-actions">
-        <button type="button" class="btn-ghost" id="hce-cancel">ביטול</button>
-        <button type="button" class="btn-primary" id="hce-save">שמור</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-
-  const close = () => modal.remove();
-  modal.querySelector('.close-btn').onclick = close;
-  modal.querySelector('.modal-backdrop').onclick = close;
-  $('hce-cancel').onclick = close;
-
-  modal.addEventListener('click', e => {
-    const btn = e.target.closest('[data-dir]');
-    if (!btn) return;
-    const list = modal.querySelector('#hce-list');
-    const rows = [...list.querySelectorAll('.card-row')];
-    const idx = Number(btn.dataset.idx);
-    const row = rows[idx];
-    if (!row) return;
-    if (btn.dataset.dir === 'up' && idx > 0) {
-      list.insertBefore(row, rows[idx - 1]);
-    } else if (btn.dataset.dir === 'down' && idx < rows.length - 1) {
-      rows[idx + 1].after(row);
-    }
-    [...list.querySelectorAll('.card-row')].forEach((r, i) => {
-      r.querySelectorAll('[data-idx]').forEach(b => b.dataset.idx = i);
-    });
-  });
-
-  $('hce-save').onclick = () => {
-    const result = [...modal.querySelectorAll('.card-row')].map(row => ({
-      id: row.dataset.id,
-      visible: row.querySelector('input[type="checkbox"]').checked,
-    }));
-    jsonSet(HOME_CARDS_KEY, result);
-    close();
-    applyHomeCardOrder();
-    toast('סדר הכרטיסים נשמר');
-  };
-}
-
-/* =========================================================================
- * מגמת צעדים — גרף קו 30 יום במסך הבית
- * ========================================================================= */
-function renderStepsHome() {
-  const el = $('steps-home');
-  if (!el) return;
-  const rows = state.data.slice(-30);
-  if (rows.length < 2) { el.innerHTML = ''; return; }
-  const labels = rows.map(r => shortDate(r.date));
-  const goal = goalSteps();
-  el.innerHTML = `<article class="card">
-    <div class="card-head"><h2 class="ct" data-info="steps">צעדים<span class="info-i">ⓘ</span></h2>
-      <span class="unit">30 ימים · יעד ${fmt(goal)}</span></div>
-    <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-steps-home"></canvas></div>
-  </article>`;
-  make('chart-steps-home', {
-    type: 'line',
-    data: { labels, datasets: [
-      line(rows, 'steps', C.violet), constLine(rows, goal, 'יעד', C.muted), maLine(rows, 'steps'),
-    ]},
-    options: opts({ beginAtZero: true }, i => `צעדים: ${fmt(i.raw.y)}`),
-  });
-}
-
-/* =========================================================================
- * עריכת כרטיסים בדף הבית — סינון וסדר
- * ========================================================================= */
-const HOME_CARDS_KEY = 'home_cards_v1';
-const HOME_CARD_DEFS = [
-  { id: 'dashboard', label: 'טבעות', fixed: true },
-  { id: 'today-card', label: 'מה לעשות היום' },
-  { id: 'strain-warning', label: 'אזהרת עומס' },
-  { id: 'anomalies', label: 'חריגים' },
-  { id: 'week-summary', label: 'סיכום שבועי' },
-  { id: 'insights-card', label: 'תובנות' },
-  { id: 'steps-home', label: 'צעדים' },
-  { id: 'weight-card', label: 'משקל' },
-];
-
-function loadHomeCards() {
-  const saved = jsonGet(HOME_CARDS_KEY, null);
-  if (!saved) return HOME_CARD_DEFS.map(c => ({ id: c.id, visible: true }));
-  const known = new Set(HOME_CARD_DEFS.map(c => c.id));
-  const result = saved.filter(s => known.has(s.id));
-  for (const def of HOME_CARD_DEFS) {
-    if (!result.find(r => r.id === def.id)) result.push({ id: def.id, visible: true });
-  }
-  return result;
-}
-
-function applyHomeCardOrder() {
-  const cards = loadHomeCards();
-  const parent = $('dashboard')?.parentElement;
-  if (!parent) return;
-  for (const c of cards) {
-    const el = $(c.id);
-    if (!el) continue;
-    el.style.display = c.visible ? '' : 'none';
-    parent.appendChild(el);
-  }
-  const body = $('home-body');
-  if (body) parent.appendChild(body);
-}
-
-function openHomeCardEditor() {
-  const cards = loadHomeCards();
-  const defs = Object.fromEntries(HOME_CARD_DEFS.map(d => [d.id, d]));
-  let html = '';
-  cards.forEach((c, i) => {
-    const def = defs[c.id] || { label: c.id };
-    const isFixed = def.fixed;
-    html += `<div class="card-row" data-id="${c.id}">
-      <label><input type="checkbox" ${c.visible ? 'checked' : ''} ${isFixed ? 'disabled' : ''} data-card="${c.id}"> ${def.label}</label>
-      ${!isFixed ? `<div class="card-arrows">
-        <button type="button" data-dir="up" data-idx="${i}">▲</button>
-        <button type="button" data-dir="down" data-idx="${i}">▼</button>
-      </div>` : ''}
-    </div>`;
-  });
-
-  const modal = document.createElement('div');
-  modal.className = 'modal';
-  modal.innerHTML = `<div class="modal-backdrop"></div>
-    <div class="modal-sheet">
-      <div class="modal-head"><h2>עריכת כרטיסים</h2>
-        <button class="close-btn" aria-label="סגירה">✕</button></div>
-      <div id="hce-list">${html}</div>
-      <div class="modal-actions">
-        <button type="button" class="btn-ghost" id="hce-cancel">ביטול</button>
-        <button type="button" class="btn-primary" id="hce-save">שמור</button>
-      </div>
-    </div>`;
-  document.body.appendChild(modal);
-
-  const close = () => modal.remove();
-  modal.querySelector('.close-btn').onclick = close;
-  modal.querySelector('.modal-backdrop').onclick = close;
-  $('hce-cancel').onclick = close;
-
-  modal.addEventListener('click', e => {
-    const btn = e.target.closest('[data-dir]');
-    if (!btn) return;
-    const list = modal.querySelector('#hce-list');
-    const rows = [...list.querySelectorAll('.card-row')];
-    const idx = Number(btn.dataset.idx);
-    const row = rows[idx];
-    if (!row) return;
-    if (btn.dataset.dir === 'up' && idx > 0) {
-      list.insertBefore(row, rows[idx - 1]);
-    } else if (btn.dataset.dir === 'down' && idx < rows.length - 1) {
-      rows[idx + 1].after(row);
-    }
-    [...list.querySelectorAll('.card-row')].forEach((r, i) => {
-      r.querySelectorAll('[data-idx]').forEach(b => b.dataset.idx = i);
-    });
-  });
-
-  $('hce-save').onclick = () => {
-    const result = [...modal.querySelectorAll('.card-row')].map(row => ({
-      id: row.dataset.id,
-      visible: row.querySelector('input[type="checkbox"]').checked,
-    }));
-    jsonSet(HOME_CARDS_KEY, result);
-    close();
-    applyHomeCardOrder();
-    toast('סדר הכרטיסים נשמר');
-  };
-}
 
 /* =========================================================================
  * רינדור כולל
@@ -3898,10 +3576,6 @@ function renderAll() {
   renderAnomalies();
   renderWeekSummary();
   if (typeof renderInsights === 'function') renderInsights();
-  renderStepsHome();
-  renderWeight();
-  renderBody();
-  applyHomeCardOrder();
 
   // כוח
   renderStrength();
@@ -4061,7 +3735,13 @@ async function syncNow() {
     if (e.message === 'SETUP') { openSetup(); }
     else if (e.message === 'INVALID_KEY') { toast('מפתח ה-API לא תקין — בדוק ונסה שוב'); openSetup(); }
     else if (e.message === 'TOKEN_EXPIRED') { clearGarminToken(); toast('הטוקן פג — מסנכרן מחדש…'); syncNow(); }
-    else toast('הסנכרון נכשל — בדוק חיבור לרשת');
+    else {
+      console.error('Garmin sync error:', e);
+      const msg = e.message || '';
+      if (msg.startsWith('TOKEN_') || msg.startsWith('GARMIN_') || msg === 'EMPTY_TOKEN')
+        toast(`שגיאת סנכרון: ${msg}`);
+      else toast('הסנכרון נכשל — בדוק חיבור לרשת');
+    }
   } finally {
     btn.classList.remove('spinning');
     syncing = false;
