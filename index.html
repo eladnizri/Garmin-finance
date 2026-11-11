@@ -135,9 +135,8 @@
 
       <!-- ========== כוח ========== -->
       <section class="page" data-title="כוח" data-sub="אימוני כוח">
-        <div id="strength-card"></div>
-        <div id="train-card"></div>
         <div id="strength-week-card"></div>
+        <div id="train-card"></div>
         <div id="lab-card"></div>
       </section>
 
@@ -151,6 +150,12 @@
 
       <!-- ========== שינה ולב ========== -->
       <section class="page" data-title="שינה ולב" data-sub="לב, HRV ושינה">
+        <article class="card" style="padding:14px 16px 12px;">
+          <div class="card-head">
+            <h2>שינה ולב</h2>
+            <button class="btn-ghost" id="sleep-customize" style="font-size:.8rem;padding:5px 10px;">התאמה אישית ⚙</button>
+          </div>
+        </article>
         <div id="sleep-hero" class="stat-hero"></div>
         <div id="sleep-rec"></div>
         <div id="sleep-consistency"></div>
@@ -254,26 +259,7 @@
             <label class="field">יעד משקל (ק״ג)<input type="number" name="weightGoal" min="30" max="250" step="0.1" inputmode="decimal" placeholder="72"></label>
           </div>
           <div class="field-row">
-            <label class="field">יעד ריצה שבועי (ק״מ)<input type="number" name="runGoalKm" min="1" max="200" step="0.5" inputmode="decimal" placeholder="לא חובה"></label>
-            <label class="field">קצב יעד גיבוי (אם אין מירוץ מוגדר)<input type="text" name="runGoalPace" inputmode="numeric" placeholder="למשל 5:30"></label>
-          </div>
-          <div class="field-row">
             <label class="field">דופק מקסימלי אמיתי<input type="number" name="maxHrOverride" min="120" max="220" inputmode="numeric" placeholder="לא חובה — ברירת מחדל 220 פחות גיל"></label>
-          </div>
-          <div class="rules-sec">
-            <h3>סיווג ריצות</h3>
-            <p class="rr-note">מה נחשב טמפו משתנה מרץ לרץ. העוצמה נמדדת באחוזים
-              מ<b>רזרבת הדופק</b> — המרחק בין דופק המנוחה לדופק המקסימלי שלך.</p>
-            <div class="field-row">
-              <label class="field">טמפו מעוצמה של (%)<input type="number" name="runTempoPct" min="50" max="98" inputmode="numeric" placeholder="70"></label>
-              <label class="field">נפח ממרחק של (ק״מ)<input type="number" name="runVolumeKm" min="1" max="50" step="0.5" inputmode="decimal" placeholder="3"></label>
-            </div>
-            <div class="field-row">
-              <label class="field">אינטרוולים: פער דופק מקס׳ מהממוצע<input type="number" name="runIntervalSpread" min="5" max="90" inputmode="numeric" placeholder="ריק = תיוג ידני בלבד"></label>
-            </div>
-            <p class="rr-rule">קלה = כל מה שנשאר — מתחת לסף הטמפו וקצרה מסף הנפח.
-              תמיד אפשר לתייג ריצה ידנית כאינטרוולים בלחיצה עליה ברשימה.</p>
-            <p class="rr-preview" id="rr-preview"></p>
           </div>
 
           <div class="modal-actions">

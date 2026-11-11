@@ -288,7 +288,7 @@ function renderStrengthWeekCard() {
     body = `<p class="tr-empty">הגדר תוכנית כוח שבועית — לכל יום תוכנית מהמאגר שלך.</p>
       <button class="btn-primary tr-wide" id="str-week-setup">הגדרת תוכנית כוח</button>`;
   } else {
-    const garminDates = (typeof weekActivityDates === 'function') ? weekActivityDates() : new Set();
+    const auto = (typeof autoStrengthDates === 'function') ? autoStrengthDates() : new Set();
     body = '<div class="plan-aero-week"><div class="plan-week">';
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
@@ -297,14 +297,14 @@ function renderStrengthWeekCard() {
       const isFuture = d > new Date(todayISO());
       const planned = plan.find(s => s.day === i);
       const prog = planned && progs.find(p => p.id === planned.programId);
-      const done = garminDates.has(iso);
+      const done = (typeof strengthDone === 'function') ? strengthDone(iso, auto) : auto.has(iso);
       const isRest = !planned;
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
-      body += `<div class="plan-day ${cls}">
+      body += `<button class="plan-day ${cls}" data-iso="${iso}" ${isFuture || isRest ? 'disabled' : ''}>
         <small>${DAY_NAMES[i][0]}</small>
         ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${prog?.name?.slice(0,8) || '?'}</span>`}
         ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
-      </div>`;
+      </button>`;
     }
     body += '</div></div>';
   }
