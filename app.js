@@ -2172,6 +2172,7 @@ function renderWeight() {
  * ========================================================================= */
 function renderStrength() {
   const el = $('strength-card');
+  if (!el) return;
   const auto = autoStrengthDates();
   const goal = goalStrength();
   const today = new Date(todayISO());
