@@ -440,116 +440,29 @@ function missingMuscles() {
 
 function todayPlan() {
   if (!state.data || !state.data.length) return null;
-  const readiness = latest('readiness_score', 2) ?? heuristicReadiness();
-  const alerts = anomalies().filter(a => a.level === 'alert');
-  const watches = anomalies().filter(a => a.level === 'watch');
 
-  const auto = autoStrengthDates();
-  const cur = weekRows(0);
-  const strDone = strengthCountInWeek(cur, auto), strGoal = goalStrength();
-  const strLeft = Math.max(0, strGoal - strDone);
-  const missing = missingMuscles();
-  // כמה ימים נשארו בשבוע כולל היום
-  const dow = new Date(`${todayISO()}T12:00:00`).getDay();
-  const daysLeftInWeek = 7 - dow;
+  const strItem  = todayStrengthItem();
+  const aeroItems = todayAeroItems();
+  const hasStr  = !!strItem;
+  const hasAero = aeroItems.length > 0;
 
-  const weekKm = (typeof weekRunKm === 'function') ? weekRunKm(cur) : 0;
-  // יעד הנפח מותאם לשלב המירוץ — בטייפר הוא נמוך יותר בכוונה
-  const kmGoal = (typeof adjustedRunGoal === 'function') ? adjustedRunGoal()
-    : (typeof goalRunKm === 'function') ? goalRunKm() : null;
-  const phase = (typeof racePhase === 'function') ? racePhase() : null;
-  const sinceRun = daysSinceLastRun(), sinceQuality = daysSinceQualityRun();
-  const raceDays = (typeof race !== 'undefined' && race && race.date)
-    ? Math.ceil((new Date(`${race.date}T00:00:00`) - new Date(`${todayISO()}T00:00:00`)) / 864e5) : null;
-
-  const why = [];
-  const push = t => { if (t) why.push(t); };
-  const muscleTxt = missing.length
-    ? missing.slice(0, 2).map(k => MUSCLES[k]).join(' ו') : null;
-
-  /* סולם ההחלטה — מהסיבה שהכי גוברת על השאר ומטה */
-  let key, title, detail, tone;
-
-  if (readiness !== null && readiness < 50) {
-    key = 'rest'; tone = 'rest'; title = 'יום מנוחה';
-    detail = 'הגוף עוד לא חזר — אימון היום יעלה יותר ממה שייתן.';
-    push(`ציון מוכנות ${Math.round(readiness)}`);
-  } else if (phase && phase.key === 'raceday') {
-    key = 'race'; tone = 'go'; title = `${race.name || 'המירוץ'} — היום`;
-    detail = `${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ בקצב יעד ${paceTxt(raceTargetPace())}. בהצלחה.`;
-    push(`יעד ${raceTimeTxt(race.timeSec)}`);
-  } else if (phase && phase.key === 'raceweek') {
-    key = 'easy'; tone = 'easy'; title = 'שבוע המירוץ — לשמור אנרגיה';
-    detail = `${phase.daysLeft} ימים למירוץ. ${phase.note}`;
-    push('בלי כוח כבד השבוע');
-  } else if (phase && phase.key === 'recovery') {
-    key = 'rest'; tone = 'rest'; title = 'התאוששות אחרי המירוץ';
-    detail = `עברו ${Math.abs(phase.daysLeft)} ימים מהמירוץ — ${phase.note}`;
-  } else if (alerts.length) {
-    key = 'easy'; tone = 'rest'; title = 'יום קל בלבד';
-    detail = 'יש מדד שחורג משמעותית מהרגיל שלך — שווה לתת לו יום.';
-    alerts.slice(0, 2).forEach(a => push(`${METRICS[a.key].label} ${valueText(a.key, a.value)} — ${a.text}`));
-  } else if (strLeft > 0 && daysLeftInWeek <= strLeft + 1) {
-    key = 'strength'; tone = 'go';
-    title = phase && phase.key === 'taper' ? 'אימון כוח קל' : 'אימון כוח — ולא לדחות';
-    detail = phase && phase.key === 'taper'
-      ? `${phase.daysLeft} ימים למירוץ — כוח קל בלבד, בלי לרדת למשקלים כבדים.`
-      : muscleTxt
-        ? `נשארו ${daysLeftInWeek} ימים בשבוע ו-${strLeft} אימונים ליעד. ${muscleTxt} עוד לא עבדו.`
-        : `נשארו ${daysLeftInWeek} ימים בשבוע ו-${strLeft} אימונים ליעד — אין הרבה מרווח.`;
-    push(`${strDone}/${strGoal} אימוני כוח השבוע`);
-  } else if (raceDays !== null && raceDays >= 0 && raceDays <= 28
-             && readiness !== null && readiness >= 70
-             && (sinceQuality === null || sinceQuality >= 4)) {
-    const tapering = phase && phase.key === 'taper';
-    key = 'quality'; tone = 'go'; title = tapering ? 'ריצה קצרה בקצב המירוץ' : 'ריצת איכות';
-    detail = tapering
-      ? `${raceDays} ימים למירוץ — שומרים חדות בנפח נמוך: כמה קילומטרים בקצב היעד ודי.`
-      : `המירוץ בעוד ${raceDays} ימים והמוכנות גבוהה — זה היום לטמפו או אינטרוולים.`;
-    push(sinceQuality === null ? 'עוד לא תועדה ריצת איכות' : `${sinceQuality} ימים מאז ריצת איכות`);
-    const gap = (typeof raceTargetPace === 'function') ? raceTargetPace() : null;
-    if (gap) push(`קצב היעד ${paceTxt(gap)}`);
-  } else if (strLeft > 0 && readiness !== null && readiness >= 60) {
-    key = 'strength'; tone = 'go'; title = 'אימון כוח';
-    detail = muscleTxt
-      ? `${muscleTxt} לא קיבלו עבודה ב-${COVER_DAYS} הימים האחרונים.`
-      : `נשאר ${strLeft === 1 ? 'אימון אחד' : `${strLeft} אימונים`} ליעד השבועי.`;
-    push(`${strDone}/${strGoal} אימוני כוח השבוע`);
-  } else if (kmGoal && weekKm < kmGoal && (sinceRun === null || sinceRun >= 2)) {
-    key = 'volume'; tone = 'go'; title = 'ריצת נפח קלה';
-    detail = `נשארו ${fmt(kmGoal - weekKm, 1)} ק״מ ליעד השבועי — בקצב נוח, לא מאמץ.`;
-    push(`${fmt(weekKm, 1)}/${fmt(kmGoal, 1)} ק״מ השבוע`);
-  } else if (strLeft === 0 && missing.length) {
-    key = 'gap'; tone = 'go'; title = `אימון משלים — ${muscleTxt}`;
-    detail = `עמדת ביעד הכוח, אבל ${muscleTxt} עדיין לא קיבלו עבודה.`;
-    push(`${strDone}/${strGoal} אימוני כוח השבוע`);
-  } else {
-    key = 'maintain'; tone = 'easy'; title = 'יום קל או מנוחה';
-    detail = 'היעדים השבועיים בדרך — אין צורך להוסיף עומס היום.';
-    if (strGoal) push(`${strDone}/${strGoal} אימוני כוח`);
-    if (kmGoal) push(`${fmt(weekKm, 1)}/${fmt(kmGoal, 1)} ק״מ`);
+  // אין כלום בתוכניות → מנוחה והתאוששות
+  if (!hasStr && !hasAero) {
+    return { key: 'rest', tone: 'rest', title: 'מנוחה והתאוששות',
+             detail: 'לא מתוכנן אימון היום לפי תוכניות הכוח והאירובי שלך.', why: [] };
   }
 
-  // תוכנית אירובית — אם יש אימון מתוכנן להיום ואין סיבה דחופה יותר, ההמלצה מתאימה
-  if (key === 'maintain' || key === 'volume') {
-    const ap = (typeof loadAeroPlan === 'function') ? loadAeroPlan() : [];
-    const todayDow = new Date(`${todayISO()}T12:00:00`).getDay();
-    const planned = ap.find(s => s.day === todayDow);
-    if (planned && planned.type !== 'rest') {
-      const sportLabel = (typeof AERO_SPORTS !== 'undefined') ? (AERO_SPORTS.find(s => s.key === planned.sport)?.label || '') : '';
-      const typeLabel = (typeof AERO_WORKOUT_TYPES !== 'undefined') ? (AERO_WORKOUT_TYPES.find(t => t.key === planned.type)?.label || '') : '';
-      key = planned.type === 'intervals' || planned.type === 'tempo' ? 'quality' : 'volume';
-      tone = 'go';
-      title = sportLabel ? `${sportLabel} — ${typeLabel}` : typeLabel;
-      detail = `לפי התוכנית השבועית שלך, היום מתוכנן ${sportLabel} ${typeLabel}.`;
-      push('לפי תוכנית');
-    }
+  // רק אירובי
+  if (hasAero && !hasStr) {
+    const a = aeroItems[0];
+    const isQ = a.key === 'quality';
+    return { key: a.key, tone: 'go', title: a.title,
+             detail: 'לפי התוכנית האירובית שלך.', why: ['לפי תוכנית'] };
   }
 
-  if (readiness !== null && key !== 'rest' && !alerts.length) push(`מוכנות ${Math.round(readiness)}`);
-  if (watches.length && tone === 'go') push(`${METRICS[watches[0].key].label} ${watches[0].text}`);
-
-  return { key, tone, title, detail, why, readiness };
+  // רק כוח (או כוח + אירובי — אירובי יופיע כ-extra ב-renderToday)
+  return { key: 'strength', tone: 'go', title: strItem.title,
+           detail: 'לפי תוכנית הכוח השבועית שלך.', why: ['לפי תוכנית'] };
 }
 
 const TODAY_ICON = { rest: 'yoga', easy: 'walk', strength: 'dumbbell', quality: 'bolt', volume: 'run', gap: 'dumbbell', maintain: 'yoga', race: 'trophy' };
