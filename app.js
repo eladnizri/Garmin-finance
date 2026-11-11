@@ -3867,7 +3867,20 @@ async function init() {
 }
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'SW_UPDATED') showUpdateBanner();
+    });
+  });
+}
+
+function showUpdateBanner() {
+  if (document.querySelector('.update-banner')) return;
+  const bar = document.createElement('div');
+  bar.className = 'update-banner';
+  bar.innerHTML = '<span>עדכון זמין</span><button onclick="location.reload()">רענן עכשיו</button>';
+  document.querySelector('.topbar')?.appendChild(bar);
 }
 
 init();
