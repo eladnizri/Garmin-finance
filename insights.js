@@ -530,6 +530,22 @@ function todayPlan() {
     if (kmGoal) push(`${fmt(weekKm, 1)}/${fmt(kmGoal, 1)} ק״מ`);
   }
 
+  // תוכנית אירובית — אם יש אימון מתוכנן להיום ואין סיבה דחופה יותר, ההמלצה מתאימה
+  if (key === 'maintain' || key === 'volume') {
+    const ap = (typeof loadAeroPlan === 'function') ? loadAeroPlan() : [];
+    const todayDow = new Date(`${todayISO()}T12:00:00`).getDay();
+    const planned = ap.find(s => s.day === todayDow);
+    if (planned && planned.type !== 'rest') {
+      const sportLabel = (typeof AERO_SPORTS !== 'undefined') ? (AERO_SPORTS.find(s => s.key === planned.sport)?.label || '') : '';
+      const typeLabel = (typeof AERO_WORKOUT_TYPES !== 'undefined') ? (AERO_WORKOUT_TYPES.find(t => t.key === planned.type)?.label || '') : '';
+      key = planned.type === 'intervals' || planned.type === 'tempo' ? 'quality' : 'volume';
+      tone = 'go';
+      title = sportLabel ? `${sportLabel} — ${typeLabel}` : typeLabel;
+      detail = `לפי התוכנית השבועית שלך, היום מתוכנן ${sportLabel} ${typeLabel}.`;
+      push('לפי תוכנית');
+    }
+  }
+
   if (readiness !== null && key !== 'rest' && !alerts.length) push(`מוכנות ${Math.round(readiness)}`);
   if (watches.length && tone === 'go') push(`${METRICS[watches[0].key].label} ${watches[0].text}`);
 
