@@ -787,6 +787,80 @@ function renderRecords(id, items) {
 }
 
 /* =========================================================================
+ * התאמה אישית — שינה
+ * ========================================================================= */
+const SLEEP_PREFS_KEY = 'sleep_prefs_v1';
+const SLEEP_SECTIONS = [
+  { key: 'stages',    label: 'שלבי שינה',          desc: 'גרף ופירוט שלבי שינה עמוקה / קלה / REM' },
+  { key: 'breathing', label: 'שינה ונשימה',         desc: 'ניתוח רמת חמצן ואירועי נשימה' },
+  { key: 'hrv',       label: 'לב ו-HRV',            desc: 'דופק מנוחה, שונות דופק ורזרבת לב' },
+  { key: 'records',   label: 'שיאים',               desc: 'רצף לילות שינה טובה' },
+];
+function loadSleepPrefs() {
+  try {
+    const s = localStorage.getItem(SLEEP_PREFS_KEY);
+    const saved = s ? JSON.parse(s) : {};
+    const defaults = { stages: true, breathing: true, hrv: true, records: true };
+    return Object.assign(defaults, saved);
+  } catch { return { stages: true, breathing: true, hrv: true, records: true }; }
+}
+function saveSleepPrefs(p) { try { localStorage.setItem(SLEEP_PREFS_KEY, JSON.stringify(p)); } catch {} }
+
+function openSleepCustomize() {
+  const prefs = loadSleepPrefs();
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-head"><h2>התאמה אישית — שינה ולב</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      <p style="font-size:.85rem;color:var(--ink-2);margin-bottom:12px;">בחר אילו חלקים יוצגו בעמוד השינה:</p>
+      <div class="plan-grouped-list">
+        ${SLEEP_SECTIONS.map(s => `
+          <label class="plan-grouped-row" style="cursor:pointer;gap:12px;">
+            <div class="plan-grouped-label">${s.label}<small>${s.desc}</small></div>
+            <input type="checkbox" name="${s.key}" ${prefs[s.key] ? 'checked' : ''}
+              style="width:20px;height:20px;accent-color:var(--primary-500);">
+          </label>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-primary" id="sleep-prefs-save">שמור</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
+  modal.querySelector('#sleep-prefs-save').onclick = () => {
+    const newPrefs = {};
+    SLEEP_SECTIONS.forEach(s => { newPrefs[s.key] = modal.querySelector(`[name="${s.key}"]`)?.checked || false; });
+    saveSleepPrefs(newPrefs);
+    close();
+    applySleepPrefs();
+  };
+}
+
+function applySleepPrefs() {
+  const prefs = loadSleepPrefs();
+  const stagesChart = document.querySelector('[data-info="stages"]')?.closest('article');
+  if (stagesChart) stagesChart.style.display = prefs.stages ? '' : 'none';
+  const stagesAnalysis = $('stages-analysis');
+  if (stagesAnalysis) stagesAnalysis.style.display = prefs.stages ? '' : 'none';
+  const breathing = $('sleep-breathing');
+  if (breathing) breathing.style.display = prefs.breathing ? '' : 'none';
+  const heartHero = $('heart-hero');
+  if (heartHero) heartHero.style.display = prefs.hrv ? '' : 'none';
+  const rhrChart = document.querySelector('[data-info="rhr"]')?.closest('article');
+  if (rhrChart) rhrChart.style.display = prefs.hrv ? '' : 'none';
+  const hrvChart = document.querySelector('[data-info="hrv"]')?.closest('article');
+  if (hrvChart) hrvChart.style.display = prefs.hrv ? '' : 'none';
+  const heartInsight = $('heart-insight');
+  if (heartInsight) heartInsight.style.display = prefs.hrv ? '' : 'none';
+  const sleepRecords = $('sleep-records');
+  if (sleepRecords) sleepRecords.style.display = prefs.records ? '' : 'none';
+}
+
+/* =========================================================================
  * המלצת שינה — כשממוצע השינה מתחת ליעד, ממליץ להקדים את שעת השינה
  * ========================================================================= */
 function renderSleepRec() {
@@ -3362,7 +3436,7 @@ function openRaceModal(existing) {
  * מודאל פרופיל
  * ========================================================================= */
 const PROFILE_FIELDS = ['age', 'heightCm', 'weightKg', 'sleepGoal', 'stepsGoal', 'strengthGoal',
-  'weightGoal', 'runGoalKm', 'maxHrOverride', 'runTempoPct', 'runVolumeKm', 'runIntervalSpread'];
+  'weightGoal', 'maxHrOverride'];
 /* קצב היעד נשמר בשניות לק״מ אבל מוקלד כ-"5:30" — המרה בשני הכיוונים */
 function parsePace(txt) {
   const m = String(txt).trim().match(/^(\d{1,2})[:.](\d{1,2})$/);
@@ -3374,8 +3448,6 @@ function fillProfileForm() {
   const f = $('profile-form');
   PROFILE_FIELDS.forEach(k => { if (f[k]) f[k].value = profile[k] ?? ''; });
   if (f.sex) f.sex.value = profile.sex || '';
-  if (f.runGoalPace) f.runGoalPace.value = profile.runGoalPace ? paceTxt(profile.runGoalPace) : '';
-  renderRulePreview();
 }
 
 /* תצוגה מקדימה חיה של הסיווג — בלעדיה כוונון הספים הוא ניחוש עיוור:
@@ -3446,19 +3518,19 @@ $('weight-form').addEventListener('submit', e => {
   renderWeekSummary();
 });
 
-/* --- סימון ידני של אימון כוח --- */
-$('strength-card').addEventListener('click', e => {
-  // הצעת עדכון היעד יושבת באותו כרטיס
-  const g = e.target.closest('[data-goal]');
-  if (g) { haptic(10); applyGoalSuggestion(g.dataset.goal); return; }
-  const btn = e.target.closest('.wday');
+/* --- סימון ידני של אימון כוח (כרטיס תוכנית שבועית) --- */
+document.addEventListener('click', e => {
+  const container = e.target.closest('#strength-week-card');
+  if (!container) return;
+  const btn = e.target.closest('.plan-day[data-iso]');
   if (!btn || btn.disabled) return;
   const iso = btn.dataset.iso;
   strengthChecks[iso] = !strengthChecks[iso];
   if (!strengthChecks[iso]) delete strengthChecks[iso];
   haptic(12);
   saveStrength();
-  renderStrength(); renderWeekSummary();
+  if (typeof renderStrengthWeekCard === 'function') renderStrengthWeekCard();
+  renderWeekSummary();
 });
 
 /* --- הסבר על גרפים (לחיצה על שם הגרף) --- */
@@ -3617,6 +3689,11 @@ function renderAll() {
 
   verdictCard('sleep-insight', 'מה זה אומר', ['sleep_hours', 'sleep_score']);
   verdictCard('heart-insight', 'מה זה אומר', ['rhr', 'hrv', 'stress_avg']);
+
+  // כפתור התאמה אישית שינה
+  const sleepCustomBtn = $('sleep-customize');
+  if (sleepCustomBtn) sleepCustomBtn.onclick = openSleepCustomize;
+  applySleepPrefs();
 
   // תובנות
   if (typeof renderInsightsPage === 'function') renderInsightsPage();
