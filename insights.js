@@ -894,10 +894,16 @@ function renderInsightsPage() {
     const found = allFindings();
     if (found.length) {
       hasContent = true;
-      const items = found.slice(0, 5).map(f => `<div class="ins-row"><span class="ins-dot"></span>
-        <div><p class="ins-txt">${f.text}</p>
-          <span class="ins-meta">${f.n} ימים${f.r !== null ? ` · מתאם ${fmt(Math.abs(f.r), 2)}` : ''}</span></div>
-      </div>`).join('');
+      const items = found.slice(0, 5).map(f => {
+        const strength = f.r !== null ? Math.abs(f.r) : 0;
+        const strengthPct = Math.round(strength * 100);
+        const strengthLabel = strength >= 0.6 ? 'חזק' : strength >= 0.4 ? 'בינוני' : 'עדין';
+        return `<div class="ins-row">
+          <div class="ins-corr-strength"><div class="ins-corr-bar"><div style="width:${strengthPct}%"></div></div><span class="ins-corr-label">${strengthLabel}</span></div>
+          <div><p class="ins-txt">${f.text}</p>
+            <span class="ins-meta">${f.n} ימים${f.r !== null ? ` · r=${fmt(Math.abs(f.r), 2)}` : ''}</span></div>
+        </div>`;
+      }).join('');
       html += `<article class="card"><div class="card-head"><h2>קורלציות אישיות</h2><span class="unit">${found.length} ממצאים</span></div>
         ${items}<p class="ins-note">מוצג רק מה שעבר בדיקת מובהקות סטטיסטית על ההיסטוריה שלך.</p></article>`;
     }
@@ -910,11 +916,17 @@ function renderInsightsPage() {
       const rows = trends.map(t => {
         const arrow = t.up ? '↑' : '↓';
         const color = t.good ? 'var(--ok)' : 'var(--alert)';
-        const pctTxt = t.pct !== null ? ` (${t.pct > 0 ? '+' : ''}${t.pct}%)` : '';
+        const pctTxt = t.pct !== null ? `${t.pct > 0 ? '+' : ''}${t.pct}%` : '';
+        const barW = t.pct !== null ? Math.min(Math.abs(t.pct) * 8, 100) : 0;
         return `<div class="ins-trend-row">
           <span class="ins-trend-label">${t.label}</span>
-          <span class="ins-trend-val">${fmt(t.avg, t.dec)} ${t.unit}</span>
-          <span class="ins-trend-arrow" style="color:${color}">${arrow}${pctTxt}</span>
+          <div class="ins-trend-right">
+            <div class="ins-trend-top">
+              <span class="ins-trend-val">${fmt(t.avg, t.dec)} ${t.unit}</span>
+              <span class="ins-trend-delta" style="color:${color}">${arrow} ${pctTxt}</span>
+            </div>
+            <div class="ins-delta-bar"><div class="ins-delta-fill" style="width:${barW}%;background:${color}"></div></div>
+          </div>
         </div>`;
       }).join('');
       html += `<article class="card"><div class="card-head"><h2>מגמות 30 יום</h2><span class="unit">מול 30 הימים הקודמים</span></div>${rows}</article>`;
@@ -927,8 +939,10 @@ function renderInsightsPage() {
       hasContent = true;
       const rows = recs.map(r => `<div class="ins-trend-row">
         <span class="ins-trend-label">${r.label}</span>
-        <span class="ins-trend-val" style="font-weight:700;color:var(--primary-500)">${fmt(r.value, r.dec)} ${r.unit}</span>
-        <span class="ins-trend-arrow" style="color:var(--ink-3);font-size:.75rem">${typeof shortDate === 'function' ? shortDate(r.date) : r.date}</span>
+        <div class="ins-rec-right">
+          <span class="ins-trend-val" style="font-weight:700;color:var(--primary-500)">${fmt(r.value, r.dec)} ${r.unit}</span>
+          <span class="ins-rec-date">${typeof shortDate === 'function' ? shortDate(r.date) : r.date}</span>
+        </div>
       </div>`).join('');
       html += `<article class="card"><div class="card-head"><h2>שיאים אישיים</h2></div>${rows}</article>`;
     }

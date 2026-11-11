@@ -1655,6 +1655,15 @@ button.tm-v:active { color: var(--primary-500); }
   .page > #hr-zones,
   .page > #insights-page { grid-column: 1 / -1; }
 
+  /* 2-col grid בתוך עמוד התובנות */
+  #insights-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  #insights-page > .card:first-child { grid-column: 1 / -1; }
+
   /* ----- מודאל — ממורכז, לא שקופית תחתונה ----- */
   .modal { align-items: center; }
   .modal-sheet {
@@ -1677,6 +1686,11 @@ button.tm-v:active { color: var(--primary-500); }
 /* =========================================================================
  * עמוד תובנות
  * ========================================================================= */
+#insights-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 .ins-row {
   display: flex;
   gap: 10px;
@@ -1708,7 +1722,19 @@ button.tm-v:active { color: var(--primary-500); }
 .ins-trend-row:last-child { border-bottom: none; }
 .ins-trend-label { flex: 1; font-size: .88rem; }
 .ins-trend-val   { font-size: .88rem; font-variant-numeric: tabular-nums; }
-.ins-trend-arrow { font-size: .82rem; min-width: 52px; text-align: start; font-weight: 600; }
+.ins-trend-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; min-width: 100px; }
+.ins-trend-top   { display: flex; align-items: baseline; gap: 6px; }
+.ins-trend-delta { font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.ins-delta-bar   { width: 100%; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.ins-delta-fill  { height: 100%; border-radius: 2px; transition: width .8s ease; }
+/* שיאים — תאריך כסאבטייטל */
+.ins-rec-right   { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.ins-rec-date    { font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* קורלציות — strength bar */
+.ins-corr-strength { flex: none; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 3px; }
+.ins-corr-bar { width: 100%; height: 48px; border-radius: 3px; background: var(--line); overflow: hidden; display: flex; align-items: flex-end; }
+.ins-corr-bar > div { width: 100%; background: linear-gradient(180deg, var(--primary-400), var(--primary-500)); border-radius: 3px; transition: height .6s ease; }
+.ins-corr-label { font-size: .6rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
 
 /* תרשים עומס */
 .load-chart {
