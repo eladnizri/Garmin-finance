@@ -385,12 +385,12 @@ function miniRingSvg(grad, fillPct, anomalous, uid, size = 78) {
 }
 
 /* מדדי הטבעות הקטנות סביב המוכנות */
-/* page numbers here must track the pager's DOM order: 0 בית, 1 כוח, 2 אירובי, 3 שינה, 4 לב */
+/* page numbers here must track the pager's DOM order: 0 בית, 1 כוח, 2 אירובי, 3 שינה ולב, 4 תובנות */
 const DASH_METRICS = [
   { key: 'sleep_hours', page: 3, label: 'שינה', ico: 'moon', grad: ['--ring-sleep-1', '--ring-sleep-2'], fill: true,
     goal: () => goalSleep(), disp: v => fmt(v, 1), sub: 'ש׳' },
-  { key: 'rhr', page: 4, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
-  { key: 'hrv', page: 4, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
+  { key: 'rhr', page: 3, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
+  { key: 'hrv', page: 3, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
 ];
 /* ברכה לפי שעת היום */
 function greeting() { const h = new Date().getHours(); return h < 12 ? 'בוקר טוב' : h < 18 ? 'צהריים טובים' : 'ערב טוב'; }
@@ -3600,6 +3600,7 @@ function renderAll() {
   // כוח
   renderStrength();
   renderTrain();
+  if (typeof renderStrengthWeekCard === 'function') renderStrengthWeekCard();
   if (typeof renderLab === 'function') renderLab();
 
   // אירובי
@@ -3622,6 +3623,9 @@ function renderAll() {
 
   verdictCard('sleep-insight', 'מה זה אומר', ['sleep_hours', 'sleep_score']);
   verdictCard('heart-insight', 'מה זה אומר', ['rhr', 'hrv', 'stress_avg']);
+
+  // תובנות
+  if (typeof renderInsightsPage === 'function') renderInsightsPage();
 
   const rows = visibleRows();
   const sleepStreak = trailingStreak(rows, r => r.sleep_score != null && r.sleep_score >= 80);
