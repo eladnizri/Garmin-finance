@@ -689,13 +689,6 @@ function renderCharts() {
   hrvSets.push(line(rows, 'hrv', C.green, !hasBand), maLine(rows, 'hrv'));
   make('chart-hrv', { type: 'line', data: { labels, datasets: hrvSets }, options: opts({ grace: '20%' }, i => `HRV: ${fmt(i.raw.y)} ms`) });
 
-  legend('legend-stress', [[C.orange, 'מתח ממוצע'], [C.ma, 'ממוצע נע 7 ימים']]);
-  make('chart-stress', {
-    type: 'line',
-    data: { labels, datasets: [line(rows, 'stress_avg', C.orange), maLine(rows, 'stress_avg')] },
-    options: opts({ min: 0, max: 100 }, i => `מתח: ${fmt(i.raw.y)}`),
-  });
-
   renderChartTips();
 }
 
