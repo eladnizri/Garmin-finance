@@ -257,3 +257,143 @@ function openPlanSetup() {
     toast('התוכנית נשמרה');
   };
 }
+
+/* =========================================================================
+ * תוכנית כוח שבועית
+ * ========================================================================= */
+const STRENGTH_WEEK_KEY = 'strength_week_plan_v1';
+
+function loadStrengthWeekPlan() {
+  try { return JSON.parse(localStorage.getItem(STRENGTH_WEEK_KEY)) || []; }
+  catch { return []; }
+}
+function saveStrengthWeekPlan(p) {
+  try { localStorage.setItem(STRENGTH_WEEK_KEY, JSON.stringify(p)); } catch {}
+}
+
+function renderStrengthWeekCard() {
+  const el = $('strength-week-card');
+  if (!el) return;
+  const plan = loadStrengthWeekPlan();
+  const progs = (typeof programs !== 'undefined') ? programs : [];
+  const todayDow = new Date(`${todayISO()}T12:00:00`).getDay();
+
+  const weekStart = new Date(weekStartISO(new Date(todayISO())));
+  const fmtD = d => `${d.getDate()}/${d.getMonth() + 1}`;
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+  const weekRange = `${fmtD(weekStart)}–${fmtD(weekEnd)}`;
+
+  let body = '';
+  if (!plan.length) {
+    body = `<p class="tr-empty">הגדר תוכנית כוח שבועית — לכל יום תוכנית מהמאגר שלך.</p>
+      <button class="btn-primary tr-wide" id="str-week-setup">הגדרת תוכנית כוח</button>`;
+  } else {
+    const garminDates = (typeof weekActivityDates === 'function') ? weekActivityDates() : new Set();
+    body = '<div class="plan-aero-week"><div class="plan-week">';
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
+      const iso = d.toISOString().slice(0, 10);
+      const isToday = i === todayDow;
+      const isFuture = d > new Date(todayISO());
+      const planned = plan.find(s => s.day === i);
+      const prog = planned && progs.find(p => p.id === planned.programId);
+      const done = garminDates.has(iso);
+      const isRest = !planned;
+      const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
+      body += `<div class="plan-day ${cls}">
+        <small>${DAY_NAMES[i][0]}</small>
+        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${prog?.name?.slice(0,8) || '?'}</span>`}
+        ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
+      </div>`;
+    }
+    body += '</div></div>';
+  }
+
+  el.innerHTML = `<article class="card">
+    <div class="card-head">
+      <h2>${icon('dumbbell', 18)} תוכנית כוח שבועית</h2>
+      <button class="world-link" id="str-week-edit">עריכה ‹</button>
+    </div>
+    <div class="plan-week-header">
+      <span class="plan-week-label">שבוע נוכחי</span>
+      <span class="plan-week-dates">${weekRange}</span>
+    </div>
+    ${body}
+  </article>`;
+
+  const setupBtn = $('str-week-setup');
+  if (setupBtn) setupBtn.onclick = () => openStrengthWeekSetup();
+  const editBtn = $('str-week-edit');
+  if (editBtn) editBtn.onclick = () => openStrengthWeekSetup();
+}
+
+function openStrengthWeekSetup() {
+  const plan = loadStrengthWeekPlan();
+  const progs = (typeof programs !== 'undefined') ? programs : [];
+  const todayDay = new Date(todayISO()).getDay();
+  const weekStart = new Date(weekStartISO(new Date(todayISO())));
+
+  if (!progs.length) {
+    if (typeof toast === 'function') toast('צור תוכנית כוח קודם בעמוד הכוח');
+    return;
+  }
+
+  let dayRows = '';
+  for (let i = 0; i < 7; i++) {
+    const planned = plan.find(s => s.day === i);
+    const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
+    const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+    const isToday = i === todayDay;
+    dayRows += `<div class="plan-day-row">
+      <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${DAY_NAMES[i][0]}</div>
+      <div class="plan-day-info">
+        <span>${DAY_NAMES[i]}</span>
+        <small>${dateStr}</small>
+      </div>
+      <select name="sprog_${i}" style="flex:1;height:36px;padding:0 8px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink);font-size:.82rem;font-family:inherit;">
+        <option value="">מנוחה</option>
+        ${progs.map(p => `<option value="${p.id}" ${planned?.programId === p.id ? 'selected' : ''}>${p.name || 'ללא שם'}</option>`).join('')}
+      </select>
+    </div>`;
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'strength-week-modal';
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet tall">
+      <div class="modal-head"><h2>תוכנית כוח שבועית</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      <form id="strength-week-form">
+        <div class="plan-section">
+          <div class="plan-section-title">בחר תוכנית לכל יום</div>
+          <div class="plan-grouped-list">${dayRows}</div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-ghost" id="str-week-cancel">ביטול</button>
+          <button type="submit" class="btn-primary">שמור</button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
+  modal.querySelector('#str-week-cancel').onclick = close;
+
+  modal.querySelector('#strength-week-form').onsubmit = e => {
+    e.preventDefault();
+    const f = e.target;
+    const newPlan = [];
+    for (let i = 0; i < 7; i++) {
+      const progId = f[`sprog_${i}`]?.value;
+      if (progId) newPlan.push({ day: i, programId: progId });
+    }
+    saveStrengthWeekPlan(newPlan);
+    close();
+    renderStrengthWeekCard();
+    if (typeof renderToday === 'function') renderToday();
+    if (typeof toast === 'function') toast('תוכנית הכוח השבועית נשמרה');
+  };
+}

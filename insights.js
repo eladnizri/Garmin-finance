@@ -553,19 +553,89 @@ function todayPlan() {
 }
 
 const TODAY_ICON = { rest: 'yoga', easy: 'walk', strength: 'dumbbell', quality: 'bolt', volume: 'run', gap: 'dumbbell', maintain: 'yoga', race: 'trophy' };
+const SPORT_ICON = { running: 'run', swimming: 'drop', cycling: 'bike' };
+
+function todayAeroItems() {
+  if (typeof loadAeroPlan !== 'function' || typeof AERO_SPORTS === 'undefined') return [];
+  const ap = loadAeroPlan();
+  const todayDow = new Date(`${todayISO()}T12:00:00`).getDay();
+  return ap.filter(s => s.day === todayDow && s.type !== 'rest').map(s => {
+    const sportInfo = AERO_SPORTS.find(sp => sp.key === s.sport);
+    const typeInfo = (typeof AERO_WORKOUT_TYPES !== 'undefined') ? AERO_WORKOUT_TYPES.find(t => t.key === s.type) : null;
+    return {
+      sport: s.sport,
+      icon: SPORT_ICON[s.sport] || 'run',
+      title: `${sportInfo?.label || s.sport} — ${typeInfo?.label || s.type}`,
+      key: (s.type === 'intervals' || s.type === 'tempo') ? 'quality' : 'volume',
+    };
+  });
+}
+
+function todayStrengthItem() {
+  if (typeof loadStrengthWeekPlan !== 'function') return null;
+  const plan = loadStrengthWeekPlan();
+  const todayDow = new Date(`${todayISO()}T12:00:00`).getDay();
+  const entry = plan.find(s => s.day === todayDow);
+  if (!entry) return null;
+  const progs = (typeof programs !== 'undefined') ? programs : [];
+  const prog = progs.find(p => p.id === entry.programId);
+  if (!prog) return null;
+  return { programId: entry.programId, title: prog.name || 'אימון כוח', icon: 'dumbbell' };
+}
+
 function renderToday() {
   const el = $('today-card');
   if (!el) return;
   const p = todayPlan();
   if (!p) { el.innerHTML = ''; return; }
-  el.innerHTML = `<article class="card today-card tone-${p.tone}">
-    <div class="today-head">
-      <span class="today-ic">${icon(TODAY_ICON[p.key] || 'bolt', 22)}</span>
-      <div><span class="today-kicker">היום</span>
-        <h2 class="today-title">${p.title}</h2></div>
+
+  const aeroItems = todayAeroItems();
+  const strItem = todayStrengthItem();
+
+  // Build extra sessions: aero items not already the main rec, plus strength from weekly plan
+  const extras = [];
+  const mainIsAero = p.key === 'volume' || p.key === 'quality';
+  const mainIsStrength = p.key === 'strength' || p.key === 'gap';
+
+  // Add aero items if main is not already this specific aero
+  for (const a of aeroItems) {
+    if (mainIsAero && p.title.includes(a.title.split('—')[0].trim())) continue;
+    extras.push({ icon: a.icon, title: a.title, detail: 'לפי התוכנית האירובית שלך', tone: 'go' });
+  }
+
+  // Add strength from weekly plan if main is not strength
+  if (strItem && !mainIsStrength) {
+    extras.push({ icon: 'dumbbell', title: strItem.title, detail: 'לפי תוכנית הכוח השבועית שלך', tone: 'go' });
+  }
+
+  // If main is aero and there's a strength week plan for today, add it
+  if (mainIsAero && strItem) {
+    extras.push({ icon: 'dumbbell', title: strItem.title, detail: 'לפי תוכנית הכוח השבועית שלך', tone: 'go' });
+  }
+
+  const totalSessions = 1 + extras.length;
+  let sessionsHtml = `<div class="today-session tone-${p.tone}">
+    <span class="today-ic">${icon(TODAY_ICON[p.key] || 'bolt', 22)}</span>
+    <div class="today-session-body">
+      <h2 class="today-title">${p.title}</h2>
+      <p class="today-detail">${p.detail}</p>
+      ${p.why.length ? `<div class="today-why">${p.why.map(w => `<span>${w}</span>`).join('')}</div>` : ''}
     </div>
-    <p class="today-detail">${p.detail}</p>
-    ${p.why.length ? `<div class="today-why">${p.why.map(w => `<span>${w}</span>`).join('')}</div>` : ''}
+  </div>`;
+
+  for (const ex of extras) {
+    sessionsHtml += `<div class="today-session tone-${ex.tone} today-session-extra">
+      <span class="today-ic">${icon(ex.icon, 22)}</span>
+      <div class="today-session-body">
+        <h2 class="today-title">${ex.title}</h2>
+        <p class="today-detail today-detail-sm">${ex.detail}</p>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = `<article class="card today-card${extras.length > 0 ? ' today-multi' : ''}">
+    <span class="today-kicker">היום${totalSessions > 1 ? ` · ${totalSessions} אימונים` : ''}</span>
+    ${sessionsHtml}
   </article>`;
 }
 
@@ -638,4 +708,292 @@ function initInsights() {
     const row = e.target.closest('[data-anom-date]');
     if (row) { haptic(6); openAnomTag(row.dataset.anomDate); }
   });
+}
+
+/* =========================================================================
+ * עמוד תובנות — 7 רכיבים + התאמה אישית
+ * ========================================================================= */
+const INSIGHTS_PREFS_KEY = 'insights_prefs_v1';
+const INSIGHTS_SECTIONS = [
+  { key: 'correlations', label: 'קורלציות אישיות',    desc: 'קשרים שנמצאו בנתונים שלך' },
+  { key: 'trends',       label: 'מגמות חודשיות',      desc: 'שינוי ממוצעים ב-30 יום' },
+  { key: 'records',      label: 'שיאים אישיים',       desc: 'ערכי שיא בכל מדד' },
+  { key: 'consistency',  label: 'עקביות',              desc: 'אחוז השבועות שעמדת ביעד' },
+  { key: 'load',         label: 'עומס vs התאוששות',   desc: 'עומס אימונים מול מוכנות' },
+  { key: 'anomalies',    label: 'ימים חריגים',         desc: 'ימים שחרגו מהרגיל' },
+  { key: 'forecast',     label: 'תחזית שבועית',        desc: 'הערכה להמשך השבוע' },
+];
+
+function loadInsightsPrefs() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(INSIGHTS_PREFS_KEY)) || {};
+    const defaults = Object.fromEntries(INSIGHTS_SECTIONS.map(s => [s.key, true]));
+    return { ...defaults, ...saved };
+  } catch { return Object.fromEntries(INSIGHTS_SECTIONS.map(s => [s.key, true])); }
+}
+function saveInsightsPrefs(p) {
+  try { localStorage.setItem(INSIGHTS_PREFS_KEY, JSON.stringify(p)); } catch {}
+}
+
+function insightsTrends() {
+  const data = state.data || [];
+  const keys = ['sleep_hours', 'rhr', 'hrv', 'sleep_score'];
+  const labels = { sleep_hours: 'שינה', rhr: 'דופק מנוחה', hrv: 'HRV', sleep_score: 'ציון שינה' };
+  const goodUp = { sleep_hours: true, rhr: false, hrv: true, sleep_score: true };
+  const units = { sleep_hours: 'ש׳', rhr: 'bpm', hrv: 'ms', sleep_score: '' };
+  const dec = { sleep_hours: 1, rhr: 0, hrv: 0, sleep_score: 0 };
+  const now = new Date(todayISO());
+  const d30ago = new Date(now); d30ago.setDate(now.getDate() - 30);
+  const d60ago = new Date(now); d60ago.setDate(now.getDate() - 60);
+  const d30str = d30ago.toISOString().slice(0,10);
+  const d60str = d60ago.toISOString().slice(0,10);
+  return keys.map(k => {
+    const recent = data.filter(r => r.date >= d30str && isNum(r[k])).map(r => r[k]);
+    const prior  = data.filter(r => r.date >= d60str && r.date < d30str && isNum(r[k])).map(r => r[k]);
+    if (recent.length < 5) return null;
+    const avgR = meanOf(recent), avgP = prior.length >= 5 ? meanOf(prior) : null;
+    const pct = avgP ? Math.round((avgR - avgP) / avgP * 100) : null;
+    const up = avgP !== null ? avgR > avgP : false;
+    const good = goodUp[k] ? up : !up;
+    return { key: k, label: labels[k], avg: avgR, pct, good, up, unit: units[k], dec: dec[k] };
+  }).filter(Boolean);
+}
+
+function insightsRecords() {
+  const data = state.data || [];
+  if (!data.length) return [];
+  const defs = [
+    { key: 'sleep_hours', label: 'שינה ארוכה ביותר', fn: 'max', unit: 'ש׳', dec: 1 },
+    { key: 'rhr',         label: 'דופק מנוחה נמוך',  fn: 'min', unit: 'bpm', dec: 0 },
+    { key: 'hrv',         label: 'HRV גבוה',         fn: 'max', unit: 'ms',  dec: 0 },
+    { key: 'sleep_score', label: 'ציון שינה גבוה',   fn: 'max', unit: '',    dec: 0 },
+  ];
+  return defs.map(d => {
+    const vals = data.filter(r => isNum(r[d.key]));
+    if (!vals.length) return null;
+    const row = d.fn === 'max'
+      ? vals.reduce((a, b) => b[d.key] > a[d.key] ? b : a)
+      : vals.reduce((a, b) => b[d.key] < a[d.key] ? b : a);
+    return { label: d.label, value: row[d.key], date: row.date, unit: d.unit, dec: d.dec };
+  }).filter(Boolean);
+}
+
+function insightsConsistency() {
+  const result = [];
+  const strGoalN = (typeof goalStrength === 'function') ? goalStrength() : 2;
+  const kmGoal = (typeof goalRunKm === 'function') ? goalRunKm() : null;
+  let strMet = 0, strTotal = 0, aeroMet = 0, aeroTotal = 0;
+  for (let w = 0; w < 12; w++) {
+    const ws = new Date(todayISO()); ws.setDate(ws.getDate() - ws.getDay() - w * 7);
+    const wsStr = ws.toISOString().slice(0,10);
+    const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const weStr = we.toISOString().slice(0,10);
+    const rows = (state.data || []).filter(r => r.date >= wsStr && r.date <= weStr);
+    const auto = (typeof autoStrengthDates === 'function') ? autoStrengthDates() : new Set();
+    const strDone = (typeof strengthCountInWeek === 'function') ? strengthCountInWeek(rows, auto) : 0;
+    strTotal++;
+    if (strDone >= strGoalN) strMet++;
+    if (kmGoal) {
+      aeroTotal++;
+      let weekKm = 0;
+      for (const r of rows) for (const wk of (r.workouts || [])) if (wk.km) weekKm += wk.km;
+      if (weekKm >= kmGoal * 0.9) aeroMet++;
+    }
+  }
+  if (strTotal) result.push({ label: 'יעד כוח שבועי', met: strMet, total: strTotal, pct: Math.round(strMet / strTotal * 100) });
+  if (aeroTotal && kmGoal) result.push({ label: 'יעד ריצה שבועי', met: aeroMet, total: aeroTotal, pct: Math.round(aeroMet / aeroTotal * 100) });
+  return result;
+}
+
+function insightsLoadRecovery() {
+  const weeks = [];
+  for (let w = 7; w >= 0; w--) {
+    const ws = new Date(todayISO()); ws.setDate(ws.getDate() - ws.getDay() - w * 7);
+    const wsStr = ws.toISOString().slice(0,10);
+    const we = new Date(ws); we.setDate(ws.getDate() + 6);
+    const weStr = we.toISOString().slice(0,10);
+    const rows = (state.data || []).filter(r => r.date >= wsStr && r.date <= weStr);
+    if (!rows.length) continue;
+    const workouts = rows.reduce((s, r) => s + (r.workouts || []).length, 0);
+    const readRows = rows.filter(r => isNum(r.readiness_score));
+    const avgR = readRows.length ? Math.round(meanOf(readRows.map(r => r.readiness_score))) : null;
+    weeks.push({ wsStr, workouts, readiness: avgR, isCurrent: w === 0 });
+  }
+  return weeks;
+}
+
+function insightsForecast() {
+  const strGoal = (typeof goalStrength === 'function') ? goalStrength() : 0;
+  const kmGoal = (typeof goalRunKm === 'function') ? goalRunKm() : null;
+  if (!strGoal && !kmGoal) return null;
+  const auto = (typeof autoStrengthDates === 'function') ? autoStrengthDates() : new Set();
+  const cur = (typeof weekRows === 'function') ? weekRows(0) : [];
+  const strDone = (typeof strengthCountInWeek === 'function') ? strengthCountInWeek(cur, auto) : 0;
+  const strLeft = Math.max(0, strGoal - strDone);
+  let weekKm = 0;
+  for (const r of cur) for (const w of (r.workouts || [])) if (w.km) weekKm += w.km;
+  const kmLeft = kmGoal ? Math.max(0, kmGoal - weekKm) : null;
+  const todayDow = new Date(todayISO()).getDay();
+  const daysLeft = 7 - todayDow;
+  const lines = [];
+  if (strLeft > 0) lines.push(`נשארו ${strLeft} ${strLeft === 1 ? 'אימון כוח' : 'אימוני כוח'} ל-${daysLeft} ${daysLeft === 1 ? 'יום' : 'ימים'} שנותרו.`);
+  if (kmLeft && kmLeft > 0) lines.push(`נשארו ${fmt(kmLeft, 1)} ק״מ ליעד האירובי השבועי.`);
+  if (!lines.length) lines.push('עמדת בכל היעדים השבועיים שלך — כל הכבוד!');
+  return lines;
+}
+
+function openInsightsCustomize() {
+  const prefs = loadInsightsPrefs();
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+  modal.innerHTML = `<div class="modal-backdrop"></div>
+    <div class="modal-sheet">
+      <div class="modal-head"><h2>התאמה אישית</h2>
+        <button class="close-btn" aria-label="סגירה">✕</button></div>
+      <p style="font-size:.85rem;color:var(--ink-2);margin-bottom:12px;">בחר אילו חלקים יוצגו בעמוד התובנות:</p>
+      <div class="plan-grouped-list">
+        ${INSIGHTS_SECTIONS.map(s => `
+          <label class="plan-grouped-row" style="cursor:pointer;gap:12px;">
+            <div class="plan-grouped-label">${s.label}<small>${s.desc}</small></div>
+            <input type="checkbox" name="${s.key}" ${prefs[s.key] ? 'checked' : ''}
+              style="width:20px;height:20px;accent-color:var(--primary-500);">
+          </label>`).join('')}
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-primary" id="insights-prefs-save">שמור</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.close-btn').onclick = close;
+  modal.querySelector('.modal-backdrop').onclick = close;
+  modal.querySelector('#insights-prefs-save').onclick = () => {
+    const newPrefs = {};
+    INSIGHTS_SECTIONS.forEach(s => { newPrefs[s.key] = modal.querySelector(`[name="${s.key}"]`)?.checked || false; });
+    saveInsightsPrefs(newPrefs);
+    close();
+    renderInsightsPage();
+  };
+}
+
+function renderInsightsPage() {
+  const el = $('insights-page');
+  if (!el) return;
+  const prefs = loadInsightsPrefs();
+
+  let html = `<article class="card" style="padding:14px 16px 12px;">
+    <div class="card-head">
+      <h2>${icon('bulb', 18)} תובנות</h2>
+      <button class="btn-ghost" id="insights-customize" style="font-size:.8rem;padding:5px 10px;">התאמה אישית ⚙</button>
+    </div>
+  </article>`;
+
+  let hasContent = false;
+
+  if (prefs.correlations) {
+    const found = allFindings();
+    if (found.length) {
+      hasContent = true;
+      const items = found.slice(0, 5).map(f => `<div class="ins-row"><span class="ins-dot"></span>
+        <div><p class="ins-txt">${f.text}</p>
+          <span class="ins-meta">${f.n} ימים${f.r !== null ? ` · מתאם ${fmt(Math.abs(f.r), 2)}` : ''}</span></div>
+      </div>`).join('');
+      html += `<article class="card"><div class="card-head"><h2>קורלציות אישיות</h2><span class="unit">${found.length} ממצאים</span></div>
+        ${items}<p class="ins-note">מוצג רק מה שעבר בדיקת מובהקות סטטיסטית על ההיסטוריה שלך.</p></article>`;
+    }
+  }
+
+  if (prefs.trends) {
+    const trends = insightsTrends();
+    if (trends.length) {
+      hasContent = true;
+      const rows = trends.map(t => {
+        const arrow = t.up ? '↑' : '↓';
+        const color = t.good ? 'var(--ok)' : 'var(--alert)';
+        const pctTxt = t.pct !== null ? ` (${t.pct > 0 ? '+' : ''}${t.pct}%)` : '';
+        return `<div class="ins-trend-row">
+          <span class="ins-trend-label">${t.label}</span>
+          <span class="ins-trend-val">${fmt(t.avg, t.dec)} ${t.unit}</span>
+          <span class="ins-trend-arrow" style="color:${color}">${arrow}${pctTxt}</span>
+        </div>`;
+      }).join('');
+      html += `<article class="card"><div class="card-head"><h2>מגמות 30 יום</h2><span class="unit">מול 30 הימים הקודמים</span></div>${rows}</article>`;
+    }
+  }
+
+  if (prefs.records) {
+    const recs = insightsRecords();
+    if (recs.length) {
+      hasContent = true;
+      const rows = recs.map(r => `<div class="ins-trend-row">
+        <span class="ins-trend-label">${r.label}</span>
+        <span class="ins-trend-val" style="font-weight:700;color:var(--primary-500)">${fmt(r.value, r.dec)} ${r.unit}</span>
+        <span class="ins-trend-arrow" style="color:var(--ink-3);font-size:.75rem">${typeof shortDate === 'function' ? shortDate(r.date) : r.date}</span>
+      </div>`).join('');
+      html += `<article class="card"><div class="card-head"><h2>שיאים אישיים</h2></div>${rows}</article>`;
+    }
+  }
+
+  if (prefs.consistency) {
+    const cons = insightsConsistency();
+    if (cons.length) {
+      hasContent = true;
+      const rows = cons.map(c => {
+        const color = c.pct >= 75 ? 'var(--ok)' : c.pct >= 50 ? 'var(--watch)' : 'var(--alert)';
+        return `<div class="plan-sport">
+          <div class="plan-sport-top">
+            <span class="plan-sport-name">${c.label}</span>
+            <span class="plan-sport-num" style="color:${color}">${c.pct}% (${c.met}/${c.total} שבועות)</span>
+          </div>
+          <div class="plan-bar"><i style="width:${c.pct}%;background:${color}"></i></div>
+        </div>`;
+      }).join('');
+      html += `<article class="card"><div class="card-head"><h2>עקביות</h2><span class="unit">12 שבועות אחרונים</span></div><div class="plan-aero">${rows}</div></article>`;
+    }
+  }
+
+  if (prefs.load) {
+    const weeks = insightsLoadRecovery();
+    if (weeks.length >= 3) {
+      hasContent = true;
+      const maxW = Math.max(...weeks.map(w => w.workouts), 1);
+      const bars = weeks.map((w, i) => {
+        const hPct = Math.round(w.workouts / maxW * 100);
+        const rPct = w.readiness;
+        const rColor = rPct === null ? 'var(--ink-3)' : rPct >= 70 ? 'var(--ok)' : rPct >= 50 ? 'var(--watch)' : 'var(--alert)';
+        return `<div class="load-week-col">
+          <div class="load-bar-wrap"><div class="load-bar" style="height:${hPct}%"></div></div>
+          <div class="load-readiness" style="color:${rColor}">${rPct !== null ? rPct : '—'}</div>
+          <div class="load-label">${w.isCurrent ? 'עכשיו' : `שב׳ ${i + 1}`}</div>
+        </div>`;
+      }).join('');
+      html += `<article class="card"><div class="card-head"><h2>עומס vs התאוששות</h2><span class="unit">עמודות=אימונים · מספר=מוכנות</span></div>
+        <div class="load-chart">${bars}</div></article>`;
+    }
+  }
+
+  if (prefs.anomalies) {
+    const anom = $('anomalies');
+    if (anom && anom.innerHTML.trim()) {
+      hasContent = true;
+      html += `<article class="card"><div class="card-head"><h2>ימים חריגים</h2></div>${anom.innerHTML}</article>`;
+    }
+  }
+
+  if (prefs.forecast) {
+    const lines = insightsForecast();
+    if (lines) {
+      hasContent = true;
+      const listHtml = lines.map(l => `<div class="ins-row"><span class="ins-dot"></span><p class="ins-txt">${l}</p></div>`).join('');
+      html += `<article class="card"><div class="card-head"><h2>תחזית שבועית</h2></div>${listHtml}</article>`;
+    }
+  }
+
+  if (!hasContent) {
+    html += `<article class="card"><p class="tr-empty">כל הסעיפים מוסתרים או אין עדיין מספיק נתונים. לחץ "התאמה אישית" להפעיל.</p></article>`;
+  }
+
+  el.innerHTML = html;
+  const btn = $('insights-customize');
+  if (btn) btn.onclick = openInsightsCustomize;
 }
