@@ -425,20 +425,27 @@ function renderDashboard() {
     const s = statusOf(m.key);
     const v = s ? s.value : latest(m.key);
     const level = s ? s.level : 'normal';
-    const display = v === null ? '—' : m.disp(v);
+    const hasData = v !== null;
+    const display = hasData ? m.disp(v) : '—';
     const cls = level === 'alert' ? 'alert' : level === 'watch' ? 'watch' : 'ok';
 
-    const fillPct = (m.fill && v !== null) ? clamp(v / m.goal() * 100, 0, 100) : null;
+    const fillPct = (m.fill && hasData) ? clamp(v / m.goal() * 100, 0, 100) : null;
     const bar = fillPct !== null
       ? `<div class="stat-bar"><div class="stat-bar-fill" style="width:${fillPct}%"></div></div>`
       : '';
 
-    const chipTxt = cls === 'ok' ? '↑ תקין' : cls === 'watch' ? '! שים לב' : '↓ חריג';
-    const statusChip = `<span class="stat-chip s-${cls}">${chipTxt}</span>`;
+    const chipTxt = cls === 'ok' ? 'תקין' : cls === 'watch' ? 'שים לב' : 'חריג';
+    const chipIcon = cls === 'ok' ? '↑' : cls === 'watch' ? '!' : '↓';
+    const statusChip = hasData
+      ? `<span class="stat-chip s-${cls}">${chipIcon} ${chipTxt}</span>` : '';
     const target = m.key === 'sleep_hours' ? 'data-flip' : `data-goto="${m.page}"`;
 
-    return `<button class="stat-tile${level !== 'normal' ? ' t-' + cls : ''}" ${target} aria-label="${m.label}">
-      <div class="stat-top">${icon(m.ico, 15)}<span class="stat-lbl">${m.label}</span>${statusChip}</div>
+    return `<button class="stat-tile${hasData && level !== 'normal' ? ' t-' + cls : ''}" ${target} aria-label="${m.label}">
+      <div class="stat-top">
+        <span class="stat-ic-wrap">${icon(m.ico, 14)}</span>
+        <span class="stat-lbl">${m.label}</span>
+        ${statusChip}
+      </div>
       <div class="stat-val">${display}<span class="stat-unit">${m.sub}</span></div>
       ${bar}
     </button>`;
