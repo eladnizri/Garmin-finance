@@ -3868,9 +3868,11 @@ async function init() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    // isFirstInstall: אין SW פעיל לפני הרישום הנוכחי — אין מה "לעדכן"
+    const isFirstInstall = !navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
     navigator.serviceWorker.addEventListener('message', e => {
-      if (e.data?.type === 'SW_UPDATED') showUpdateBanner();
+      if (e.data?.type === 'SW_UPDATED' && !isFirstInstall) showUpdateBanner();
     });
   });
 }
