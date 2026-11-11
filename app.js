@@ -389,8 +389,6 @@ function miniRingSvg(grad, fillPct, anomalous, uid, size = 78) {
 const DASH_METRICS = [
   { key: 'sleep_hours', page: 3, label: 'שינה', ico: 'moon', grad: ['--ring-sleep-1', '--ring-sleep-2'], fill: true,
     goal: () => goalSleep(), disp: v => fmt(v, 1), sub: 'ש׳' },
-  { key: 'steps', page: 0, label: 'צעדים', ico: 'walk', grad: ['--ring-steps-1', '--ring-steps-2'], fill: true,
-    goal: () => goalSteps(), disp: v => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : fmt(v), sub: '' },
   { key: 'rhr', page: 4, label: 'דופק', ico: 'heart', grad: ['--ring-rhr-1', '--ring-rhr-2'], fill: false, disp: v => fmt(v), sub: 'bpm' },
   { key: 'hrv', page: 4, label: 'HRV', ico: 'hrv', grad: ['--ring-hrv-1', '--ring-hrv-2'], fill: false, disp: v => fmt(v), sub: 'ms' },
 ];
@@ -3869,5 +3867,16 @@ async function init() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
+
+/* =========================================================================
+ * גרפים מתכווצים — לחיצה על הכותרת פותחת/סוגרת
+ * ========================================================================= */
+document.addEventListener('click', e => {
+  const toggle = e.target.closest('.fold-toggle');
+  if (!toggle) return;
+  const card = toggle.closest('.chart-fold');
+  if (!card) return;
+  card.classList.toggle('collapsed');
+});
 
 init();
