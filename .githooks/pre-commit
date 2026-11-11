@@ -1,0 +1,14 @@
+#!/bin/sh
+# מעלה את מספר גרסת ה-SW אוטומטית בכל commit שמשנה קבצי אפליקציה
+
+CHANGED=$(git diff --cached --name-only | grep -E '\.(js|html|css|webmanifest)$' | grep -v '^sw\.js$')
+if [ -z "$CHANGED" ]; then exit 0; fi
+
+SW=sw.js
+CURRENT=$(grep -oE 'health-app-v([0-9]+)' "$SW" | grep -oE '[0-9]+$')
+if [ -z "$CURRENT" ]; then exit 0; fi
+
+NEXT=$((CURRENT + 1))
+sed -i "s/health-app-v${CURRENT}/health-app-v${NEXT}/" "$SW"
+echo "SW cache: v${CURRENT} → v${NEXT}"
+git add "$SW"
