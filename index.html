@@ -118,47 +118,20 @@
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
         </button>
       </div>
-      <div id="range-filter" class="range-seg" aria-label="טווח זמן">
-        <button data-range="7" class="seg-btn">שבוע</button>
-        <button data-range="30" class="seg-btn">חודש</button>
-        <button data-range="all" class="seg-btn">הכל</button>
-      </div>
+      <div id="range-filter" style="display:none"></div>
     </header>
 
     <!-- ===== עמודים בהחלקה ===== -->
     <div id="pager" class="pager">
 
       <!-- ========== בית ========== -->
-      <section class="page" data-title="בית" data-sub="תמונת מצב" style="position:relative">
-        <button class="home-edit-btn" id="home-edit-btn" aria-label="עריכת כרטיסים">⚙</button>
-
-        <!-- לוח טבעות — מוכנות במרכז + מדדים מסביב -->
+      <section class="page" data-title="בית" data-sub="תמונת מצב">
         <div id="dashboard" class="dashboard"></div>
-
-        <!-- מה לעשות היום -->
         <div id="today-card"></div>
-
-        <!-- אזהרת עומס/מחלה — מופיע רק כשמצטלבים סימנים -->
         <div id="strain-warning"></div>
-
-        <!-- מה חריג -->
         <div id="anomalies"></div>
-
-        <!-- השבוע שלי — סיכום מול השבוע הקודם -->
         <div id="week-summary"></div>
-
-        <!-- תובנות אישיות — דפוסים שנמצאו בנתונים שלי -->
         <div id="insights-card"></div>
-
-
-        <!-- מגמת צעדים -->
-        <div id="steps-home"></div>
-
-        <!-- מעקב משקל -->
-        <div id="weight-card"></div>
-
-        <!-- פרופיל -->
-        <div id="home-body"></div>
       </section>
 
       <!-- ========== כוח ========== -->
