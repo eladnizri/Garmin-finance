@@ -3,8 +3,8 @@
 /* =========================================================================
  * garmin-api.js — Garmin Personal API client (browser-side).
  *
- * Auth flow: API key → POST /oauth/token → 24h access token → Bearer header.
- * All requests go through the CORS proxy (Cloudflare Worker).
+ * Auth flow: API key → POST /personal-token → 24h access token → Bearer header.
+ * All requests go through the CORS proxy (Supabase Edge Function).
  *
  * Env/config stored in localStorage:
  *   garmin_api_key   — the user's Personal API consumer key
@@ -45,10 +45,9 @@ async function getAccessToken() {
   const key = garminApiKey();
   if (!proxy || !key) throw new Error('SETUP');
 
-  const res = await fetch(`${proxy}/oauth/token`, {
+  const res = await fetch(`${proxy}/personal-token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ grant_type: 'client_credentials', client_id: key }),
+    headers: { 'Authorization': `ApiKey ${key}` },
   });
 
   if (!res.ok) {
@@ -57,7 +56,6 @@ async function getAccessToken() {
     throw new Error(`TOKEN_${res.status}: ${text.slice(0, 200)}`);
   }
 
-  // Garmin returns the token as plain text
   const accessToken = (await res.text()).trim();
   if (!accessToken) throw new Error('EMPTY_TOKEN');
 
@@ -96,15 +94,14 @@ function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); retu
 /* --- Data fetching ----------------------------------------------------- */
 
 async function fetchGarminDailySummaries(start, end) {
-  // endpoint: /dailies?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD (max 60 days)
   const chunks = [];
   let cursor = new Date(start);
   const endDate = new Date(end);
   while (cursor <= endDate) {
-    const chunkEnd = new Date(Math.min(addDays(cursor, 59).getTime(), endDate.getTime()));
+    const chunkEnd = new Date(Math.min(addDays(cursor, 364).getTime(), endDate.getTime()));
     chunks.push(garminFetch(
-      `/dailies?startDate=${isoDate(cursor)}&endDate=${isoDate(chunkEnd)}`
-    ));
+      `/usersummary-service/v2/dailysummaries?startDate=${isoDate(cursor)}&endDate=${isoDate(chunkEnd)}`
+    ).then(r => (r && r.data) || []));
     cursor = addDays(chunkEnd, 1);
   }
   return (await Promise.all(chunks)).flat();
@@ -118,7 +115,7 @@ async function fetchGarminSleep(start, end) {
   while (cursor <= endDate) {
     const chunkEnd = new Date(Math.min(addDays(cursor, 30).getTime(), endDate.getTime()));
     chunks.push(garminFetch(
-      `/sleep?startDate=${isoDate(cursor)}&endDate=${isoDate(chunkEnd)}`
+      `/sleep-service/sleep/dailySleepSummariesByDate?startDate=${isoDate(cursor)}&endDate=${isoDate(chunkEnd)}`
     ));
     cursor = addDays(chunkEnd, 1);
   }
@@ -127,9 +124,9 @@ async function fetchGarminSleep(start, end) {
 
 async function fetchGarminHRV(start, end) {
   // HRV supports up to 365 days
-  return garminFetch(
-    `/hrv?startDate=${isoDate(new Date(start))}&endDate=${isoDate(new Date(end))}`
-  );
+  const s = isoDate(new Date(start)), e = isoDate(new Date(end));
+  const r = await garminFetch(`/hrv-service/hrv/daily/${s}/${e}`);
+  return Array.isArray(r) ? r : (r && r.hrvSummaries) || [];
 }
 
 async function fetchGarminActivities(start, end) {
@@ -138,7 +135,7 @@ async function fetchGarminActivities(start, end) {
   let page = 0;
   while (true) {
     const batch = await garminFetch(
-      `/activities?startDate=${isoDate(new Date(start))}&endDate=${isoDate(new Date(end))}&start=${page * 20}&limit=20`
+      `/activitylist-service/activities/search/activities?startDate=${isoDate(new Date(start))}&endDate=${isoDate(new Date(end))}&start=${page * 20}&limit=20`
     );
     if (!Array.isArray(batch) || batch.length === 0) break;
     all.push(...batch);
@@ -149,8 +146,8 @@ async function fetchGarminActivities(start, end) {
 }
 
 async function fetchGarminFitnessAge() {
-  // single call, returns current snapshot
-  try { return await garminFetch('/fitnessAge'); } catch { return null; }
+  // Not available in Garmin Personal API
+  return null;
 }
 
 /* --- Activity name mapping --------------------------------------------- */
