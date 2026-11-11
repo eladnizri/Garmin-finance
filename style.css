@@ -1686,6 +1686,11 @@ button.tm-v:active { color: var(--primary-500); }
 /* =========================================================================
  * עמוד תובנות
  * ========================================================================= */
+#insights-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 .ins-row {
   display: flex;
   gap: 10px;
