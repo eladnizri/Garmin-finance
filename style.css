@@ -207,7 +207,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .dashboard {
   background: radial-gradient(120% 80% at 50% -5%, rgba(63, 158, 115, .08), transparent 60%), var(--surface);
   border: 1px solid transparent; border-radius: var(--r-lg);
-  box-shadow: var(--shadow); padding: 20px 16px 16px;
+  box-shadow: var(--shadow); padding: 18px 14px 14px;
+  overflow: hidden;
 }
 .dash-greet { font-size: .72rem; font-weight: 600; letter-spacing: .06em; color: var(--muted); margin-bottom: 14px; text-align: center; }
 .dash-verdict {
@@ -224,43 +225,49 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .dash-tiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 8px;
 }
 .stat-tile {
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: var(--r-md);
-  padding: 12px 11px 11px;
-  display: flex; flex-direction: column; gap: 8px;
+  border-radius: var(--r-sm);
+  padding: 10px 10px 9px;
+  display: flex; flex-direction: column; gap: 0;
   text-align: start;
   transition: transform .12s ease, background .15s ease;
-  min-height: 100px;
 }
 .stat-tile:active { transform: scale(.95); }
-.stat-top { display: flex; align-items: center; gap: 6px; }
+.stat-top {
+  display: flex; align-items: center; gap: 5px;
+  flex-wrap: nowrap; overflow: hidden;
+  margin-bottom: 7px;
+}
 .stat-ic-wrap {
-  width: 26px; height: 26px; border-radius: 8px;
+  width: 20px; height: 20px; border-radius: 6px;
   background: var(--primary-soft); display: grid; place-items: center; flex: none;
 }
 .stat-ic-wrap .ic { color: var(--primary); }
-.stat-lbl { font-size: .7rem; font-weight: 600; color: var(--ink-2); flex: 1; }
+.stat-lbl {
+  font-size: .66rem; font-weight: 600; color: var(--ink-2);
+  flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
 .stat-chip {
-  font-size: .56rem; font-weight: 700; padding: 2px 6px; border-radius: 999px;
-  white-space: nowrap; letter-spacing: .02em; flex: none;
+  font-size: .52rem; font-weight: 700; padding: 1px 5px; border-radius: 999px;
+  white-space: nowrap; flex: none; letter-spacing: 0;
 }
 .stat-val {
-  font-size: 1.75rem; font-weight: 800; letter-spacing: -.04em;
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.04em;
   font-variant-numeric: tabular-nums; line-height: 1; color: var(--ink);
-  flex: 1; display: flex; align-items: flex-end; gap: 2px;
+  display: flex; align-items: baseline; gap: 2px;
 }
-.stat-unit { font-size: .64rem; font-weight: 500; color: var(--muted); padding-bottom: 3px; }
-.stat-bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.stat-unit { font-size: .6rem; font-weight: 500; color: var(--muted); padding-bottom: 2px; }
+.stat-bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 7px; }
 .stat-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--primary-500), var(--primary-400)); transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
-.t-ok .stat-ic-wrap { background: rgba(47,158,106,.1); }
+.t-ok .stat-ic-wrap { background: rgba(47,158,106,.12); }
 .t-ok .stat-ic-wrap .ic { color: var(--ok); }
-.t-watch .stat-ic-wrap { background: rgba(207,138,31,.1); }
+.t-watch .stat-ic-wrap { background: rgba(207,138,31,.12); }
 .t-watch .stat-ic-wrap .ic { color: var(--watch); }
-.t-alert .stat-ic-wrap { background: rgba(224,99,78,.1); }
+.t-alert .stat-ic-wrap { background: rgba(224,99,78,.12); }
 .t-alert .stat-ic-wrap .ic { color: var(--alert); }
 
 .dash-rings {
@@ -1587,12 +1594,12 @@ button.tm-v:active { color: var(--primary-500); }
     overflow: hidden;
   }
 
-  /* מחוון אקטיבי — רצועה ירוקה משמאל לטאב */
+  /* מחוון אקטיבי — רצועה ירוקה בצד הפנימי (מול התוכן) */
   .tab.active {
     background: var(--primary-soft);
     color: var(--primary-500);
     font-weight: 700;
-    box-shadow: inset -3px 0 0 var(--primary);
+    box-shadow: inset 3px 0 0 var(--primary);
   }
 
   /* הגלולה המחליקה — לא רלוונטית בסיידבר */
@@ -1640,9 +1647,13 @@ button.tm-v:active { color: var(--primary-500); }
   .page > .stat-hero,
   .page > #strain-warning,
   .page > #anomalies,
+  .page > #today-card,
+  .page > #week-summary,
   .page > #sleep-rec,
   .page > #sleep-insight,
-  .page > #hr-zones { grid-column: 1 / -1; }
+  .page > #heart-insight,
+  .page > #hr-zones,
+  .page > #insights-page { grid-column: 1 / -1; }
 
   /* ----- מודאל — ממורכז, לא שקופית תחתונה ----- */
   .modal { align-items: center; }
