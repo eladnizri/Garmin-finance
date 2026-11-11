@@ -418,41 +418,35 @@ function sleepStages() {
 function renderDashboard() {
   const el = $('dashboard');
 
-  // --- טבעות המדדים הקטנות ---
-  const minis = DASH_METRICS.map((m, i) => {
-    const s = statusOf(m.key);
-    const v = s ? s.value : latest(m.key);
-    const anomalous = s && (s.level === 'watch' || s.level === 'alert');
-    const fillPct = (m.fill && v !== null) ? clamp(v / m.goal() * 100, 0, 100) : (m.fill ? 0 : null);
-    const center = v === null ? '—' : m.disp(v);
-    const ringInner = `${miniRingSvg(m.grad, fillPct, anomalous, i)}
-      <span class="mini-txt"><b>${center}</b>${m.sub ? `<i>${m.sub}</i>` : ''}</span>`;
-    const label = `<span class="mini-label">${icon(m.ico, 14)}${m.label}</span>`;
-
-    // טבעת השינה מתהפכת בלחיצה ומציגה את פירוט שלבי השינה
-    if (m.key === 'sleep_hours') {
-      const stages = sleepStages();
-      const back = stages
-        ? `<span class="flip-back">${stages.map(st =>
-            `<span class="stg"><i>${st.name}</i><b class="c-${st.cls}">${st.v == null ? '—' : minToHm(st.v)}</b></span>`).join('')}</span>`
-        : `<span class="flip-back"><span class="stg-empty">אין נתוני שלבים</span></span>`;
-      return `<button class="mini${anomalous ? ' alert' : ''}" data-flip aria-label="פירוט שינה">
-        <span class="mini-ring flip3d"><span class="flip-inner">
-          <span class="flip-front">${ringInner}</span>${back}</span></span>
-        ${label}</button>`;
-    }
-    return `<button class="mini${anomalous ? ' alert' : ''}" data-goto="${m.page}">
-      <span class="mini-ring">${ringInner}</span>${label}</button>`;
-  }).join('');
-
   const last = lastRow();
   const dateLine = last.date ? `${greeting()} · ${longDate(last.date)}` : greeting();
 
+  const tiles = DASH_METRICS.map((m) => {
+    const s = statusOf(m.key);
+    const v = s ? s.value : latest(m.key);
+    const level = s ? s.level : 'normal';
+    const display = v === null ? '—' : m.disp(v);
+    const cls = level === 'alert' ? 'alert' : level === 'watch' ? 'watch' : 'ok';
+
+    const fillPct = (m.fill && v !== null) ? clamp(v / m.goal() * 100, 0, 100) : null;
+    const bar = fillPct !== null
+      ? `<div class="stat-bar"><div class="stat-bar-fill" style="width:${fillPct}%"></div></div>`
+      : '';
+
+    const chipTxt = cls === 'ok' ? '↑ תקין' : cls === 'watch' ? '! שים לב' : '↓ חריג';
+    const statusChip = `<span class="stat-chip s-${cls}">${chipTxt}</span>`;
+    const target = m.key === 'sleep_hours' ? 'data-flip' : `data-goto="${m.page}"`;
+
+    return `<button class="stat-tile${level !== 'normal' ? ' t-' + cls : ''}" ${target} aria-label="${m.label}">
+      <div class="stat-top">${icon(m.ico, 15)}<span class="stat-lbl">${m.label}</span>${statusChip}</div>
+      <div class="stat-val">${display}<span class="stat-unit">${m.sub}</span></div>
+      ${bar}
+    </button>`;
+  }).join('');
+
   el.innerHTML = `
-    <div class="dash-center">
-      <div class="dash-greet">${dateLine}</div>
-    </div>
-    <div class="dash-rings">${minis}</div>`;
+    <div class="dash-greet">${dateLine}</div>
+    <div class="dash-tiles">${tiles}</div>`;
 
   animateRings(el);
 }
@@ -3644,6 +3638,10 @@ function setActive(idx) {
   $('page-sub').textContent = pages[idx].dataset.sub || '';
   // בורר הטווח רלוונטי רק לעמודים עם גרפים (לא בית ולא כוח)
   $('range-filter').classList.toggle('hidden', idx === 0 || idx === 1);
+  // דסקטופ: מציג רק את הדף הפעיל (ב-mobile scroll-snap מטפל בזה)
+  if (window.innerWidth >= 768) {
+    pages.forEach((p, i) => p.classList.toggle('active-page', i === idx));
+  }
 }
 /* גלילה אל עמוד — scrollBy על הפייג'ר בלבד, לפי הפרש המלבנים.
  * במכוון *לא* scrollIntoView: הוא מגלגל כל מכל-גלילה בשרשרת ההורים, ולכן
@@ -3875,6 +3873,10 @@ async function init() {
   }
 
   state.page = -1;
+  // דסקטופ: מאתחל את הדף הראשון כדף פעיל לפני setActive
+  if (window.innerWidth >= 768) {
+    pages.forEach((p, i) => p.classList.toggle('active-page', i === 0));
+  }
   setActive(0);
   if (typeof initInsights === 'function') initInsights();
   if (typeof loadGoalAdapt === 'function') loadGoalAdapt();

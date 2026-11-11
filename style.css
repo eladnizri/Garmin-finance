@@ -207,10 +207,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .dashboard {
   background: radial-gradient(120% 80% at 50% -5%, rgba(63, 158, 115, .08), transparent 60%), var(--surface);
   border: 1px solid transparent; border-radius: var(--r-lg);
-  box-shadow: var(--shadow); padding: 24px 16px 20px;
+  box-shadow: var(--shadow); padding: 20px 16px 16px;
 }
-.dash-center { display: flex; flex-direction: column; align-items: center; text-align: center; }
-.dash-greet { font-size: .72rem; font-weight: 600; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+.dash-greet { font-size: .72rem; font-weight: 600; letter-spacing: .06em; color: var(--muted); margin-bottom: 14px; text-align: center; }
 .dash-verdict {
   font-size: 1.7rem; font-weight: 800; margin-top: 10px; letter-spacing: -.02em;
   line-height: 1.25; max-width: 320px; animation: ringIn .55s cubic-bezier(.22, 1, .36, 1) backwards;
@@ -220,6 +219,41 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .dash-verdict.lvl-mid  { color: var(--watch); }
 .dash-verdict.lvl-low  { color: var(--alert, var(--watch)); }
 .dash-note { font-size: .86rem; color: var(--ink-2); line-height: 1.5; margin-top: 8px; max-width: 300px; }
+
+/* ===== stat-tiles (dashboard) ===== */
+.dash-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.stat-tile {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 10px 10px;
+  display: flex; flex-direction: column; gap: 6px;
+  text-align: start;
+  transition: transform .12s ease;
+  min-height: 92px;
+}
+.stat-tile:active { transform: scale(.96); }
+.stat-top { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.stat-lbl { font-size: .68rem; font-weight: 600; color: var(--ink-2); flex: 1; }
+.stat-top .ic { color: var(--primary); flex: none; }
+.stat-chip {
+  font-size: .56rem; font-weight: 700; padding: 2px 5px; border-radius: 999px;
+  white-space: nowrap; letter-spacing: .02em;
+}
+.stat-val {
+  font-size: 1.55rem; font-weight: 800; letter-spacing: -.03em;
+  font-variant-numeric: tabular-nums; line-height: 1; color: var(--ink);
+}
+.stat-unit { font-size: .62rem; font-weight: 500; color: var(--muted); margin-inline-start: 2px; }
+.stat-bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 2px; }
+.stat-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--primary-500), var(--primary-400)); transition: width 1s cubic-bezier(.2,.8,.2,1); }
+.t-ok .stat-top .ic { color: var(--ok); }
+.t-watch .stat-top .ic { color: var(--watch); }
+.t-alert .stat-top .ic { color: var(--alert); }
 
 .dash-rings {
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
@@ -637,6 +671,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .tab {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 10px 0 7px; color: var(--muted); transition: color .15s, transform .12s;
+  min-height: 56px;
 }
 .tab:active { transform: scale(.92); }
 .tab svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -1563,13 +1598,16 @@ button.tm-v:active { color: var(--primary-500); }
 
   /* ----- עמוד — פריסה דו-טורית ----- */
   .page {
-    display: grid;
+    display: none;
     grid-template-columns: 1fr 1fr;
     gap: var(--gap);
     align-content: start;
     padding: 20px 24px 32px;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+  .page.active-page {
+    display: grid;
   }
 
   /* ביטול רווח-עליון ממוביל (מנגנון מובייל) */
@@ -1675,3 +1713,19 @@ button.tm-v:active { color: var(--primary-500); }
 }
 .load-readiness { font-size: .72rem; font-weight: 600; }
 .load-label     { font-size: .65rem; color: var(--ink-3); }
+
+/* ===== נגישות: focus-visible ===== */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible { border-radius: var(--r-sm); }
+.field input:focus-visible, .field select:focus-visible { outline: none; }
+
+/* ===== hover על דסקטופ ===== */
+@media (hover: hover) {
+  .card:hover { box-shadow: 0 20px 44px -20px rgba(47,90,70,.35), 0 3px 10px -3px rgba(47,90,70,.10); }
+  .stat-tile:hover { background: var(--surface); border-color: rgba(63,158,115,.25); }
+  .tab:hover:not(.active) { background: var(--primary-soft); color: var(--primary-500); }
+}
