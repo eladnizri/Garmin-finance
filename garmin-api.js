@@ -145,6 +145,21 @@ async function fetchGarminActivities(start, end) {
   return all;
 }
 
+async function fetchGarminSteps(start, end) {
+  // dedicated steps endpoint, max 28 days per request
+  const chunks = [];
+  let cursor = new Date(start);
+  const endDate = new Date(end);
+  while (cursor <= endDate) {
+    const chunkEnd = new Date(Math.min(addDays(cursor, 27).getTime(), endDate.getTime()));
+    chunks.push(garminFetch(
+      `/usersummary-service/stats/steps/daily/${isoDate(cursor)}/${isoDate(chunkEnd)}`
+    ));
+    cursor = addDays(chunkEnd, 1);
+  }
+  return (await Promise.all(chunks)).flat();
+}
+
 async function fetchGarminFitnessAge() {
   // Not available in Garmin Personal API
   return null;
@@ -175,11 +190,12 @@ async function syncGarminData(onProgress, backfillDays) {
 
   // Fetch all data sources in parallel where possible
   onProgress?.('מושך נתונים…');
-  const [dailies, sleepData, hrvData, activities, fitnessAge] = await Promise.all([
+  const [dailies, sleepData, hrvData, activities, stepsData, fitnessAge] = await Promise.all([
     fetchGarminDailySummaries(start, today),
     fetchGarminSleep(start, today),
     fetchGarminHRV(start, today),
     fetchGarminActivities(start, today),
+    fetchGarminSteps(start, today),
     fetchGarminFitnessAge(),
   ]);
 
@@ -193,6 +209,13 @@ async function syncGarminData(onProgress, backfillDays) {
   for (const h of hrvData) {
     const day = h.calendarDate || h.startDate || '';
     if (day) hrvByDate[day] = h;
+  }
+
+  // Index steps by date (from dedicated endpoint)
+  const stepsByDate = {};
+  for (const s of stepsData) {
+    const day = s.calendarDate || '';
+    if (day && s.steps != null) stepsByDate[day] = Number(s.steps);
   }
 
   // Index activities by date
@@ -227,13 +250,13 @@ async function syncGarminData(onProgress, backfillDays) {
     if (!day) continue;
     const record = { date: day };
 
-    // Daily summary fields — v2 uses nested objects
+    // Daily summary fields — v2 uses nested objects; steps from dedicated endpoint
     const rhr = d.heartRate?.restingValue ?? d.restingHeartRate;
     if (rhr != null) record.rhr = rhr;
     const stress = d.stress?.averageLevel ?? d.averageStressLevel;
     if (stress != null && stress >= 0) record.stress_avg = stress;
-    const steps = d.movement?.steps ?? d.totalSteps;
-    if (steps != null) record.steps = steps;
+    const steps = stepsByDate[day] ?? d.movement?.steps ?? d.totalSteps;
+    if (steps != null && !Number.isNaN(Number(steps))) record.steps = Number(steps);
     const cals = d.calories?.totalKilocalories ?? d.totalKilocalories;
     if (cals != null) record.calories = Math.round(cals);
     const floors = d.movement?.floorsAscended ?? d.floorsAscended;
