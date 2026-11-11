@@ -1385,7 +1385,7 @@ button.tm-v:active { color: var(--primary-500); }
 .phase-del { padding: 2px 6px !important; min-width: auto !important; }
 
 /* כפתור מירוץ יעד קומפקטי */
-.race-compact { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); cursor: pointer; text-align: start; color: var(--ink); }
+.race-compact { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; text-align: start; color: var(--ink); }
 .race-c-ic { flex-shrink: 0; color: var(--primary-500); }
 .race-c-body { flex: 1; line-height: 1.4; }
 .race-c-body b { display: block; font-size: .88rem; }
