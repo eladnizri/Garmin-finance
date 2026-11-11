@@ -3556,6 +3556,28 @@ $('garmin-settings-btn').addEventListener('click', () => { closeProfile(); openS
 $('export-btn').addEventListener('click', exportBackup);
 $('import-btn').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });
+$('check-update-btn').addEventListener('click', async () => {
+  const btn = $('check-update-btn');
+  btn.textContent = '🔄 בודק...';
+  btn.disabled = true;
+  window._swUpdateManual = true;
+  try {
+    const reg = window._swReg || await navigator.serviceWorker.getRegistration();
+    if (!reg) throw new Error('no reg');
+    await reg.update();
+    // אם אין SW חדש — reg.installing יהיה null
+    await new Promise(r => setTimeout(r, 2500));
+    if (!reg.installing && !reg.waiting) {
+      btn.textContent = '✓ האפליקציה מעודכנת';
+      btn.disabled = false;
+      window._swUpdateManual = false;
+    }
+  } catch {
+    btn.textContent = '🔄 בדיקת עדכון';
+    btn.disabled = false;
+    window._swUpdateManual = false;
+  }
+});
 
 
 
@@ -3868,11 +3890,14 @@ async function init() {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // isFirstInstall: אין SW פעיל לפני הרישום הנוכחי — אין מה "לעדכן"
     const isFirstInstall = !navigator.serviceWorker.controller;
-    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+      .then(reg => { window._swReg = reg; })
+      .catch(() => {});
     navigator.serviceWorker.addEventListener('message', e => {
-      if (e.data?.type === 'SW_UPDATED' && !isFirstInstall) showUpdateBanner();
+      if (e.data?.type !== 'SW_UPDATED') return;
+      if (window._swUpdateManual) { location.reload(); return; }
+      if (!isFirstInstall) showUpdateBanner();
     });
   });
 }
