@@ -227,13 +227,20 @@ async function syncGarminData(onProgress, backfillDays) {
     if (!day) continue;
     const record = { date: day };
 
-    // Daily summary fields
-    if (d.restingHeartRate != null) record.rhr = d.restingHeartRate;
-    if (d.averageStressLevel != null && d.averageStressLevel >= 0) record.stress_avg = d.averageStressLevel;
-    if (d.totalSteps != null) record.steps = d.totalSteps;
-    if (d.totalKilocalories != null) record.calories = Math.round(d.totalKilocalories);
-    if (d.floorsAscended != null) record.floors = d.floorsAscended;
-    const intense = (d.moderateIntensityMinutes || 0) + 2 * (d.vigorousIntensityMinutes || 0);
+    // Daily summary fields — v2 uses nested objects
+    const rhr = d.heartRate?.restingValue ?? d.restingHeartRate;
+    if (rhr != null) record.rhr = rhr;
+    const stress = d.stress?.averageLevel ?? d.averageStressLevel;
+    if (stress != null && stress >= 0) record.stress_avg = stress;
+    const steps = d.movement?.steps ?? d.totalSteps;
+    if (steps != null) record.steps = steps;
+    const cals = d.calories?.totalKilocalories ?? d.totalKilocalories;
+    if (cals != null) record.calories = Math.round(cals);
+    const floors = d.movement?.floorsAscended ?? d.floorsAscended;
+    if (floors != null) record.floors = floors;
+    const modMin = d.intensityMinutes?.moderateMinutes ?? d.moderateIntensityMinutes ?? 0;
+    const vigMin = d.intensityMinutes?.vigorousMinutes ?? d.vigorousIntensityMinutes ?? 0;
+    const intense = modMin + 2 * vigMin;
     if (intense > 0) record.intensity_min = intense;
 
     // Sleep
