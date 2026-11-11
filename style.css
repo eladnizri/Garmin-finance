@@ -1188,25 +1188,34 @@ button.tm-v:active { color: var(--primary-500); }
 /* =========================================================================
  * כרטיס "היום" — ההמלצה היחידה שפותחת את מסך הבית
  * ========================================================================= */
-.today-card { padding: 15px 16px; border-inline-start: 4px solid var(--primary); }
+.today-card { padding: 14px 16px 16px; border-inline-start: 4px solid var(--primary); }
 .today-card.tone-go   { border-inline-start-color: var(--ok); }
 .today-card.tone-easy { border-inline-start-color: var(--watch); }
 .today-card.tone-rest { border-inline-start-color: var(--alert); }
 .today-head { display: flex; gap: 12px; align-items: center; }
+.today-kicker {
+  display: block; font-size: .64rem; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
+/* session = שורת אימון אחת (ראשית או נוספת) */
+.today-session { display: flex; gap: 12px; align-items: flex-start; }
+.today-session + .today-session {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line);
+}
+.today-session-body { flex: 1; min-width: 0; }
 .today-ic {
   width: 42px; height: 42px; border-radius: 13px; flex: none;
   display: grid; place-items: center; background: var(--surface-2); color: var(--primary-500);
 }
-.tone-easy .today-ic { color: var(--watch); }
-.tone-rest .today-ic { color: var(--alert); }
-.today-kicker {
-  display: block; font-size: .64rem; font-weight: 700; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--muted);
-}
+.today-session.tone-go .today-ic   { color: var(--ok); }
+.today-session.tone-easy .today-ic { color: var(--watch); }
+.today-session.tone-rest .today-ic { color: var(--alert); }
+.today-session-extra .today-ic { background: var(--surface-2); opacity: .85; }
 .today-title { font-size: 1.05rem; font-weight: 700; line-height: 1.35; }
-.today-detail { font-size: .85rem; line-height: 1.6; color: var(--ink-2); margin-top: 11px; }
+.today-detail { font-size: .85rem; line-height: 1.6; color: var(--ink-2); margin-top: 8px; }
+.today-detail-sm { font-size: .78rem; margin-top: 4px; }
 /* הנימוקים — המספרים שמאחורי ההמלצה, כדי שלא תיראה כמו הכרזה שרירותית */
-.today-why { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; }
+.today-why { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .today-why span {
   font-size: .71rem; font-weight: 600; color: var(--ink-2);
   background: var(--surface-2); border-radius: 999px; padding: 4px 10px;

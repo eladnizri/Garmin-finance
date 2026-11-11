@@ -553,19 +553,83 @@ function todayPlan() {
 }
 
 const TODAY_ICON = { rest: 'yoga', easy: 'walk', strength: 'dumbbell', quality: 'bolt', volume: 'run', gap: 'dumbbell', maintain: 'yoga', race: 'trophy' };
+const SPORT_ICON = { running: 'run', swimming: 'drop', cycling: 'bike' };
+
+/* מחזיר את כל האימונים האירוביים מהתוכנית להיום */
+function todayAeroItems() {
+  if (typeof loadAeroPlan !== 'function' || typeof AERO_SPORTS === 'undefined') return [];
+  const ap = loadAeroPlan();
+  const todayDow = new Date(`${todayISO()}T12:00:00`).getDay();
+  return ap.filter(s => s.day === todayDow && s.type !== 'rest').map(s => {
+    const sportInfo = AERO_SPORTS.find(sp => sp.key === s.sport);
+    const typeInfo = (typeof AERO_WORKOUT_TYPES !== 'undefined') ? AERO_WORKOUT_TYPES.find(t => t.key === s.type) : null;
+    return {
+      sport: s.sport,
+      icon: SPORT_ICON[s.sport] || 'run',
+      title: `${sportInfo?.label || s.sport} — ${typeInfo?.label || s.type}`,
+      key: (s.type === 'intervals' || s.type === 'tempo') ? 'quality' : 'volume',
+    };
+  });
+}
+
 function renderToday() {
   const el = $('today-card');
   if (!el) return;
   const p = todayPlan();
   if (!p) { el.innerHTML = ''; return; }
-  el.innerHTML = `<article class="card today-card tone-${p.tone}">
-    <div class="today-head">
-      <span class="today-ic">${icon(TODAY_ICON[p.key] || 'bolt', 22)}</span>
-      <div><span class="today-kicker">היום</span>
-        <h2 class="today-title">${p.title}</h2></div>
+
+  const aeroItems = todayAeroItems();
+  // מסנן אירוביים שכבר מיוצגים בהמלצה הראשית
+  const extraAero = aeroItems.filter(a => p.key !== a.key || p.tone !== 'go' ||
+    !(p.title.includes(a.title.split('—')[0].trim())));
+
+  // האם ההמלצה הראשית היא כבר אירובית (מהתוכנית)?
+  const mainIsAero = p.key === 'volume' || p.key === 'quality';
+  // האם יש צורך בכוח גם כן?
+  const needStrength = !mainIsAero && (p.key === 'strength' || p.key === 'gap');
+
+  let sessionsHtml = '';
+
+  // כרטיס ראשי
+  sessionsHtml += `<div class="today-session tone-${p.tone}">
+    <span class="today-ic">${icon(TODAY_ICON[p.key] || 'bolt', 22)}</span>
+    <div class="today-session-body">
+      <h2 class="today-title">${p.title}</h2>
+      <p class="today-detail">${p.detail}</p>
+      ${p.why.length ? `<div class="today-why">${p.why.map(w => `<span>${w}</span>`).join('')}</div>` : ''}
     </div>
-    <p class="today-detail">${p.detail}</p>
-    ${p.why.length ? `<div class="today-why">${p.why.map(w => `<span>${w}</span>`).join('')}</div>` : ''}
+  </div>`;
+
+  // אימונים אירוביים נוספים מהתוכנית (שלא מיוצגים בהמלצה הראשית)
+  for (const a of extraAero) {
+    sessionsHtml += `<div class="today-session tone-go today-session-extra">
+      <span class="today-ic">${icon(a.icon, 22)}</span>
+      <div class="today-session-body">
+        <h2 class="today-title">${a.title}</h2>
+        <p class="today-detail today-detail-sm">לפי התוכנית האירובית שלך</p>
+      </div>
+    </div>`;
+  }
+
+  // אם ההמלצה הראשית היא אירובית — מציג גם כוח אם נדרש
+  if (mainIsAero && p.key !== 'rest') {
+    // בדיקה האם יש צורך בכוח (strLeft > 0 — בדיקה עקיפה דרך ה-why)
+    const hasStrengthNote = p.why.some(w => w.includes('כוח'));
+    if (hasStrengthNote) {
+      sessionsHtml += `<div class="today-session tone-go today-session-extra">
+        <span class="today-ic">${icon('dumbbell', 22)}</span>
+        <div class="today-session-body">
+          <h2 class="today-title">אימון כוח</h2>
+          <p class="today-detail today-detail-sm">גם כוח מתוכנן לשבוע הזה</p>
+        </div>
+      </div>`;
+    }
+  }
+
+  const multi = extraAero.length > 0;
+  el.innerHTML = `<article class="card today-card${multi ? ' today-multi' : ''}">
+    <span class="today-kicker">היום${multi ? ` · ${1 + extraAero.length} אימונים` : ''}</span>
+    ${sessionsHtml}
   </article>`;
 }
 
