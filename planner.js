@@ -129,9 +129,20 @@ function renderPlanner() {
     body += `<div class="plan-week">${daySlots.join('')}</div></div>`;
   }
 
+  const weekStart = new Date(weekStartISO(new Date(todayISO())));
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+  const fmtD = d => `${d.getDate()}/${d.getMonth() + 1}`;
+  const weekRange = `${fmtD(weekStart)}–${fmtD(weekEnd)}`;
+
   el.innerHTML = `<article class="card">
-    <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2>
-      <button class="world-link" id="plan-edit">עריכה ‹</button></div>
+    <div class="card-head">
+      <h2>${icon('calendar', 18)} תוכנית אירובית</h2>
+      <button class="world-link" id="plan-edit">עריכה ‹</button>
+    </div>
+    <div class="plan-week-header">
+      <span class="plan-week-label">שבוע נוכחי</span>
+      <span class="plan-week-dates">${weekRange}</span>
+    </div>
     ${body}
   </article>`;
 }
@@ -154,24 +165,37 @@ function weekRunDates() { return weekActivityDates(); }
 function openPlanSetup() {
   const plan = loadPlan();
   const aeroPlan = loadAeroPlan();
+  const todayDay = new Date(todayISO()).getDay();
+  const weekStart = new Date(weekStartISO(new Date(todayISO())));
 
-  let aeroFields = '';
+  let aeroRows = '';
   for (const sport of AERO_SPORTS) {
-    aeroFields += `<div class="plan-field">
-      <label>${sport.label} (ק״מ בשבוע)</label>
-      <input type="number" name="aero_${sport.key}" value="${plan.aerobic[sport.key] || ''}"
-        min="0" step="1" inputmode="decimal" placeholder="0">
+    aeroRows += `<div class="plan-grouped-row">
+      <label class="plan-grouped-label" for="aero_${sport.key}">
+        ${sport.label}
+        <small>ק״מ בשבוע</small>
+      </label>
+      <input type="number" id="aero_${sport.key}" name="aero_${sport.key}"
+        value="${plan.aerobic[sport.key] || ''}" min="0" step="1"
+        inputmode="decimal" placeholder="0">
     </div>`;
   }
 
-  let weekFields = '';
+  let dayRows = '';
   for (let i = 0; i < 7; i++) {
     const planned = aeroPlan.find(s => s.day === i);
-    weekFields += `<div class="plan-field plan-day-field">
-      <label>${DAY_NAMES[i]}</label>
-      <div class="plan-day-selects">
+    const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
+    const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
+    const isToday = i === todayDay;
+    dayRows += `<div class="plan-day-row">
+      <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${DAY_NAMES[i][0]}</div>
+      <div class="plan-day-info">
+        <span>${DAY_NAMES[i]}</span>
+        <small>${dateStr}</small>
+      </div>
+      <div class="plan-day-selects-hig">
         <select name="asport_${i}">
-          <option value="rest">מנוחה</option>
+          <option value="rest"${!planned || planned.sport === 'rest' ? ' selected' : ''}>מנוחה</option>
           ${AERO_SPORTS.map(s =>
             `<option value="${s.key}" ${planned?.sport === s.key ? 'selected' : ''}>${s.label}</option>`).join('')}
         </select>
@@ -191,10 +215,14 @@ function openPlanSetup() {
       <div class="modal-head"><h2>תוכנית אירובית</h2>
         <button class="close-btn" aria-label="סגירה">✕</button></div>
       <form id="plan-form">
-        <h3>נפח שבועי</h3>
-        ${aeroFields}
-        <h3>אימון לפי יום</h3>
-        ${weekFields}
+        <div class="plan-section">
+          <div class="plan-section-title">נפח שבועי</div>
+          <div class="plan-grouped-list">${aeroRows}</div>
+        </div>
+        <div class="plan-section">
+          <div class="plan-section-title">אימון לפי יום</div>
+          <div class="plan-grouped-list">${dayRows}</div>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn-ghost" id="plan-cancel">ביטול</button>
           <button type="submit" class="btn-primary">שמור</button>

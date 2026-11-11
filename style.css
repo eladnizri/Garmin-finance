@@ -1397,6 +1397,72 @@ button.tm-v:active { color: var(--primary-500); }
 .phase-row select { width: 70px; }
 .phase-row input[type="date"] { width: 120px; }
 .phase-row input[type="number"] { width: 80px; }
+
+/* =========================================================
+ * גרפים מתכווצים
+ * ========================================================= */
+.chart-fold .chart-body { overflow: hidden; transition: max-height .28s ease, opacity .2s ease; max-height: 400px; opacity: 1; }
+.chart-fold.collapsed .chart-body { max-height: 0; opacity: 0; }
+.fold-arrow { margin-inline-start: auto; font-size: 1.1rem; color: var(--ink-3); transition: transform .22s ease; display: inline-block; }
+.chart-fold.collapsed .fold-arrow { transform: rotate(180deg); }
+.fold-toggle { cursor: pointer; user-select: none; }
+.fold-toggle:hover .fold-arrow { color: var(--primary-500); }
+
+/* =========================================================
+ * תוכנית אירובית — עיצוב HIG
+ * ========================================================= */
+.plan-week-header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px; }
+.plan-week-label { font-size: .78rem; color: var(--ink-3); }
+.plan-week-dates { font-size: .78rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+/* מודאל תוכנית — קבוצות HIG */
+.plan-section { margin-bottom: 20px; }
+.plan-section-title {
+  font-size: .68rem; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--ink-3);
+  padding: 0 4px; margin-bottom: 6px;
+}
+.plan-grouped-list {
+  background: var(--surface-2); border-radius: var(--r); overflow: hidden;
+}
+.plan-grouped-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; min-height: 44px;
+  border-bottom: 1px solid var(--line);
+}
+.plan-grouped-row:last-child { border-bottom: none; }
+.plan-grouped-label { flex: 1; font-size: .9rem; color: var(--ink); }
+.plan-grouped-label small { display: block; font-size: .75rem; color: var(--ink-3); margin-top: 1px; }
+.plan-grouped-row input[type="number"] {
+  width: 68px; height: 36px; padding: 0 10px; text-align: center;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink);
+  font-size: .9rem; font-family: inherit;
+}
+.plan-day-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; min-height: 52px;
+  border-bottom: 1px solid var(--line);
+}
+.plan-day-row:last-child { border-bottom: none; }
+.plan-day-badge {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700;
+  background: var(--surface); color: var(--ink-2);
+}
+.plan-day-badge.today-badge { background: var(--primary-500); color: #fff; }
+.plan-day-info { flex: 1; min-width: 0; }
+.plan-day-info span { font-size: .88rem; color: var(--ink); display: block; }
+.plan-day-info small { font-size: .72rem; color: var(--ink-3); }
+.plan-day-selects-hig { display: flex; gap: 6px; }
+.plan-day-selects-hig select {
+  flex: 1; height: 36px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink);
+  font-size: .82rem; font-family: inherit;
+  min-width: 0;
+}
 .phase-del { padding: 2px 6px !important; min-width: auto !important; }
 
 /* כפתור מירוץ יעד קומפקטי */
