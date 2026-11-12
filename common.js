@@ -61,6 +61,7 @@ function fmt(value, decimals = 0) {
 }
 
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+const SHORT_DAY_NAMES = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו', 'ש'];
 
 function shortDate(iso) {
   const [, m, d] = iso.split('-');
@@ -69,7 +70,7 @@ function shortDate(iso) {
 
 function longDate(iso) {
   const date = new Date(`${iso}T12:00:00`);
-  return `יום ${DAY_NAMES[date.getDay()]}, ${shortDate(iso)}`;
+  return `יום ${SHORT_DAY_NAMES[date.getDay()]}, ${shortDate(iso)}`;
 }
 
 function minToHm(min) {

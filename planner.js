@@ -121,7 +121,7 @@ function renderPlanner() {
       const isRest = !planned || planned.type === 'rest';
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
       daySlots.push(`<div class="plan-day ${cls}">
-        <small>${DAY_NAMES[i][0]}</small>
+        <small>${SHORT_DAY_NAMES[i]}</small>
         ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${sportInfo?.label || ''}${planned?.km ? ` ${fmt(planned.km, 1)}ק"מ` : ''}<br><small>${typeInfo?.label || ''}</small></span>`}
         ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
       </div>`);
@@ -189,7 +189,7 @@ function openPlanSetup() {
     const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
     const isToday = i === todayDay;
     dayRows += `<div class="plan-day-row${isRest ? ' is-rest' : ''}">
-      <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${DAY_NAMES[i][0]}</div>
+      <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${SHORT_DAY_NAMES[i]}</div>
       <div class="plan-day-body">
         <div class="plan-day-top">
           <div class="plan-day-info">
@@ -324,7 +324,7 @@ function renderStrengthWeekCard() {
       const isRest = !planned;
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
       body += `<button class="plan-day ${cls}" data-iso="${iso}" ${isFuture || isRest ? 'disabled' : ''}>
-        <small>${DAY_NAMES[i][0]}</small>
+        <small>${SHORT_DAY_NAMES[i]}</small>
         ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${prog?.name?.slice(0,8) || '?'}</span>`}
         ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
       </button>`;
@@ -368,7 +368,7 @@ function openStrengthWeekSetup() {
     const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
     const isToday = i === todayDay;
     dayRows += `<div class="plan-day-row">
-      <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${DAY_NAMES[i][0]}</div>
+      <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${SHORT_DAY_NAMES[i]}</div>
       <div class="plan-day-info">
         <span>${DAY_NAMES[i]}</span>
         <small>${dateStr}</small>

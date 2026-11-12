@@ -444,9 +444,9 @@ function renderDashboard() {
       <div class="stat-top">
         <span class="stat-ic-wrap">${icon(m.ico, 14)}</span>
         <span class="stat-lbl">${m.label}</span>
-        ${statusChip}
       </div>
       <div class="stat-val">${display}<span class="stat-unit">${m.sub}</span></div>
+      ${statusChip}
       ${bar}
     </button>`;
   }).join('');
@@ -1183,7 +1183,7 @@ function shortDateY(iso) {
   const y = iso.slice(0, 4);
   return y === todayISO().slice(0, 4) ? shortDate(iso) : `${shortDate(iso)}.${y.slice(2)}`;
 }
-const longDateY = iso => `יום ${DAY_NAMES[new Date(`${iso}T12:00:00`).getDay()]}, ${shortDateY(iso)}`;
+const longDateY = iso => `יום ${SHORT_DAY_NAMES[new Date(`${iso}T12:00:00`).getDay()]}, ${shortDateY(iso)}`;
 
 /* כל הריצות בטווח המוצג, הישן→חדש, עם סיווג ומדדים גזורים */
 function runsInRange() {
@@ -2246,7 +2246,7 @@ function renderStrength() {
     if (done && !isFuture) doneThisWeek++;
     const cls = [done ? 'done' : '', isAuto ? 'auto' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
     days.push(`<button class="wday ${cls}" data-iso="${iso}" ${isFuture || isAuto ? 'disabled' : ''}>
-      <i>${done ? '✓' : ''}</i><small>${DAY_NAMES[i][0]}</small></button>`);
+      <i>${done ? '✓' : ''}</i><small>${SHORT_DAY_NAMES[i]}</small></button>`);
   }
 
   // רצף שבועות ביעד (השבוע נספר רק אם כבר עמד ביעד)
