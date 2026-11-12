@@ -99,7 +99,6 @@ function renderPlanner() {
   for (const sport of activeSports) {
     const target = plan.aerobic[sport.key] || 0;
     const sportDays = aeroPlan.filter(s => s.sport === sport.key);
-    if (!target && !sportDays.length) continue; // ענף ללא תוכנית — לא מציג
 
     let body = '';
 
@@ -153,6 +152,8 @@ function renderPlanner() {
       }
       body += `<div class="plan-aero-week"><div class="plan-week">${daySlots.join('')}</div></div>`;
     }
+
+    if (!body) body = `<p class="tr-empty">לחץ עריכה כדי להגדיר תוכנית.</p>`;
 
     html += `<article class="card">
       <div class="card-head">
