@@ -53,7 +53,10 @@ async function dbPutDays(rows) {
     await new Promise((resolve, reject) => {
       const get = store.get(row.date);
       get.onsuccess = () => {
-        const merged = { ...(get.result || {}), ...row };
+        const base = get.result || {};
+        // Don't overwrite existing non-null values with null/undefined
+        const patch = Object.fromEntries(Object.entries(row).filter(([, v]) => v !== null && v !== undefined));
+        const merged = { ...base, ...patch };
         const put = store.put(merged);
         put.onsuccess = () => resolve();
         put.onerror = () => reject(put.error);

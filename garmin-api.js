@@ -212,10 +212,12 @@ async function syncGarminData(onProgress, backfillDays) {
   }
 
   // Index steps by date (from dedicated endpoint)
+  // Garmin API returns totalSteps in this endpoint, some versions use steps
   const stepsByDate = {};
   for (const s of stepsData) {
     const day = s.calendarDate || '';
-    if (day && s.steps != null) stepsByDate[day] = Number(s.steps);
+    const sv = s.totalSteps ?? s.steps;
+    if (day && sv != null) stepsByDate[day] = Number(sv);
   }
 
   // Index activities by date
@@ -255,7 +257,7 @@ async function syncGarminData(onProgress, backfillDays) {
     if (rhr != null) record.rhr = rhr;
     const stress = d.stress?.averageLevel ?? d.averageStressLevel;
     if (stress != null && stress >= 0) record.stress_avg = stress;
-    const steps = stepsByDate[day] ?? d.movement?.steps ?? d.totalSteps;
+    const steps = stepsByDate[day] ?? d.movement?.totalSteps ?? d.movement?.steps ?? d.totalSteps;
     if (steps != null && !Number.isNaN(Number(steps))) record.steps = Number(steps);
     const cals = d.calories?.totalKilocalories ?? d.totalKilocalories;
     if (cals != null) record.calories = Math.round(cals);
