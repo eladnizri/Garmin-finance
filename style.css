@@ -626,8 +626,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .rec-list b { color: var(--ink); font-weight: 700; }
 
 /* ===== לוח אימוני כוח שבועי ===== */
-.week-board { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; }
-.wday { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; padding: 0; }
+.week-board { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; overflow: hidden; }
+.wday { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; min-width: 0; padding: 0; }
 .wday i {
   width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
   background: var(--surface-2); border: 1px solid var(--border);
@@ -656,12 +656,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .plan-bar i { display: block; height: 100%; border-radius: 3px; background: var(--primary); transition: width .3s; }
 .plan-sport.done .plan-bar i { background: var(--ok); }
 .plan-sport.done .plan-sport-num { color: var(--ok); }
-.plan-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 12px 0; text-align: center; }
-.plan-day { padding: 8px 2px; border-radius: 10px; background: var(--surface-2); font-size: .75rem; position: relative; border: none; cursor: pointer; color: inherit; width: 100%; }
+.plan-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin: 12px 0; text-align: center; }
+.plan-day { padding: 8px 2px; border-radius: 10px; background: var(--surface-2); font-size: .75rem; position: relative; border: none; cursor: pointer; color: inherit; width: 100%; overflow: hidden; }
 .plan-day:disabled { cursor: default; opacity: .6; }
 .plan-day:not(:disabled):hover { background: color-mix(in srgb, var(--primary) 10%, var(--surface-2)); }
 .plan-day small { display: block; color: var(--ink-2); margin-bottom: 2px; }
-.plan-prog { display: block; font-size: 0.69rem; font-weight: 600; line-height: 1.2; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-prog { display: block; font-size: 0.69rem; font-weight: 600; line-height: 1.2; color: var(--ink); overflow: hidden; }
+.plan-prog-line { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-prog small { display: block; color: var(--ink-2); font-size: 0.6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plan-rest { color: var(--muted); }
 .plan-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
 .plan-day.done { background: color-mix(in srgb, var(--ok) 12%, transparent); }
