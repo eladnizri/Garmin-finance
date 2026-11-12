@@ -122,7 +122,7 @@ function renderPlanner() {
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
       daySlots.push(`<div class="plan-day ${cls}">
         <small>${SHORT_DAY_NAMES[i]}</small>
-        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog"><span class="plan-prog-line">${sportInfo?.label || ''}${planned?.km ? ` ${fmt(planned.km, 1)}ק"מ` : ''}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
+        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog"><span class="plan-prog-line">${planned?.km ? `${fmt(planned.km, 1)} ק"מ` : (sportInfo?.label?.slice(0, 2) || '')}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
         ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
       </div>`);
     }
