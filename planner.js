@@ -203,8 +203,12 @@ function openPlanSetup() {
           ${AERO_WORKOUT_TYPES.filter(t => t.key !== 'rest').map(t =>
             `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
         </select>
+      </div>
+      <div class="plan-km-row">
+        <label class="plan-km-label">מרחק מתוכנן</label>
         <input type="number" name="akm_${i}" value="${planned?.km || ''}" min="0" step="0.5"
-          inputmode="decimal" placeholder="ק״מ" class="plan-km-input">
+          inputmode="decimal" placeholder="0" class="plan-km-input">
+        <span class="plan-km-unit">ק״מ</span>
       </div>
     </div>`;
   }
