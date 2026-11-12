@@ -2955,8 +2955,12 @@ $('train-card').addEventListener('change', e => {
 
 
 $('planner-cards').addEventListener('click', e => {
-  if (e.target.closest('#plan-setup') || e.target.closest('.plan-edit-btn')) {
+  if (e.target.closest('#plan-setup')) {
     if (typeof openPlanSetup === 'function') openPlanSetup();
+  } else if (e.target.closest('.plan-edit-btn')) {
+    const card = e.target.closest('article.card');
+    const sportKey = card?.dataset.sport;
+    if (typeof openPlanSetup === 'function') openPlanSetup(sportKey);
   }
 });
 
@@ -3600,7 +3604,7 @@ $('save-sports-btn')?.addEventListener('click', () => {
   applyNavFromSports();
   renderAll();
   closeProfile();
-  toast('הספורטים עודכנו');
+  toast('סוגי הספורט עודכנו');
 });
 $('profile-form').addEventListener('input', renderRulePreview);
 
@@ -4206,7 +4210,7 @@ async function init() {
   if (!profile.age) {
     showOnboarding(1);
   } else if (!getSelectedSports()) {
-    // משתמש קיים ללא בחירת ספורטים — מציג רק את שלב הבחירה
+    // משתמש קיים ללא בחירת סוגי ספורט — מציג רק את שלב הבחירה
     showOnboarding(2);
   } else {
     $('app').classList.remove('hidden');
