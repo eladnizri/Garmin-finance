@@ -3853,7 +3853,9 @@ $('sync-btn').addEventListener('click', syncNow);
 function openSetup() {
   $('setup-key').value = garminApiKey();
   $('setup-proxy').value = garminProxy();
-  $('setup-remove').classList.toggle('hidden', !garminApiKey());
+  const hasKey = !!garminApiKey();
+  $('setup-remove').classList.toggle('hidden', !hasKey);
+  $('backfill-btn').classList.toggle('hidden', !hasKey);
   $('setup-modal').classList.remove('hidden');
 }
 function closeSetup() { $('setup-modal').classList.add('hidden'); }
@@ -3874,6 +3876,26 @@ $('setup-remove').addEventListener('click', () => {
   clearGarminToken();
   closeSetup();
   toast('ההגדרות נמחקו');
+});
+$('backfill-btn').addEventListener('click', async () => {
+  const days = Number($('setup-backfill').value);
+  closeSetup();
+  if (!hasGarminSetup()) return;
+  syncing = true;
+  const btn = $('sync-btn');
+  btn.classList.add('spinning');
+  try {
+    const data = await syncGarminData(msg => msg ? toast(msg, true) : null, days);
+    state.data = data;
+    renderAll();
+    toast(`נמשכו נתוני ${days} ימים אחרונים`);
+  } catch (e) {
+    console.error('Backfill error:', e);
+    toast('משיכת ההיסטוריה נכשלה');
+  } finally {
+    btn.classList.remove('spinning');
+    syncing = false;
+  }
 });
 
 /* =========================================================================
