@@ -755,6 +755,37 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ===== מסך התחברות ===== */
+.login-screen {
+  position: fixed; inset: 0; z-index: 50; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.login-box {
+  width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  text-align: center;
+}
+.login-logo { width: 80px; height: 80px; border-radius: 20px; }
+.login-title {
+  font-size: 1.8rem; font-weight: 700; margin: 0;
+  background: linear-gradient(135deg, var(--primary), var(--c-teal));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.login-desc { font-size: .9rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
+.btn-google {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 12px 28px; border: 1.5px solid var(--border); border-radius: 12px;
+  background: var(--surface); color: var(--ink); font: 600 1rem/1 'Rubik', sans-serif;
+  cursor: pointer; transition: box-shadow .15s, transform .1s;
+  margin-top: 8px;
+}
+.btn-google:active { transform: scale(.97); }
+.btn-google:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.btn-logout { color: var(--c-red) !important; }
+.user-name-label { font-size: .85rem; color: var(--ink-2); }
+
 /* ===== אשף כניסה ראשונה ===== */
 .onboarding {
   position: fixed; inset: 0; z-index: 45; background: var(--bg);

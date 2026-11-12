@@ -3934,6 +3934,27 @@ function showOnboarding() {
  * אתחול
  * ========================================================================= */
 async function init() {
+  // Auth check — show login screen if not signed in
+  let user = null;
+  try { user = await initAuth(); } catch (e) { console.error('Auth init:', e); }
+
+  $('loading').classList.add('hidden');
+
+  if (!user) {
+    $('login-screen').classList.remove('hidden');
+    $('google-login-btn').addEventListener('click', () => signInWithGoogle());
+    return;
+  }
+
+  // Show user info in profile modal
+  const uRow = $('user-info-row');
+  if (uRow) {
+    uRow.style.display = '';
+    const nameEl = $('user-display-name');
+    if (nameEl) nameEl.textContent = user.user_metadata?.full_name || user.email || '';
+    $('logout-btn')?.addEventListener('click', () => signOut());
+  }
+
   loadProfile();
   loadWeights();
   loadStrength();
@@ -3945,10 +3966,8 @@ async function init() {
   let data = [];
   try {
     data = await dbGetAll();
-  } catch { /* IndexedDB unavailable */ }
+  } catch (e) { console.error('dbGetAll:', e); }
   state.data = data;
-
-  $('loading').classList.add('hidden');
 
   // אם אין נתונים ואין פרופיל — הצגת אשף כניסה ראשונה
   if (!data.length && !profile.age) {

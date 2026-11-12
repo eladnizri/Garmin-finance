@@ -1,12 +1,12 @@
 /* Service worker — מאפשר התקנה כאפליקציה ופתיחה מהירה גם ללא רשת.
  * אסטרטגיה: cache-first לקבצי המעטפת, network-first לנתונים (health.json). */
-const CACHE = 'health-app-v74';
+const CACHE = 'health-app-v90';
 const SHELL = [
   './',
   './index.html',
   './style.css',
   './common.js',
-  './storage.js',
+  './auth.js',
   './garmin-api.js',
   './app.js',
   './insights.js',
