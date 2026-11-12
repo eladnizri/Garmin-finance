@@ -514,6 +514,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .weight-goal b { color: var(--ink); font-weight: 700; }
 .backup-row { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
 .backup-row .btn-ghost { flex: 1; font-size: .82rem; padding: 10px; }
+.sport-select-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+.sport-select-label { font-size: .82rem; font-weight: 600; color: var(--ink-2); }
 
 /* =========================================================================
  * גיליון פירוט ריצה — שני מצבים: הצצה (peek) ומסך מלא, בגרירה

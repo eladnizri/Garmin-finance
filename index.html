@@ -161,7 +161,7 @@
 
       <!-- ========== אירובי ========== -->
       <section class="page" data-title="אירובי" data-sub="ריצה ואירובי" data-sport="aerobic">
-        <div id="planner-card"></div>
+        <div id="planner-cards"></div>
         <div id="race-card"></div>
         <div id="runs-card"></div>
         <div id="cardio-log"></div>
@@ -291,6 +291,18 @@
         </form>
         <div class="backup-row">
           <button type="button" class="btn-ghost" id="garmin-settings-btn">⚙️ הגדרות חיבור גרמין</button>
+        </div>
+        <div class="backup-row sport-select-row">
+          <div class="sport-select-label">🏃 הספורטים שלי</div>
+          <div class="ob-sport-chips" id="settings-sport-chips" role="group" aria-label="בחירת ספורטים">
+            <button class="ob-sport-chip" type="button" data-sport="running">🏃 ריצה</button>
+            <button class="ob-sport-chip" type="button" data-sport="walking">🚶 הליכה</button>
+            <button class="ob-sport-chip" type="button" data-sport="cycling">🚴 אופניים</button>
+            <button class="ob-sport-chip" type="button" data-sport="swimming">🏊 שחייה</button>
+            <button class="ob-sport-chip" type="button" data-sport="pilates">🧘 פילאטיס</button>
+            <button class="ob-sport-chip" type="button" data-sport="strength">🏋️ כוח</button>
+          </div>
+          <button type="button" class="btn-primary" id="save-sports-btn">שמור ספורטים</button>
         </div>
         <div class="backup-row">
           <button type="button" class="btn-ghost" id="export-btn">⬇️ ייצוא גיבוי</button>

@@ -67,17 +67,17 @@ function weekAeroActuals() {
 }
 
 /* =========================================================================
- * כרטיס התוכנית השבועית
+ * כרטיס התוכנית השבועית — כרטיס נפרד לכל ענף ספורט פעיל
  * ========================================================================= */
 function renderPlanner() {
-  const el = $('planner-card');
+  const el = $('planner-cards');
   if (!el) return;
   const plan = loadPlan();
   const aeroPlan = loadAeroPlan();
-  const hasAero = AERO_SPORTS.some(s => plan.aerobic[s.key] > 0);
-  const hasAeroPlan = aeroPlan.length > 0;
+  const activeSports = getActiveSports();
+  const hasAnyPlan = AERO_SPORTS.some(s => plan.aerobic[s.key] > 0) || aeroPlan.length > 0;
 
-  if (!hasAero && !hasAeroPlan) {
+  if (!hasAnyPlan) {
     el.innerHTML = `<article class="card">
       <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2></div>
       <p class="tr-empty">תכנן את השבוע: הגדר נפח אירובי לפי ענף ותוכנית שבועית.</p>
@@ -86,73 +86,97 @@ function renderPlanner() {
     return;
   }
 
-  let body = '';
+  const actuals = weekAeroActuals();
+  const today = new Date(todayISO());
+  const ws = new Date(weekStartISO(today));
+  const weekEnd = new Date(ws); weekEnd.setDate(ws.getDate() + 6);
+  const fmtD = d => `${d.getDate()}/${d.getMonth() + 1}`;
+  const weekRange = `${fmtD(ws)}–${fmtD(weekEnd)}`;
+  const garminDates = weekActivityDates();
 
-  // נפח שבועי: יעד מול ביצוע
-  if (hasAero) {
-    const actuals = weekAeroActuals();
-    body += '<div class="plan-aero">';
-    for (const sport of getActiveSports()) {
-      const target = plan.aerobic[sport.key] || 0;
-      if (!target) continue;
+  let html = '';
+
+  for (const sport of activeSports) {
+    const target = plan.aerobic[sport.key] || 0;
+    const sportDays = aeroPlan.filter(s => s.sport === sport.key);
+    if (!target && !sportDays.length) continue; // ענף ללא תוכנית — לא מציג
+
+    let body = '';
+
+    // שורת נפח שבועי
+    if (target && sport.hasKm !== false) {
       const actual = actuals[sport.key] || 0;
       const pct = Math.min(actual / target * 100, 100);
       const done = actual >= target;
-      body += `<div class="plan-sport${done ? ' done' : ''}">
+      body += `<div class="plan-aero"><div class="plan-sport${done ? ' done' : ''}">
         <div class="plan-sport-top">
-          <span class="plan-sport-name">${sport.label}</span>
+          <span class="plan-sport-name">נפח שבועי</span>
           <span class="plan-sport-num">${fmt(actual, 1)} / ${fmt(target, 0)} ק״מ</span>
         </div>
         <div class="plan-bar"><i style="width:${Math.round(pct)}%"></i></div>
-      </div>`;
+      </div></div>`;
+    } else if (target && sport.hasKm === false) {
+      // ספורט ללא ק״מ (פילאטיס) — ספירת ימים
+      const doneCount = [...garminDates].filter(iso => {
+        const day = new Date(`${iso}T12:00:00`).getDay();
+        return sportDays.some(s => s.day === day);
+      }).length;
+      body += `<div class="plan-aero"><div class="plan-sport">
+        <div class="plan-sport-top">
+          <span class="plan-sport-name">אימונים השבוע</span>
+          <span class="plan-sport-num">${doneCount} / ${target}</span>
+        </div>
+      </div></div>`;
     }
-    body += '</div>';
+
+    // גריד ימים — רק ימים שתוכננו לענף זה
+    if (sportDays.length) {
+      const daySlots = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(ws);
+        d.setDate(ws.getDate() + i);
+        const iso = d.toISOString().slice(0, 10);
+        const isFuture = d > today;
+        const isToday = iso === todayISO();
+        const planned = sportDays.find(s => s.day === i);
+        const typeInfo = planned && AERO_WORKOUT_TYPES.find(t => t.key === planned.type);
+        const done = garminDates.has(iso) && !!planned;
+        const isRest = !planned;
+        const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
+        daySlots.push(`<div class="plan-day ${cls}">
+          <small>${SHORT_DAY_NAMES[i]}</small>
+          ${isRest
+            ? '<span class="plan-rest">—</span>'
+            : `<span class="plan-prog"><span class="plan-prog-line">${planned?.km ? `${fmt(planned.km, 1)} ק"מ` : ''}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
+          ${done ? '<i class="plan-check">✓</i>' : ''}
+        </div>`);
+      }
+      body += `<div class="plan-aero-week"><div class="plan-week">${daySlots.join('')}</div></div>`;
+    }
+
+    html += `<article class="card">
+      <div class="card-head">
+        <h2>${icon(sport.icon, 18)} ${sport.label}</h2>
+        <button class="world-link plan-edit-btn">עריכה ‹</button>
+      </div>
+      <div class="plan-week-header">
+        <span class="plan-week-label">שבוע נוכחי</span>
+        <span class="plan-week-dates">${weekRange}</span>
+      </div>
+      ${body}
+    </article>`;
   }
 
-  // תוכנית שבועית — ענף + סוג אימון לכל יום
-  if (hasAeroPlan) {
-    const today = new Date(todayISO());
-    const ws = new Date(weekStartISO(today));
-    const garminDates = weekActivityDates();
-    body += '<div class="plan-aero-week">';
-    const daySlots = [];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(ws);
-      d.setDate(ws.getDate() + i);
-      const iso = d.toISOString().slice(0, 10);
-      const isFuture = d > today;
-      const isToday = iso === todayISO();
-      const planned = aeroPlan.find(s => s.day === i);
-      const sportInfo = planned && AERO_SPORTS.find(s => s.key === planned.sport);
-      const typeInfo = planned && AERO_WORKOUT_TYPES.find(t => t.key === planned.type);
-      const done = garminDates.has(iso);
-      const isRest = !planned || planned.type === 'rest';
-      const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
-      daySlots.push(`<div class="plan-day ${cls}">
-        <small>${SHORT_DAY_NAMES[i]}</small>
-        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog"><span class="plan-prog-line">${planned?.km ? `${fmt(planned.km, 1)} ק"מ` : (sportInfo?.label?.slice(0, 2) || '')}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
-        ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
-      </div>`);
-    }
-    body += `<div class="plan-week">${daySlots.join('')}</div></div>`;
+  if (!html) {
+    // תוכנית קיימת אבל לא לאף ענף פעיל
+    html = `<article class="card">
+      <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2></div>
+      <p class="tr-empty">הגדר תוכנית לספורטים שבחרת.</p>
+      <button class="btn-primary tr-wide" id="plan-setup">הגדרת תוכנית</button>
+    </article>`;
   }
 
-  const weekStart = new Date(weekStartISO(new Date(todayISO())));
-  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
-  const fmtD = d => `${d.getDate()}/${d.getMonth() + 1}`;
-  const weekRange = `${fmtD(weekStart)}–${fmtD(weekEnd)}`;
-
-  el.innerHTML = `<article class="card">
-    <div class="card-head">
-      <h2>${icon('calendar', 18)} תוכנית אירובית</h2>
-      <button class="world-link" id="plan-edit">עריכה ‹</button>
-    </div>
-    <div class="plan-week-header">
-      <span class="plan-week-label">שבוע נוכחי</span>
-      <span class="plan-week-dates">${weekRange}</span>
-    </div>
-    ${body}
-  </article>`;
+  el.innerHTML = html;
 }
 
 function weekActivityDates() {

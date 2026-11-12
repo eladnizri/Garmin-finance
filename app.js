@@ -2954,8 +2954,8 @@ $('train-card').addEventListener('change', e => {
 });
 
 
-$('planner-card').addEventListener('click', e => {
-  if (e.target.closest('#plan-setup') || e.target.closest('#plan-edit')) {
+$('planner-cards').addEventListener('click', e => {
+  if (e.target.closest('#plan-setup') || e.target.closest('.plan-edit-btn')) {
     if (typeof openPlanSetup === 'function') openPlanSetup();
   }
 });
@@ -3562,7 +3562,15 @@ function renderRulePreview() {
         `<b style="color:${RUN_TYPES[k].color}">${counts[k]} ${RUN_TYPES[k].label}</b>`).join(' · ')
     + `<small>${hardPct}% ריצות קשות. אימון מאוזן שואף ל-~20%.</small>`;
 }
-function openProfile() { fillProfileForm(); $('profile-modal').classList.remove('hidden'); }
+function openProfile() {
+  fillProfileForm();
+  // Initialize sport chips with current selection
+  const sel = getSelectedSports() || [];
+  $('settings-sport-chips')?.querySelectorAll('.ob-sport-chip').forEach(btn => {
+    btn.classList.toggle('ob-sport-chip-sel', sel.includes(btn.dataset.sport));
+  });
+  $('profile-modal').classList.remove('hidden');
+}
 function closeProfile() { $('profile-modal').classList.add('hidden'); }
 
 $('profile-btn').addEventListener('click', openProfile);
@@ -3577,6 +3585,22 @@ $('profile-form').addEventListener('submit', e => {
   saveProfileObj(p); closeProfile(); renderAll();
 });
 $('profile-clear').addEventListener('click', () => { saveProfileObj({}); fillProfileForm(); closeProfile(); renderAll(); });
+
+// Sport chips in settings — multi-select toggle
+$('settings-sport-chips')?.querySelectorAll('.ob-sport-chip').forEach(btn => {
+  btn.addEventListener('click', () => btn.classList.toggle('ob-sport-chip-sel'));
+});
+
+// Save sports button
+$('save-sports-btn')?.addEventListener('click', () => {
+  const sel = [...$('settings-sport-chips').querySelectorAll('.ob-sport-chip-sel')].map(b => b.dataset.sport);
+  if (!sel.length) { toast('בחר לפחות ספורט אחד'); return; }
+  saveSelectedSports(sel);
+  applyNavFromSports();
+  renderAll();
+  closeProfile();
+  toast('הספורטים עודכנו');
+});
 $('profile-form').addEventListener('input', renderRulePreview);
 
 /* --- מודאל שקילה --- */
