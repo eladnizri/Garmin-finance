@@ -690,10 +690,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .tab-pill {
   position: absolute; top: 6px; height: 3px; width: 34px; border-radius: 999px;
   background: var(--primary-500);
-  inset-inline-start: calc(var(--tab-idx) * 20% + 10% - 17px);
+  inset-inline-start: var(--tab-pill-x, calc(var(--tab-idx) * 20% + 10% - 17px));
   transition: inset-inline-start .28s cubic-bezier(.22, 1, .36, 1);
   pointer-events: none;
 }
+.tab-hidden { display: none !important; }
+.page-hidden { display: none !important; }
 .tab {
   display: flex; flex-direction: column; align-items: center; gap: 2px;
   padding: 10px 0 7px; color: var(--muted); transition: color .15s, transform .12s;
@@ -919,6 +921,21 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
   border-radius: 10px; background: var(--bg); color: var(--ink);
   font: 1rem/1 'Rubik', sans-serif;
+}
+
+/* sport chip selector (multi-select) */
+.ob-sport-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.ob-sport-chip {
+  flex: 1 1 calc(33% - 10px); min-width: 90px;
+  padding: 14px 8px; border-radius: 14px;
+  border: 1.5px solid var(--border); background: var(--surface-2);
+  color: var(--ink); font: 600 1rem/1.2 'Rubik', sans-serif;
+  cursor: pointer; transition: border-color .15s, background .15s, transform .1s;
+}
+.ob-sport-chip:active { transform: scale(.96); }
+.ob-sport-chip-sel {
+  border-color: var(--primary-500); background: color-mix(in srgb, var(--primary-500) 12%, var(--surface-2));
+  color: var(--primary-500);
 }
 
 /* text input (garmin) */

@@ -3789,7 +3789,19 @@ function setActive(idx) {
   if (idx === state.page) return;
   state.page = idx;
   tabs.forEach((t, i) => t.classList.toggle('active', i === idx));
-  $('tabbar').style.setProperty('--tab-idx', idx);
+  // Position pill dynamically so it works with hidden tabs
+  requestAnimationFrame(() => {
+    const activeTab = tabs[idx];
+    if (activeTab && !activeTab.classList.contains('tab-hidden')) {
+      const tabbar = $('tabbar');
+      const tabRect = activeTab.getBoundingClientRect();
+      const barRect = tabbar.getBoundingClientRect();
+      // RTL: inset-inline-start is from the right; compute pill center offset from right
+      const tabCenterFromLeft = tabRect.left - barRect.left + tabRect.width / 2;
+      const pillX = barRect.width - tabCenterFromLeft - 17;
+      tabbar.style.setProperty('--tab-pill-x', `${pillX}px`);
+    }
+  });
   $('page-title').textContent = pages[idx].dataset.title;
   $('page-sub').textContent = pages[idx].dataset.sub || '';
   // בורר הטווח רלוונטי רק לעמודים עם גרפים (לא בית ולא כוח)
@@ -3797,6 +3809,20 @@ function setActive(idx) {
   // דסקטופ: מציג רק את הדף הפעיל (ב-mobile scroll-snap מטפל בזה)
   if (window.innerWidth >= 768) {
     pages.forEach((p, i) => p.classList.toggle('active-page', i === idx));
+  }
+}
+
+function applyNavFromSports() {
+  const sports = getSelectedSports() || [];
+  const hasStrength = sports.includes('strength');
+  const hasAerobic = sports.some(s => ['running', 'walking', 'swimming', 'cycling', 'pilates'].includes(s));
+  tabs[1].classList.toggle('tab-hidden', !hasStrength);
+  tabs[2].classList.toggle('tab-hidden', !hasAerobic);
+  pages[1].classList.toggle('page-hidden', !hasStrength);
+  pages[2].classList.toggle('page-hidden', !hasAerobic);
+  // If current page became hidden, navigate to home
+  if (state.page > 0 && pages[state.page]?.classList.contains('page-hidden')) {
+    goTo(0);
   }
 }
 /* גלילה אל עמוד — scrollBy על הפייג'ר בלבד, לפי הפרש המלבנים.
@@ -3816,6 +3842,7 @@ function snapToPage(idx, smooth) {
   pager.style.scrollSnapType = prev;
 }
 function goTo(idx) {
+  if (pages[idx]?.classList.contains('page-hidden')) return;
   haptic(10);
   // מעבר לעמוד מתחיל תמיד מראש העמוד המבוקש
   pages[idx].scrollTop = 0;
@@ -3830,6 +3857,7 @@ function currentIndex() {
   const box = pager.getBoundingClientRect();
   let best = 0, bestD = Infinity;
   pages.forEach((p, i) => {
+    if (p.classList.contains('page-hidden')) return;
     const d = Math.abs(p.getBoundingClientRect().left - box.left);
     if (d < bestD) { bestD = d; best = i; }
   });
@@ -3986,7 +4014,7 @@ function showOnboarding(startStep = 1) {
   // Google login (step 0)
   $('ob-google-btn')?.addEventListener('click', () => signInWithGoogle());
 
-  // Chip buttons (sex, steps)
+  // Chip buttons (sex, steps) — single-select
   el.querySelectorAll('.ob-chip[data-field]').forEach(btn => {
     btn.addEventListener('click', () => {
       const field = btn.dataset.field;
@@ -3995,6 +4023,11 @@ function showOnboarding(startStep = 1) {
       const input = $(field);
       if (input) input.value = btn.dataset.val;
     });
+  });
+
+  // Sport chips — multi-select
+  el.querySelectorAll('.ob-sport-chip').forEach(btn => {
+    btn.addEventListener('click', () => btn.classList.toggle('ob-sport-chip-sel'));
   });
 
   // Stepper (+/−) for age
@@ -4070,19 +4103,18 @@ function showOnboarding(startStep = 1) {
     if (v('ob-sex'))    p.sex          = v('ob-sex');
     if (v('ob-height')) p.heightCm     = Number(v('ob-height'));
     if (v('ob-weight')) p.weightKg     = Number(v('ob-weight'));
-    if (v('ob-sleep'))  p.sleepGoal    = Number(v('ob-sleep'));
-    if (v('ob-steps'))  p.stepsGoal    = Number(v('ob-steps'));
-    if (v('ob-strength')) p.strengthGoal = Number(v('ob-strength'));
-    if (v('ob-run'))    p.runGoalKm    = Number(v('ob-run'));
-    if (v('ob-bike'))   p.bikeGoalKm   = Number(v('ob-bike'));
-    if (v('ob-swim'))   p.swimGoalKm   = Number(v('ob-swim'));
     saveProfileObj(p);
+
+    // Save selected sports from chip step
+    const selectedChips = [...el.querySelectorAll('.ob-sport-chip-sel')].map(c => c.dataset.sport);
+    if (selectedChips.length) saveSelectedSports(selectedChips);
 
     const key = v('ob-garmin-key');
     if (key) setGarminKey(key);
 
     el.classList.add('hidden');
     $('app').classList.remove('hidden');
+    applyNavFromSports();
     renderAll();
     requestAnimationFrame(() => snapToPage(0, false));
     if (key) syncNow();
@@ -4148,8 +4180,12 @@ async function init() {
   // אם אין פרופיל — הצגת אשף כניסה ראשונה (מדלג על שלב הלוגין)
   if (!profile.age) {
     showOnboarding(1);
+  } else if (!getSelectedSports()) {
+    // משתמש קיים ללא בחירת ספורטים — מציג רק את שלב הבחירה
+    showOnboarding(2);
   } else {
     $('app').classList.remove('hidden');
+    applyNavFromSports();
   }
 
   state.page = -1;

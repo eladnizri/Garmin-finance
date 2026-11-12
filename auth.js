@@ -75,6 +75,7 @@ const SYNCED_KEYS = [
   'target_race_v1', 'goal_adapt_v1', 'sleep_prefs_v1', 'sleep_order_v1',
   'insights_prefs_v1', 'insights_order_v1', 'anomaly_tags_v1',
   'garmin_api_key', 'garmin_proxy_url', 'garmin_token',
+  'selected_sports_v1',
 ];
 
 async function _pullSettingsFromCloud() {

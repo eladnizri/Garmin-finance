@@ -61,6 +61,23 @@ function fmt(value, decimals = 0) {
 }
 
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
+
+const ALL_SPORTS = [
+  { key: 'running',  label: 'ריצה',    emoji: '🏃', aerobic: true,  hasKm: true  },
+  { key: 'walking',  label: 'הליכה',   emoji: '🚶', aerobic: true,  hasKm: true  },
+  { key: 'cycling',  label: 'אופניים', emoji: '🚴', aerobic: true,  hasKm: true  },
+  { key: 'swimming', label: 'שחייה',   emoji: '🏊', aerobic: true,  hasKm: true  },
+  { key: 'pilates',  label: 'פילאטיס', emoji: '🧘', aerobic: true,  hasKm: false },
+  { key: 'strength', label: 'כוח',     emoji: '🏋️', aerobic: false, hasKm: false },
+];
+const SPORTS_KEY = 'selected_sports_v1';
+function getSelectedSports() {
+  try { return JSON.parse(localStorage.getItem(SPORTS_KEY)) || null; }
+  catch { return null; }
+}
+function saveSelectedSports(arr) {
+  localStorage.setItem(SPORTS_KEY, JSON.stringify(arr));
+}
 const SHORT_DAY_NAMES = ['א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו', 'ש'];
 
 function shortDate(iso) {

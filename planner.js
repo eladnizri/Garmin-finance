@@ -8,10 +8,18 @@
  * ========================================================================= */
 const PLAN_KEY = 'workout_plan_v1';
 const AERO_SPORTS = [
-  { key: 'running',  label: 'ריצה',    typeKeys: ['running', 'treadmill_running', 'trail_running'], icon: 'run' },
-  { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'drop' },
-  { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], icon: 'bike' },
+  { key: 'running',  label: 'ריצה',    typeKeys: ['running', 'treadmill_running', 'trail_running'], icon: 'run',  hasKm: true  },
+  { key: 'walking',  label: 'הליכה',   typeKeys: ['walking', 'casual_walking', 'speed_walking'],    icon: 'walk', hasKm: true  },
+  { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'drop', hasKm: true  },
+  { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], icon: 'bike', hasKm: true  },
+  { key: 'pilates',  label: 'פילאטיס', typeKeys: ['pilates', 'yoga', 'barre'],                     icon: 'yoga', hasKm: false },
 ];
+
+function getActiveSports() {
+  const selected = typeof getSelectedSports === 'function' ? getSelectedSports() : null;
+  if (!selected) return AERO_SPORTS;
+  return AERO_SPORTS.filter(s => selected.includes(s.key));
+}
 
 const AERO_PLAN_KEY = 'aero_plan_v1';
 const AERO_WORKOUT_TYPES = [
@@ -84,7 +92,7 @@ function renderPlanner() {
   if (hasAero) {
     const actuals = weekAeroActuals();
     body += '<div class="plan-aero">';
-    for (const sport of AERO_SPORTS) {
+    for (const sport of getActiveSports()) {
       const target = plan.aerobic[sport.key] || 0;
       if (!target) continue;
       const actual = actuals[sport.key] || 0;
@@ -169,15 +177,19 @@ function openPlanSetup() {
   const weekStart = new Date(weekStartISO(new Date(todayISO())));
 
   let aeroRows = '';
-  for (const sport of AERO_SPORTS) {
+  for (const sport of getActiveSports()) {
     aeroRows += `<div class="plan-grouped-row">
       <label class="plan-grouped-label" for="aero_${sport.key}">
         ${sport.label}
-        <small>ק״מ בשבוע</small>
+        <small>${sport.hasKm !== false ? 'ק״מ בשבוע' : 'אימונים בשבוע'}</small>
       </label>
-      <input type="number" id="aero_${sport.key}" name="aero_${sport.key}"
-        value="${plan.aerobic[sport.key] || ''}" min="0" step="1"
-        inputmode="decimal" placeholder="0">
+      ${sport.hasKm !== false
+        ? `<input type="number" id="aero_${sport.key}" name="aero_${sport.key}"
+            value="${plan.aerobic[sport.key] || ''}" min="0" step="1"
+            inputmode="decimal" placeholder="0">`
+        : `<input type="number" id="aero_${sport.key}" name="aero_${sport.key}"
+            value="${plan.aerobic[sport.key] || ''}" min="0" max="7" step="1"
+            inputmode="numeric" placeholder="0">`}
     </div>`;
   }
 
@@ -198,7 +210,7 @@ function openPlanSetup() {
           </div>
           <select name="asport_${i}" class="plan-sport-sel">
             <option value="rest"${isRest ? ' selected' : ''}>מנוחה</option>
-            ${AERO_SPORTS.map(s =>
+            ${getActiveSports().map(s =>
               `<option value="${s.key}" ${planned?.sport === s.key ? 'selected' : ''}>${s.label}</option>`).join('')}
           </select>
         </div>
