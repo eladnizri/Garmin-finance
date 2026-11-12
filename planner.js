@@ -184,31 +184,35 @@ function openPlanSetup() {
   let dayRows = '';
   for (let i = 0; i < 7; i++) {
     const planned = aeroPlan.find(s => s.day === i);
+    const isRest = !planned || planned.sport === 'rest';
     const d = new Date(weekStart); d.setDate(weekStart.getDate() + i);
     const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
     const isToday = i === todayDay;
-    dayRows += `<div class="plan-day-row">
+    dayRows += `<div class="plan-day-row${isRest ? ' is-rest' : ''}">
       <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${DAY_NAMES[i][0]}</div>
-      <div class="plan-day-info">
-        <span>${DAY_NAMES[i]}</span>
-        <small>${dateStr}</small>
-      </div>
-      <div class="plan-day-selects-hig">
-        <select name="asport_${i}">
-          <option value="rest"${!planned || planned.sport === 'rest' ? ' selected' : ''}>מנוחה</option>
-          ${AERO_SPORTS.map(s =>
-            `<option value="${s.key}" ${planned?.sport === s.key ? 'selected' : ''}>${s.label}</option>`).join('')}
-        </select>
-        <select name="atype_${i}">
-          ${AERO_WORKOUT_TYPES.filter(t => t.key !== 'rest').map(t =>
-            `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
-        </select>
-      </div>
-      <div class="plan-km-row">
-        <label class="plan-km-label">מרחק מתוכנן</label>
-        <input type="number" name="akm_${i}" value="${planned?.km || ''}" min="0" step="0.5"
-          inputmode="decimal" placeholder="0" class="plan-km-input">
-        <span class="plan-km-unit">ק״מ</span>
+      <div class="plan-day-body">
+        <div class="plan-day-top">
+          <div class="plan-day-info">
+            <span>${DAY_NAMES[i]}</span>
+            <small>${dateStr}</small>
+          </div>
+          <select name="asport_${i}" class="plan-sport-sel">
+            <option value="rest"${isRest ? ' selected' : ''}>מנוחה</option>
+            ${AERO_SPORTS.map(s =>
+              `<option value="${s.key}" ${planned?.sport === s.key ? 'selected' : ''}>${s.label}</option>`).join('')}
+          </select>
+        </div>
+        <div class="plan-day-bottom">
+          <select name="atype_${i}" class="plan-type-sel">
+            ${AERO_WORKOUT_TYPES.filter(t => t.key !== 'rest').map(t =>
+              `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
+          </select>
+          <div class="plan-km-inline">
+            <input type="number" name="akm_${i}" value="${planned?.km || ''}" min="0" step="0.5"
+              inputmode="decimal" placeholder="—" class="plan-km-input">
+            <span class="plan-km-unit">ק״מ</span>
+          </div>
+        </div>
       </div>
     </div>`;
   }
@@ -241,6 +245,14 @@ function openPlanSetup() {
   modal.querySelector('.close-btn').onclick = close;
   modal.querySelector('.modal-backdrop').onclick = close;
   $('plan-cancel').onclick = close;
+
+  // Toggle rest styling when sport changes
+  for (let i = 0; i < 7; i++) {
+    const sel = modal.querySelector(`[name="asport_${i}"]`);
+    if (sel) sel.addEventListener('change', () => {
+      sel.closest('.plan-day-row').classList.toggle('is-rest', sel.value === 'rest');
+    });
+  }
 
   $('plan-form').onsubmit = e => {
     e.preventDefault();

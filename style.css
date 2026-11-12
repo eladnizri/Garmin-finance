@@ -1501,41 +1501,54 @@ button.tm-v:active { color: var(--primary-500); }
   font-size: .9rem; font-family: inherit;
 }
 .plan-day-row {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 14px; min-height: 52px;
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
+  transition: opacity .15s;
 }
 .plan-day-row:last-child { border-bottom: none; }
+.plan-day-row.is-rest { opacity: .5; }
 .plan-day-badge {
-  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: .8rem; font-weight: 700;
+  font-size: .82rem; font-weight: 700;
   background: var(--surface); color: var(--ink-2);
+  margin-top: 2px;
 }
 .plan-day-badge.today-badge { background: var(--primary-500); color: #fff; }
+.plan-day-body { flex: 1; min-width: 0; }
+.plan-day-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .plan-day-info { flex: 1; min-width: 0; }
 .plan-day-info span { font-size: .88rem; color: var(--ink); display: block; }
 .plan-day-info small { font-size: .72rem; color: var(--ink-3); }
-.plan-day-selects-hig { display: flex; gap: 6px; }
-.plan-day-selects-hig select {
-  flex: 1; height: 36px; padding: 0 8px;
-  border: 1px solid var(--border); border-radius: var(--r-sm);
-  background: var(--surface); color: var(--ink);
-  font-size: .82rem; font-family: inherit;
-  min-width: 0;
+.plan-sport-sel {
+  flex-shrink: 0; height: 34px; padding: 0 10px 0 6px;
+  border: 1.5px solid var(--primary-500); border-radius: 20px;
+  background: var(--surface); color: var(--primary-500);
+  font-size: .84rem; font-family: inherit; font-weight: 600;
+  min-width: 72px;
 }
-.plan-km-row {
+.plan-day-row.is-rest .plan-sport-sel {
+  border-color: var(--border); color: var(--ink-3); font-weight: 400;
+}
+.plan-day-bottom {
   display: flex; align-items: center; gap: 8px;
-  padding: 4px 0 2px; justify-content: flex-end;
 }
-.plan-km-label { font-size: .78rem; color: var(--ink-2); }
-.plan-km-unit  { font-size: .78rem; color: var(--ink-2); }
+.plan-day-row.is-rest .plan-day-bottom { display: none; }
+.plan-type-sel {
+  flex: 1; height: 32px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2); color: var(--ink-2);
+  font-size: .78rem; font-family: inherit;
+}
+.plan-km-inline { display: flex; align-items: center; gap: 4px; }
 .plan-km-input {
-  width: 72px; height: 32px; padding: 0 8px;
+  width: 54px; height: 32px; padding: 0 6px;
   border: 1px solid var(--border); border-radius: var(--r-sm);
   background: var(--surface); color: var(--ink);
   font-size: .84rem; font-family: inherit; text-align: center;
 }
+.plan-km-unit { font-size: .76rem; color: var(--ink-3); white-space: nowrap; }
 .phase-del { padding: 2px 6px !important; min-width: auto !important; }
 
 /* כפתור מירוץ יעד קומפקטי */
