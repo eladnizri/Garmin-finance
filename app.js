@@ -3172,6 +3172,13 @@ function weekRunKm(rows) {
     if (h.date >= from && h.date <= to && !taken.has(h.date)) km += h.km || 0;
   return km;
 }
+function weekSportKm(rows, typeKeys) {
+  let km = 0;
+  for (const r of rows)
+    for (const w of (r.workouts || []))
+      if (typeKeys.includes(w.type_key)) km += w.km || 0;
+  return km;
+}
 
 /* =========================================================================
  * רצף שבועות פעילים — שבוע נספר אם היה בו אימון כלשהו. סף נמוך במכוון:
@@ -3230,6 +3237,11 @@ function renderWeekSummary() {
   const stepsC = avg(cur, 'steps'), stepsP = avg(prev, 'steps');
   const wC = weekWorkouts(cur, auto), wP = weekWorkouts(prev, auto);
   const kmC = weekRunKm(cur), kmP = weekRunKm(prev);
+  const swimC = weekSportKm(cur, ['lap_swimming', 'open_water_swimming']);
+  const swimP = weekSportKm(prev, ['lap_swimming', 'open_water_swimming']);
+  const bikeC = weekSportKm(cur, ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling']);
+  const bikeP = weekSportKm(prev, ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling']);
+  const planAero = typeof loadPlan === 'function' ? loadPlan().aerobic : {};
   const actC = activeDays(cur), actP = activeDays(prev);
   const rhrC = avg(cur, 'rhr'), rhrP = avg(prev, 'rhr');
   const intC = cur.reduce((a, r) => a + (r.intensity_min || 0), 0);
@@ -3250,6 +3262,20 @@ function renderWeekSummary() {
     <b>${fmt(kmC, 1)}<small> ${kmGoal ? `/ ${fmt(kmGoal, 1)} ` : ''}ק״מ</small></b>
     ${kmGoal ? `<div class="ws-bar"><i style="width:${clamp(kmC / kmGoal * 100, 0, 100)}%"></i></div>`
              : wsDelta(kmC, kmP, 1)}</div>`);
+  if (swimC > 0 || planAero.swimming > 0) {
+    const sg = planAero.swimming || 0;
+    chips.push(`<div class="ws-chip"><small>נפח שחייה</small>
+      <b>${fmt(swimC, 1)}<small>${sg ? ` / ${fmt(sg, 0)}` : ''} ק״מ</small></b>
+      ${sg ? `<div class="ws-bar"><i style="width:${clamp(swimC / sg * 100, 0, 100)}%"></i></div>`
+           : wsDelta(swimC, swimP, 1)}</div>`);
+  }
+  if (bikeC > 0 || planAero.cycling > 0) {
+    const bg = planAero.cycling || 0;
+    chips.push(`<div class="ws-chip"><small>נפח רכיבה</small>
+      <b>${fmt(bikeC, 1)}<small>${bg ? ` / ${fmt(bg, 0)}` : ''} ק״מ</small></b>
+      ${bg ? `<div class="ws-bar"><i style="width:${clamp(bikeC / bg * 100, 0, 100)}%"></i></div>`
+           : wsDelta(bikeC, bikeP, 1)}</div>`);
+  }
   // דופק מנוחה: ירידה היא שיפור, ולכן ההשוואה הפוכה
   chips.push(`<div class="ws-chip"><small>דופק מנוחה</small>
     <b>${rhrC !== null ? Math.round(rhrC) : '—'}</b>${wsDelta(rhrC, rhrP, 0, true)}</div>`);

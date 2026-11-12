@@ -122,7 +122,7 @@ function renderPlanner() {
       const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
       daySlots.push(`<div class="plan-day ${cls}">
         <small>${DAY_NAMES[i][0]}</small>
-        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${sportInfo?.label || ''}<br><small>${typeInfo?.label || ''}</small></span>`}
+        ${isRest ? '<span class="plan-rest">—</span>' : `<span class="plan-prog">${sportInfo?.label || ''}${planned?.km ? ` ${fmt(planned.km, 1)}ק"מ` : ''}<br><small>${typeInfo?.label || ''}</small></span>`}
         ${done && !isRest ? '<i class="plan-check">✓</i>' : ''}
       </div>`);
     }
@@ -203,6 +203,8 @@ function openPlanSetup() {
           ${AERO_WORKOUT_TYPES.filter(t => t.key !== 'rest').map(t =>
             `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
         </select>
+        <input type="number" name="akm_${i}" value="${planned?.km || ''}" min="0" step="0.5"
+          inputmode="decimal" placeholder="ק״מ" class="plan-km-input">
       </div>
     </div>`;
   }
@@ -248,7 +250,12 @@ function openPlanSetup() {
     for (let i = 0; i < 7; i++) {
       const sport = f[`asport_${i}`]?.value;
       const type = f[`atype_${i}`]?.value;
-      if (sport && sport !== 'rest') newAeroPlan.push({ day: i, sport, type: type || 'easy' });
+      if (sport && sport !== 'rest') {
+        const kmVal = Number(f[`akm_${i}`]?.value);
+        const entry = { day: i, sport, type: type || 'easy' };
+        if (kmVal > 0) entry.km = kmVal;
+        newAeroPlan.push(entry);
+      }
     }
     savePlan(newPlan);
     saveAeroPlan(newAeroPlan);

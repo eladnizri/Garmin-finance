@@ -1524,6 +1524,12 @@ button.tm-v:active { color: var(--primary-500); }
   font-size: .82rem; font-family: inherit;
   min-width: 0;
 }
+.plan-km-input {
+  width: 64px; height: 36px; padding: 0 8px; flex-shrink: 0;
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink);
+  font-size: .82rem; font-family: inherit; text-align: center;
+}
 .phase-del { padding: 2px 6px !important; min-width: auto !important; }
 
 /* כפתור מירוץ יעד קומפקטי */
