@@ -756,24 +756,6 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== מסך התחברות ===== */
-.login-screen {
-  position: fixed; inset: 0; z-index: 50; background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  padding: 16px;
-}
-.login-box {
-  width: 100%; max-width: 360px;
-  display: flex; flex-direction: column; align-items: center; gap: 16px;
-  text-align: center;
-}
-.login-logo { width: 80px; height: 80px; border-radius: 20px; }
-.login-title {
-  font-size: 1.8rem; font-weight: 700; margin: 0;
-  background: linear-gradient(135deg, var(--primary), var(--c-teal));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.login-desc { font-size: .9rem; color: var(--ink-2); line-height: 1.6; margin: 0; }
 .btn-google {
   display: inline-flex; align-items: center; gap: 10px;
   padding: 12px 28px; border: 1.5px solid var(--border); border-radius: 12px;
@@ -789,40 +771,162 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* ===== אשף כניסה ראשונה ===== */
 .onboarding {
   position: fixed; inset: 0; z-index: 45; background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  padding: 16px;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 16px; overflow-y: auto;
 }
 .ob-container {
   width: 100%; max-width: 420px;
-  display: flex; flex-direction: column; gap: 24px;
+  display: flex; flex-direction: column; gap: 20px;
+  padding: 8px 0 32px;
 }
 .ob-progress {
   height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden;
 }
 .ob-bar {
-  height: 100%; width: 25%; background: var(--primary);
-  border-radius: 2px; transition: width .3s ease;
+  height: 100%; width: 0%; background: var(--primary);
+  border-radius: 2px; transition: width .35s ease;
 }
-.ob-step { text-align: center; }
-.ob-icon { margin-bottom: 16px; }
+
+/* שלב 0: לוגין */
+.ob-step-login {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding-top: 40px; text-align: center;
+}
+.ob-logo { width: 80px; height: 80px; border-radius: 20px; }
+.ob-google-btn { margin-top: 8px; min-width: 220px; justify-content: center; }
+
+/* שלבים 1–3 */
+.ob-step { text-align: start; }
 .ob-title {
-  font-size: 1.8rem; font-weight: 700; margin: 0 0 12px;
+  font-size: 1.8rem; font-weight: 700; margin: 0 0 8px;
+  text-align: center;
   background: linear-gradient(135deg, var(--primary), var(--c-teal));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.ob-step-title { font-size: 1.3rem; font-weight: 700; margin: 0 0 8px; }
-.ob-desc { font-size: .9rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 8px; }
+.ob-step-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 4px; }
+.ob-desc { font-size: .88rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 8px; }
 .ob-small { font-size: .78rem; color: var(--muted); }
-.ob-fields { text-align: start; margin-top: 16px; }
-.ob-fields .field-row { margin-bottom: 12px; }
+.ob-garmin-icon { text-align: center; margin-bottom: 8px; }
+
+/* field group */
+.ob-field-group { margin-bottom: 20px; }
+.ob-field-label { font-size: .82rem; font-weight: 600; color: var(--ink-2); margin-bottom: 8px; }
+
+/* chips */
+.ob-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.ob-chip {
+  flex: 1; min-width: 60px;
+  padding: 10px 16px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--ink); font: 600 .9rem/1 'Rubik', sans-serif;
+  cursor: pointer; transition: border-color .15s, background .15s;
+  min-height: 44px; text-align: center;
+}
+.ob-chip:active { transform: scale(.97); }
+.ob-chip-sel {
+  border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+/* stepper */
+.ob-stepper {
+  display: flex; align-items: center; gap: 0;
+  border: 1.5px solid var(--border); border-radius: 12px;
+  overflow: hidden; width: fit-content;
+}
+.ob-stepper-btn {
+  width: 52px; height: 52px; font-size: 1.3rem; font-weight: 300;
+  background: var(--surface); color: var(--ink); border: none;
+  cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.ob-stepper-btn:active { background: var(--surface-2); }
+.ob-stepper input[type=number] {
+  width: 72px; height: 52px; border: none; border-inline: 1.5px solid var(--border);
+  background: var(--bg); color: var(--ink);
+  font: 700 1.2rem/1 'Rubik', sans-serif; text-align: center;
+  -moz-appearance: textfield;
+}
+.ob-stepper input[type=number]::-webkit-inner-spin-button,
+.ob-stepper input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* slider */
+.ob-slider {
+  width: 100%; height: 6px; appearance: none; -webkit-appearance: none;
+  border-radius: 3px; outline: none; cursor: pointer;
+  background: linear-gradient(to left, var(--primary) var(--pct, 50%), var(--surface-2) var(--pct, 50%));
+}
+.ob-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 24px; height: 24px;
+  border-radius: 50%; background: var(--primary);
+  border: 3px solid var(--bg); box-shadow: 0 1px 4px rgba(0,0,0,.2);
+  cursor: pointer;
+}
+.ob-slider::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--primary); border: 3px solid var(--bg);
+  box-shadow: 0 1px 4px rgba(0,0,0,.2); cursor: pointer;
+}
+
+/* day toggles */
+.ob-days { display: flex; gap: 6px; }
+.ob-day {
+  flex: 1; height: 44px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--ink); font: 600 .85rem/1 'Rubik', sans-serif;
+  cursor: pointer; transition: border-color .15s, background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.ob-day-sel {
+  border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+/* sport rows */
+.ob-sports { display: flex; flex-direction: column; gap: 4px; }
+.ob-sport-row {
+  border: 1.5px solid var(--border); border-radius: 12px;
+  overflow: hidden; background: var(--surface);
+}
+.ob-sport-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; min-height: 52px;
+}
+.ob-sport-icon { font-size: 1.1rem; flex-shrink: 0; }
+.ob-sport-name { flex: 1; font-size: .9rem; font-weight: 600; color: var(--ink); }
+.ob-sport-toggle {
+  font-size: .78rem; color: var(--primary); font-weight: 600;
+  background: none; border: none; cursor: pointer;
+  padding: 6px 10px; border-radius: 8px; white-space: nowrap;
+  min-height: 36px;
+}
+.ob-sport-toggle:active { background: var(--surface-2); }
+.ob-sport-body { padding: 0 14px 14px; }
+.ob-sport-body input {
+  width: 100%; padding: 10px 14px; border: 1.5px solid var(--border);
+  border-radius: 10px; background: var(--bg); color: var(--ink);
+  font: 1rem/1 'Rubik', sans-serif;
+}
+
+/* text input (garmin) */
+.ob-text-input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+  border-radius: 12px; background: var(--bg); color: var(--ink);
+  font: 1rem/1 'Rubik', sans-serif; direction: ltr; text-align: start;
+}
+.ob-text-input:focus { border-color: var(--primary); outline: none; }
+
+/* nav */
 .ob-nav {
   display: flex; gap: 12px; justify-content: center;
 }
 .ob-nav .btn-primary { min-width: 140px; }
 .ob-skip {
-  font-size: .78rem; color: var(--muted); text-decoration: underline;
-  text-underline-offset: 3px; padding: 8px; align-self: center;
+  font-size: .88rem; color: var(--muted);
+  text-decoration: underline; text-underline-offset: 3px;
+  padding: 10px; align-self: center; cursor: pointer;
+  background: none; border: none; min-height: 44px;
 }
 
 /* ===== העדפת תנועה מופחתת ===== */

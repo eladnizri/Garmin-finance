@@ -32,87 +32,150 @@
     <div class="spinner"></div>
   </div>
 
-  <!-- ===== מסך התחברות ===== -->
-  <div id="login-screen" class="login-screen hidden">
-    <div class="login-box">
-      <img src="icons/icon-192.png" alt="" class="login-logo">
-      <h1 class="login-title">בריאות וכושר</h1>
-      <p class="login-desc">מעקב חכם אחרי השינה, הדופק והאימונים שלך</p>
-      <button id="google-login-btn" class="btn-google" type="button">
-        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
-        התחבר עם Google
-      </button>
-    </div>
-  </div>
-
   <!-- ===== אשף כניסה ראשונה ===== -->
   <div id="onboarding" class="onboarding hidden">
     <div class="ob-container">
       <div class="ob-progress"><div class="ob-bar" id="ob-bar"></div></div>
 
-      <!-- שלב 1: ברוכים הבאים -->
-      <div class="ob-step" data-step="0">
-        <div class="ob-icon">
-          <svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 3 9 2-4h7"/></svg>
-        </div>
+      <!-- שלב 0: כניסה עם Google -->
+      <div class="ob-step ob-step-login" data-step="0">
+        <img src="icons/icon-192.png" alt="" class="ob-logo">
         <h1 class="ob-title">בריאות וכושר</h1>
         <p class="ob-desc">מעקב חכם אחרי השינה, הדופק, האימונים והריצות שלך — ישירות מהשעון של Garmin.</p>
-        <p class="ob-desc ob-small">הנתונים נשמרים בענן בחשבון האישי שלך — נגישים מכל מכשיר.</p>
+        <button id="ob-google-btn" class="btn-google ob-google-btn" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+          התחבר עם Google
+        </button>
+        <p class="ob-desc ob-small">הנתונים נשמרים בענן ונגישים מכל מכשיר</p>
       </div>
 
-      <!-- שלב 2: פרטים אישיים -->
+      <!-- שלב 1: פרטים אישיים -->
       <div class="ob-step hidden" data-step="1">
         <h2 class="ob-step-title">קצת עליך</h2>
-        <p class="ob-desc">הפרטים עוזרים לנו להתאים את היעדים והתובנות עבורך.</p>
-        <div class="ob-fields">
-          <div class="field-row">
-            <label class="field">גיל<input type="number" id="ob-age" min="10" max="120" inputmode="numeric" autocomplete="off" placeholder="35"></label>
-            <label class="field">מין
-              <select id="ob-sex" autocomplete="sex"><option value="">—</option><option value="m">זכר</option><option value="f">נקבה</option></select>
-            </label>
+        <p class="ob-desc">עוזר לנו להתאים יעדים ותובנות.</p>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">מין</div>
+          <div class="ob-chips" role="group" aria-label="מין">
+            <button class="ob-chip" type="button" data-val="m" data-field="ob-sex">זכר</button>
+            <button class="ob-chip" type="button" data-val="f" data-field="ob-sex">נקבה</button>
           </div>
-          <div class="field-row">
-            <label class="field">גובה (ס״מ)<input type="number" id="ob-height" min="100" max="230" inputmode="numeric" autocomplete="off" placeholder="175"></label>
-            <label class="field">משקל (ק״ג)<input type="number" id="ob-weight" min="30" max="250" inputmode="numeric" autocomplete="off" placeholder="70"></label>
+          <input type="hidden" id="ob-sex" value="">
+        </div>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">גיל</div>
+          <div class="ob-stepper">
+            <button class="ob-stepper-btn" type="button" data-target="ob-age" data-delta="-1" aria-label="הפחת">−</button>
+            <input type="number" id="ob-age" value="30" min="10" max="100" inputmode="numeric" aria-label="גיל">
+            <button class="ob-stepper-btn" type="button" data-target="ob-age" data-delta="1" aria-label="הוסף">+</button>
           </div>
+        </div>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">גובה — <span id="ob-height-val">170</span> ס״מ</div>
+          <input type="range" id="ob-height" class="ob-slider" min="140" max="220" value="170" aria-label="גובה">
+        </div>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">משקל — <span id="ob-weight-val">70</span> ק״ג</div>
+          <input type="range" id="ob-weight" class="ob-slider" min="40" max="150" value="70" aria-label="משקל">
         </div>
       </div>
 
-      <!-- שלב 3: יעדים -->
+      <!-- שלב 2: יעדים -->
       <div class="ob-step hidden" data-step="2">
         <h2 class="ob-step-title">היעדים שלך</h2>
-        <p class="ob-desc">תמיד אפשר לשנות בהמשך דרך הפרופיל.</p>
-        <div class="ob-fields">
-          <div class="field-row">
-            <label class="field">שעות שינה<input type="number" id="ob-sleep" min="4" max="12" step="0.5" inputmode="decimal" placeholder="8"></label>
-            <label class="field">צעדים ביום<input type="number" id="ob-steps" min="1000" max="30000" step="500" inputmode="numeric" placeholder="10000"></label>
+        <p class="ob-desc">אפשר לשנות בכל עת מהפרופיל.</p>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">שינה — <span id="ob-sleep-val">8</span> שעות בלילה</div>
+          <input type="range" id="ob-sleep" class="ob-slider" min="5" max="10" step="0.5" value="8" aria-label="יעד שינה">
+        </div>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">צעדים ביום</div>
+          <div class="ob-chips" role="group" aria-label="יעד צעדים">
+            <button class="ob-chip" type="button" data-val="5000" data-field="ob-steps">5K</button>
+            <button class="ob-chip" type="button" data-val="8000" data-field="ob-steps">8K</button>
+            <button class="ob-chip ob-chip-sel" type="button" data-val="10000" data-field="ob-steps">10K</button>
+            <button class="ob-chip" type="button" data-val="12000" data-field="ob-steps">12K</button>
+            <button class="ob-chip" type="button" data-val="15000" data-field="ob-steps">15K</button>
           </div>
-          <div class="field-row">
-            <label class="field">אימוני כוח בשבוע<input type="number" id="ob-strength" min="1" max="7" inputmode="numeric" placeholder="3"></label>
-            <label class="field">ריצה שבועית (ק״מ)<input type="number" id="ob-run" min="1" max="200" step="0.5" inputmode="decimal" placeholder="לא חובה"></label>
+          <input type="hidden" id="ob-steps" value="10000">
+        </div>
+
+        <div class="ob-field-group">
+          <div class="ob-field-label">ימי אימוני כוח</div>
+          <div class="ob-days" id="ob-strength-days" role="group" aria-label="ימי כוח">
+            <button class="ob-day" type="button" data-day="0">א</button>
+            <button class="ob-day" type="button" data-day="1">ב</button>
+            <button class="ob-day" type="button" data-day="2">ג</button>
+            <button class="ob-day" type="button" data-day="3">ד</button>
+            <button class="ob-day" type="button" data-day="4">ה</button>
+            <button class="ob-day" type="button" data-day="5">ו</button>
+            <button class="ob-day" type="button" data-day="6">ש</button>
+          </div>
+          <input type="hidden" id="ob-strength" value="">
+        </div>
+
+        <div class="ob-sports">
+          <div class="ob-sport-row">
+            <div class="ob-sport-header">
+              <span class="ob-sport-icon">🏃</span>
+              <span class="ob-sport-name">ריצה שבועית</span>
+              <button class="ob-sport-toggle" type="button" data-target="ob-run-body">הוסף יעד</button>
+            </div>
+            <div class="ob-sport-body hidden" id="ob-run-body">
+              <input type="number" id="ob-run" min="1" max="300" inputmode="decimal" placeholder="ק״מ בשבוע">
+            </div>
+          </div>
+
+          <div class="ob-sport-row">
+            <div class="ob-sport-header">
+              <span class="ob-sport-icon">🚴</span>
+              <span class="ob-sport-name">רכיבה שבועית</span>
+              <button class="ob-sport-toggle" type="button" data-target="ob-bike-body">הוסף יעד</button>
+            </div>
+            <div class="ob-sport-body hidden" id="ob-bike-body">
+              <input type="number" id="ob-bike" min="1" max="500" inputmode="decimal" placeholder="ק״מ בשבוע">
+            </div>
+          </div>
+
+          <div class="ob-sport-row">
+            <div class="ob-sport-header">
+              <span class="ob-sport-icon">🏊</span>
+              <span class="ob-sport-name">שחייה שבועית</span>
+              <button class="ob-sport-toggle" type="button" data-target="ob-swim-body">הוסף יעד</button>
+            </div>
+            <div class="ob-sport-body hidden" id="ob-swim-body">
+              <input type="number" id="ob-swim" min="1" max="100" inputmode="decimal" placeholder="ק״מ בשבוע">
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- שלב 4: חיבור גרמין -->
+      <!-- שלב 3: חיבור Garmin -->
       <div class="ob-step hidden" data-step="3">
+        <div class="ob-garmin-icon">
+          <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+        </div>
         <h2 class="ob-step-title">חיבור ל-Garmin</h2>
-        <p class="ob-desc">חבר את חשבון הגרמין שלך כדי להתחיל לקבל נתונים.</p>
+        <p class="ob-desc">חבר את חשבון הגרמין שלך כדי לקבל נתונים.</p>
         <ol class="token-steps">
           <li>היכנס ל-<a href="https://developer.garmin.com/gc-developer-program/personal-api/" target="_blank" rel="noopener">Garmin Personal API</a></li>
           <li>צור Consumer Key והעתק אותו לכאן</li>
         </ol>
-        <div class="ob-fields">
-          <label class="field">Garmin API Key<input type="password" id="ob-garmin-key" autocomplete="off" spellcheck="false" placeholder="your-consumer-key"></label>
+        <div class="ob-field-group">
+          <input type="password" id="ob-garmin-key" class="ob-text-input" autocomplete="off" spellcheck="false" placeholder="your-consumer-key" aria-label="Garmin API Key">
         </div>
-        <p class="ob-desc ob-small">אפשר גם לדלג ולחבר מאוחר יותר דרך הגדרות הפרופיל.</p>
       </div>
 
-      <div class="ob-nav">
-        <button class="btn-ghost ob-back hidden" id="ob-back">חזרה</button>
-        <button class="btn-primary ob-next" id="ob-next">הבא</button>
+      <div class="ob-nav" id="ob-nav">
+        <button class="btn-ghost ob-back hidden" id="ob-back" type="button">חזרה</button>
+        <button class="btn-primary ob-next" id="ob-next" type="button">הבא</button>
       </div>
-      <button class="ob-skip" id="ob-skip">דלג על ההגדרה</button>
+      <button class="ob-skip" id="ob-skip" type="button">אגדיר בהמשך</button>
     </div>
   </div>
 

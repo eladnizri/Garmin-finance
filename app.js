@@ -3970,36 +3970,105 @@ $('backfill-btn').addEventListener('click', async () => {
 });
 
 /* =========================================================================
- * אשף כניסה ראשונה — 4 שלבים
+ * אשף כניסה ראשונה — 4 שלבים (0=login, 1=פרטים, 2=יעדים, 3=garmin)
  * ========================================================================= */
-function showOnboarding() {
+function showOnboarding(startStep = 1) {
   const el = $('onboarding');
   el.classList.remove('hidden');
-  let step = 0;
+  let step = startStep;
   const steps = el.querySelectorAll('.ob-step');
   const bar = $('ob-bar');
   const backBtn = $('ob-back');
   const nextBtn = $('ob-next');
+  const navRow = $('ob-nav');
+  const skipBtn = $('ob-skip');
+
+  // Google login (step 0)
+  $('ob-google-btn')?.addEventListener('click', () => signInWithGoogle());
+
+  // Chip buttons (sex, steps)
+  el.querySelectorAll('.ob-chip[data-field]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const field = btn.dataset.field;
+      el.querySelectorAll(`.ob-chip[data-field="${field}"]`).forEach(b => b.classList.remove('ob-chip-sel'));
+      btn.classList.add('ob-chip-sel');
+      const input = $(field);
+      if (input) input.value = btn.dataset.val;
+    });
+  });
+
+  // Stepper (+/−) for age
+  el.querySelectorAll('.ob-stepper-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const input = $(btn.dataset.target);
+      if (!input) return;
+      const val = (parseInt(input.value) || 0) + parseInt(btn.dataset.delta);
+      input.value = Math.min(Number(input.max), Math.max(Number(input.min), val));
+    });
+  });
+
+  // Sliders — live label update
+  [['ob-height', 'ob-height-val'], ['ob-weight', 'ob-weight-val'], ['ob-sleep', 'ob-sleep-val']].forEach(([id, valId]) => {
+    const slider = $(id);
+    const valEl = $(valId);
+    if (slider && valEl) slider.addEventListener('input', () => { valEl.textContent = slider.value; });
+  });
+
+  // Day toggles for strength
+  const daysEl = $('ob-strength-days');
+  if (daysEl) {
+    daysEl.querySelectorAll('.ob-day').forEach(btn => {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('ob-day-sel');
+        $('ob-strength').value = daysEl.querySelectorAll('.ob-day-sel').length || '';
+      });
+    });
+  }
+
+  // Sport expand toggle
+  el.querySelectorAll('.ob-sport-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const body = $(btn.dataset.target);
+      if (!body) return;
+      const opening = body.classList.contains('hidden');
+      body.classList.toggle('hidden', !opening);
+      btn.textContent = opening ? 'אגדיר בהמשך' : 'הוסף יעד';
+      if (opening) $(btn.dataset.target.replace('-body', ''))?.focus?.();
+    });
+  });
 
   function show(i) {
     step = i;
     steps.forEach((s, idx) => s.classList.toggle('hidden', idx !== i));
-    bar.style.width = `${((i + 1) / steps.length) * 100}%`;
-    backBtn.classList.toggle('hidden', i === 0);
-    nextBtn.textContent = i === steps.length - 1 ? 'סיום' : 'הבא';
+
+    if (i === 0) {
+      navRow.classList.add('hidden');
+      skipBtn.classList.add('hidden');
+      bar.style.width = '0%';
+    } else {
+      navRow.classList.remove('hidden');
+      // progress: steps 1–3 fill bar 0→100%
+      bar.style.width = `${((i - 1) / (steps.length - 2)) * 100}%`;
+      backBtn.classList.toggle('hidden', i === 1);
+      nextBtn.textContent = i === steps.length - 1 ? 'סיום' : 'הבא';
+      // skip only on garmin step
+      skipBtn.classList.toggle('hidden', i !== steps.length - 1);
+    }
   }
 
   function finish() {
     const p = { ...profile };
     const v = id => { const e = $(id); return e ? e.value.trim() : ''; };
-    if (v('ob-age')) p.age = v('ob-age');
-    if (v('ob-sex')) p.sex = v('ob-sex');
-    if (v('ob-height')) p.heightCm = v('ob-height');
-    if (v('ob-weight')) p.weightKg = v('ob-weight');
-    if (v('ob-sleep')) p.sleepGoal = v('ob-sleep');
-    if (v('ob-steps')) p.stepsGoal = v('ob-steps');
-    if (v('ob-strength')) p.strengthGoal = v('ob-strength');
-    if (v('ob-run')) p.runGoalKm = v('ob-run');
+    if (v('ob-age'))    p.age          = Number(v('ob-age'));
+    if (v('ob-sex'))    p.sex          = v('ob-sex');
+    if (v('ob-height')) p.heightCm     = Number(v('ob-height'));
+    if (v('ob-weight')) p.weightKg     = Number(v('ob-weight'));
+    if (v('ob-sleep'))  p.sleepGoal    = Number(v('ob-sleep'));
+    if (v('ob-steps'))  p.stepsGoal    = Number(v('ob-steps'));
+    if (v('ob-strength')) p.strengthGoal = Number(v('ob-strength'));
+    if (v('ob-run'))    p.runGoalKm    = Number(v('ob-run'));
+    if (v('ob-bike'))   p.bikeGoalKm   = Number(v('ob-bike'));
+    if (v('ob-swim'))   p.swimGoalKm   = Number(v('ob-swim'));
     saveProfileObj(p);
 
     const key = v('ob-garmin-key');
@@ -4009,18 +4078,17 @@ function showOnboarding() {
     $('app').classList.remove('hidden');
     renderAll();
     requestAnimationFrame(() => snapToPage(0, false));
-
     if (key) syncNow();
   }
 
-  backBtn.addEventListener('click', () => { if (step > 0) show(step - 1); });
+  backBtn.addEventListener('click', () => { if (step > 1) show(step - 1); });
   nextBtn.addEventListener('click', () => {
     if (step < steps.length - 1) show(step + 1);
     else finish();
   });
-  $('ob-skip').addEventListener('click', finish);
+  skipBtn.addEventListener('click', finish);
 
-  show(0);
+  show(startStep);
 }
 
 /* =========================================================================
@@ -4034,8 +4102,7 @@ async function init() {
   $('loading').classList.add('hidden');
 
   if (!user) {
-    $('login-screen').classList.remove('hidden');
-    $('google-login-btn').addEventListener('click', () => signInWithGoogle());
+    showOnboarding(0);
     return;
   }
 
@@ -4070,9 +4137,9 @@ async function init() {
   } catch (e) { console.error('dbGetAll:', e); }
   state.data = data;
 
-  // אם אין נתונים ואין פרופיל — הצגת אשף כניסה ראשונה
-  if (!data.length && !profile.age) {
-    showOnboarding();
+  // אם אין פרופיל — הצגת אשף כניסה ראשונה (מדלג על שלב הלוגין)
+  if (!profile.age) {
+    showOnboarding(1);
   } else {
     $('app').classList.remove('hidden');
   }
