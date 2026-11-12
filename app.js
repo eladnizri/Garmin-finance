@@ -4046,6 +4046,14 @@ async function init() {
     const nameEl = $('user-display-name');
     if (nameEl) nameEl.textContent = user.user_metadata?.full_name || user.email || '';
     $('logout-btn')?.addEventListener('click', () => signOut());
+    $('force-sync-btn')?.addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      btn.textContent = '⏳ מסנכרן...';
+      const ok = await forceSyncSettings();
+      btn.textContent = ok ? '✅ סונכרן!' : '❌ שגיאה';
+      setTimeout(() => { btn.textContent = '☁️ סנכרן לענן'; btn.disabled = false; }, 2000);
+    });
   }
 
   loadProfile();

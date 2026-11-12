@@ -83,9 +83,7 @@ async function _pullSettingsFromCloud() {
     .select('key, value')
     .eq('user_id', _currentUser.id);
 
-  const cloudKeys = new Set((data || []).map(r => r.key));
-
-  // Pull cloud → localStorage
+  // Pull cloud → localStorage (cloud wins for existing keys)
   for (const row of (data || [])) {
     try {
       const val = typeof row.value === 'string' ? row.value : JSON.stringify(row.value);
@@ -93,7 +91,8 @@ async function _pullSettingsFromCloud() {
     } catch {}
   }
 
-  // Push any local keys missing from cloud (first login migration)
+  // Push ALL local keys to cloud (upsert — safe to call every time)
+  const cloudKeys = new Set((data || []).map(r => r.key));
   const pushes = [];
   for (const key of SYNCED_KEYS) {
     if (cloudKeys.has(key)) continue;
@@ -109,8 +108,36 @@ async function _pullSettingsFromCloud() {
     } catch {}
   }
   if (pushes.length) {
-    await sb.from('user_settings').upsert(pushes, { onConflict: 'user_id,key' });
+    const { error } = await sb.from('user_settings')
+      .upsert(pushes, { onConflict: 'user_id,key' });
+    if (error) console.error('Settings push failed:', error);
+    else console.log(`Pushed ${pushes.length} settings to cloud`);
   }
+}
+
+/* Force-push all local settings to cloud (called from profile modal) */
+async function forceSyncSettings() {
+  if (!_currentUser) return;
+  const pushes = [];
+  for (const key of SYNCED_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw == null) continue;
+      let jsonVal;
+      try { jsonVal = JSON.parse(raw); } catch { jsonVal = raw; }
+      pushes.push({
+        user_id: _currentUser.id, key, value: jsonVal,
+        updated_at: new Date().toISOString(),
+      });
+    } catch {}
+  }
+  if (pushes.length) {
+    const { error } = await sb.from('user_settings')
+      .upsert(pushes, { onConflict: 'user_id,key' });
+    if (error) console.error('Force sync failed:', error);
+    return !error;
+  }
+  return true;
 }
 
 /* --- Auto-sync localStorage writes to cloud ----------------------------- */
