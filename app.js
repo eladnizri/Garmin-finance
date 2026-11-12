@@ -4007,11 +4007,18 @@ function showOnboarding(startStep = 1) {
     });
   });
 
-  // Sliders — live label update
+  // Sliders — live label + track fill
   [['ob-height', 'ob-height-val'], ['ob-weight', 'ob-weight-val'], ['ob-sleep', 'ob-sleep-val']].forEach(([id, valId]) => {
     const slider = $(id);
     const valEl = $(valId);
-    if (slider && valEl) slider.addEventListener('input', () => { valEl.textContent = slider.value; });
+    if (!slider) return;
+    const paint = () => {
+      if (valEl) valEl.textContent = slider.value;
+      const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+      slider.style.setProperty('--pct', `${pct}%`);
+    };
+    slider.addEventListener('input', paint);
+    paint();
   });
 
   // Day toggles for strength
@@ -4047,8 +4054,8 @@ function showOnboarding(startStep = 1) {
       bar.style.width = '0%';
     } else {
       navRow.classList.remove('hidden');
-      // progress: steps 1–3 fill bar 0→100%
-      bar.style.width = `${((i - 1) / (steps.length - 2)) * 100}%`;
+      // progress: step 1 of 3 already shows a third filled
+      bar.style.width = `${(i / (steps.length - 1)) * 100}%`;
       backBtn.classList.toggle('hidden', i === 1);
       nextBtn.textContent = i === steps.length - 1 ? 'סיום' : 'הבא';
       // skip only on garmin step
@@ -4123,6 +4130,7 @@ async function init() {
     });
   }
 
+  restoreFolds();
   loadProfile();
   loadWeights();
   loadStrength();
@@ -4180,14 +4188,54 @@ function showUpdateBanner() {
 }
 
 /* =========================================================================
- * גרפים מתכווצים — לחיצה על הכותרת פותחת/סוגרת
+ * גרפים מתכווצים — לחיצה/מקלדת על הכותרת פותחת/סוגרת, המצב נשמר
  * ========================================================================= */
-document.addEventListener('click', e => {
-  const toggle = e.target.closest('.fold-toggle');
-  if (!toggle) return;
+const FOLD_KEY = 'chart_folds_v1';
+
+function foldId(toggle) {
+  return toggle.querySelector('.ct')?.dataset.info || '';
+}
+
+function setFold(card, toggle, collapsed) {
+  card.classList.toggle('collapsed', collapsed);
+  toggle.setAttribute('aria-expanded', String(!collapsed));
+}
+
+function toggleFold(toggle) {
   const card = toggle.closest('.chart-fold');
   if (!card) return;
-  card.classList.toggle('collapsed');
+  const collapsed = !card.classList.contains('collapsed');
+  setFold(card, toggle, collapsed);
+
+  const id = foldId(toggle);
+  if (!id) return;
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch {}
+  saved[id] = collapsed;
+  try { localStorage.setItem(FOLD_KEY, JSON.stringify(saved)); } catch {}
+}
+
+function restoreFolds() {
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(FOLD_KEY)) || {}; } catch {}
+  document.querySelectorAll('.fold-toggle').forEach(toggle => {
+    const card = toggle.closest('.chart-fold');
+    if (!card) return;
+    setFold(card, toggle, saved[foldId(toggle)] === true);
+  });
+}
+
+document.addEventListener('click', e => {
+  const toggle = e.target.closest('.fold-toggle');
+  if (toggle) toggleFold(toggle);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const toggle = e.target.closest('.fold-toggle');
+  if (!toggle) return;
+  e.preventDefault();
+  toggleFold(toggle);
 });
 
 init();

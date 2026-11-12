@@ -77,7 +77,14 @@ body {
   font-family: 'Rubik', system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  /* מונע זום בדאבל-טאפ ובפינץ' */
+  touch-action: pan-x pan-y;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+
+/* iOS מזים אוטומטית על פוקוס בשדה מתחת ל-16px */
+input, select, textarea { font-size: max(16px, 1em); }
 h1, h2, h3, h4, p { margin: 0; }
 button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 .hidden { display: none !important; }
@@ -248,11 +255,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .stat-ic-wrap .ic { color: var(--primary); }
 .stat-lbl {
-  font-size: .66rem; font-weight: 600; color: var(--ink-2);
+  font-size: 0.69rem; font-weight: 600; color: var(--ink-2);
   flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 .stat-chip {
-  font-size: .52rem; font-weight: 700; padding: 1px 5px; border-radius: 999px;
+  font-size: 0.69rem; font-weight: 700; padding: 1px 5px; border-radius: 999px;
   white-space: nowrap; flex: none; letter-spacing: 0;
 }
 .stat-val {
@@ -260,7 +267,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   font-variant-numeric: tabular-nums; line-height: 1; color: var(--ink);
   display: flex; align-items: baseline; gap: 2px;
 }
-.stat-unit { font-size: .6rem; font-weight: 500; color: var(--muted); padding-bottom: 2px; }
+.stat-unit { font-size: 0.69rem; font-weight: 500; color: var(--muted); padding-bottom: 2px; }
 .stat-bar { height: 3px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 7px; }
 .stat-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--primary-500), var(--primary-400)); transition: width 1.2s cubic-bezier(.2,.8,.2,1); }
 .t-ok .stat-ic-wrap { background: rgba(47,158,106,.12); }
@@ -286,7 +293,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   align-items: center; justify-content: center; line-height: 1;
 }
 .mini-txt b { font-size: 1.15rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.mini-txt i { font-size: .55rem; color: var(--muted); font-style: normal; margin-top: 2px; }
+.mini-txt i { font-size: 0.69rem; color: var(--muted); font-style: normal; margin-top: 2px; }
 .mini-label { display: inline-flex; align-items: center; gap: 5px; font-size: .72rem; color: var(--ink-2); font-weight: 600; }
 .mini-label .ic { width: 14px; height: 14px; }
 .mini.alert .mini-label { color: var(--alert); }
@@ -310,9 +317,9 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border);
 }
 .flip-back .stg { display: flex; align-items: baseline; gap: 5px; font-variant-numeric: tabular-nums; }
-.flip-back .stg i { font-size: .56rem; color: var(--muted); font-style: normal; width: 12px; text-align: center; }
-.flip-back .stg b { font-size: .68rem; font-weight: 700; min-width: 30px; text-align: start; }
-.flip-back .stg-empty { font-size: .56rem; color: var(--muted); text-align: center; padding: 0 6px; }
+.flip-back .stg i { font-size: 0.69rem; color: var(--muted); font-style: normal; width: 12px; text-align: center; }
+.flip-back .stg b { font-size: 0.69rem; font-weight: 700; min-width: 30px; text-align: start; }
+.flip-back .stg-empty { font-size: 0.69rem; color: var(--muted); text-align: center; padding: 0 6px; }
 .c-ok { color: var(--ok); }
 .c-watch { color: var(--watch); }
 .c-alert { color: var(--alert); }
@@ -329,7 +336,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .sa-item.alert .sa-head b { color: var(--alert); }
 .sa-row { display: flex; gap: 9px; margin-top: 7px; }
 .sa-row:first-of-type { margin-top: 0; }
-.sa-k { font-size: .68rem; font-weight: 700; color: var(--primary-500); min-width: 66px; flex: none; padding-top: 2px; }
+.sa-k { font-size: 0.69rem; font-weight: 700; color: var(--primary-500); min-width: 66px; flex: none; padding-top: 2px; }
 .sa-row p { font-size: .83rem; line-height: 1.55; color: var(--ink-2); }
 
 /* אנימציות כניסה מגניבות לטבעות */
@@ -345,7 +352,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 
 /* מצבי סטטוס — משמשים גם בכותרות-העל ובכרטיס עקביות */
 .d-status {
-  font-size: .65rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;
+  font-size: 0.69rem; font-weight: 700; padding: 3px 8px; border-radius: 999px;
   white-space: nowrap; flex: none;
 }
 .s-ok { background: #e3f3ea; color: var(--ok); }
@@ -364,7 +371,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .sh-val small { font-size: .75rem; font-weight: 500; color: var(--muted); margin-inline-start: 3px; }
 .sh-label { font-size: .74rem; color: var(--ink-2); font-weight: 600; margin-bottom: 5px; }
 .sh-right { margin-inline-start: auto; text-align: end; }
-.sh-base { font-size: .68rem; color: var(--muted); margin-top: 5px; }
+.sh-base { font-size: 0.69rem; color: var(--muted); margin-top: 5px; }
 .sh-extra { font-size: .72rem; color: var(--ink-2); margin-top: 6px; }
 .sh-bar { height: 6px; border-radius: 999px; background: var(--surface-2); margin-top: 11px; overflow: hidden; position: relative; }
 .sh-bar i { position: absolute; top: 0; bottom: 0; border-radius: 999px; }
@@ -426,7 +433,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .rec span { font-size: .95rem; }
 .rec b { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.rec small { font-size: .63rem; color: var(--muted); line-height: 1.3; }
+.rec small { font-size: 0.69rem; color: var(--muted); line-height: 1.3; }
 
 /* ===== רשימות (אימונים / אזורי דופק / גורמים) ===== */
 .rows { list-style: none; margin: 0; padding: 0; }
@@ -435,13 +442,13 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .rows .r-ic { width: 26px; text-align: center; font-size: 1.05rem; flex: none; }
 .rows .r-name { font-size: .85rem; color: var(--ink-2); }
 .rows .r-tag {
-  font-size: .6rem; font-weight: 700; color: var(--primary-500);
+  font-size: 0.69rem; font-weight: 700; color: var(--primary-500);
   background: var(--primary-soft); border-radius: 999px; padding: 1px 7px; margin-inline-start: 6px;
   vertical-align: middle;
 }
-.rows .r-sub { font-size: .68rem; color: var(--muted); }
+.rows .r-sub { font-size: 0.69rem; color: var(--muted); }
 .rows .r-val { margin-inline-start: auto; font-weight: 700; font-size: .9rem; text-align: end; font-variant-numeric: tabular-nums; }
-.rows .r-val small { font-weight: 500; color: var(--muted); font-size: .66rem; }
+.rows .r-val small { font-weight: 500; color: var(--muted); font-size: 0.69rem; }
 .zdot { width: 11px; height: 11px; border-radius: 4px; flex: none; }
 
 /* מד אחוז אופקי (גורמי מוכנות) */
@@ -457,7 +464,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .chip span { font-size: .9rem; }
 .chip b { font-size: .95rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.chip small { font-size: .58rem; color: var(--muted); }
+.chip small { font-size: 0.69rem; color: var(--muted); }
 
 .prompt-card {
   width: 100%; text-align: start;
@@ -480,12 +487,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm);
   padding: 9px 11px; display: flex; flex-direction: column; gap: 2px;
 }
-.ws-chip small { font-size: .64rem; color: var(--muted); }
+.ws-chip small { font-size: 0.69rem; color: var(--muted); }
 .ws-chip b { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 /* פירוט האימונים מתחת למספר — קטן, כדי שהמספר יישאר הדבר שנקרא ראשון */
-.ws-sub { font-size: .62rem; color: var(--ink-2); line-height: 1.4; }
+.ws-sub { font-size: 0.69rem; color: var(--ink-2); line-height: 1.4; }
 .ws-wide { grid-column: 1 / -1; }
-.ws-delta { font-size: .66rem; font-weight: 600; }
+.ws-delta { font-size: 0.69rem; font-weight: 600; }
 .ws-delta.up { color: var(--ok); }
 .ws-delta.down { color: var(--alert); }
 .ws-delta.flat { color: var(--muted); }
@@ -546,7 +553,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .rs-hero small { font-size: 1rem; font-weight: 600; color: var(--muted); }
 .rs-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 16px 0 6px; }
 .rs-kpis div { text-align: center; }
-.rs-kpis small { display: block; font-size: .68rem; color: var(--muted); margin-bottom: 3px; }
+.rs-kpis small { display: block; font-size: 0.69rem; color: var(--muted); margin-bottom: 3px; }
 .rs-kpis b { font-size: 1.14rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 
 .rs-scroll { padding: 4px 18px calc(24px + env(safe-area-inset-bottom)); }
@@ -630,12 +637,12 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .wday:active i { transform: scale(.9); }
 .wday.done i { background: #e3f3ea; border-color: var(--ok); color: var(--ok); }
 .wday.auto i::after {
-  content: '⌚'; position: absolute; bottom: -3px; inset-inline-end: -3px; font-size: .6rem;
+  content: '⌚'; position: absolute; bottom: -3px; inset-inline-end: -3px; font-size: 0.69rem;
 }
 .wday.today i { border-color: var(--primary-500); border-width: 2px; }
 .wday.future { pointer-events: none; }
 .wday.future i { opacity: .35; }
-.wday small { font-size: .6rem; color: var(--muted); font-weight: 500; }
+.wday small { font-size: 0.69rem; color: var(--muted); font-weight: 500; }
 .strength-streak { margin-top: 10px; font-size: .78rem; color: var(--ink-2); }
 .strength-count { font-size: .8rem; color: var(--ink-2); font-weight: 600; font-variant-numeric: tabular-nums; }
 .strength-count b { color: var(--ok); }
@@ -654,14 +661,14 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .plan-day:disabled { cursor: default; opacity: .6; }
 .plan-day:not(:disabled):hover { background: color-mix(in srgb, var(--primary) 10%, var(--surface-2)); }
 .plan-day small { display: block; color: var(--ink-2); margin-bottom: 2px; }
-.plan-prog { display: block; font-size: .68rem; font-weight: 600; line-height: 1.2; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-prog { display: block; font-size: 0.69rem; font-weight: 600; line-height: 1.2; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .plan-rest { color: var(--muted); }
 .plan-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
 .plan-day.done { background: color-mix(in srgb, var(--ok) 12%, transparent); }
 .plan-check { color: var(--ok); font-style: normal; font-size: .7rem; }
 .plan-field { margin-bottom: 10px; }
 .plan-field label { display: block; font-size: .82rem; font-weight: 600; margin-bottom: 4px; }
-.plan-field input, .plan-field select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: .9rem; }
+.plan-field input, .plan-field select { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 1rem; }
 .plan-day-field { display: inline-flex; flex-direction: column; width: calc(50% - 6px); margin-inline-end: 6px; }
 #plan-form h3 { font-size: .9rem; margin: 16px 0 8px; }
 #plan-form h3:first-of-type { margin-top: 4px; }
@@ -692,7 +699,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .tab:active { transform: scale(.92); }
 .tab svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.tab span { font-size: .66rem; font-weight: 600; }
+.tab span { font-size: 0.69rem; font-weight: 600; }
 .tab.active { color: var(--primary-500); }
 
 /* ===== מודאל ===== */
@@ -716,7 +723,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .field-row { display: flex; gap: 10px; margin-bottom: 11px; }
 .field { flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--ink-2); }
 .field input, .field select {
-  font: inherit; font-size: .95rem; font-weight: 500; color: var(--ink);
+  font: inherit; font-size: 1rem; font-weight: 500; color: var(--ink);
   padding: 10px 12px; border: 1px solid var(--border); border-radius: 11px;
   background: var(--surface-2); -webkit-appearance: none; appearance: none; width: 100%;
 }
@@ -778,7 +785,10 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
   width: 100%; max-width: 420px;
   display: flex; flex-direction: column; gap: 20px;
   padding: 8px 0 32px;
+  min-height: calc(100dvh - 32px);
 }
+/* הניווט נדחף לאזור האגודל גם כשהשלב קצר */
+.ob-container > .ob-nav { margin-top: auto; }
 .ob-progress {
   height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden;
 }
@@ -949,7 +959,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
  * ניתוח אימון — כרטיס הפעילות, עורך התוכנית, ומצב אימון
  * ========================================================================= */
 .tr-empty { font-size: .85rem; color: var(--ink-2); line-height: 1.6; margin-bottom: 14px; }
-.tr-wide { width: 100%; flex: none; margin-top: 12px; }
+.tr-wide { width: 100%; flex: none; margin-top: 12px; min-height: 44px; }
 .tr-manage { color: var(--primary-500); }
 .tr-last {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
@@ -1007,7 +1017,7 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 .pg-del:active { background: #fdeceb; color: var(--alert); }
 .pg-shead, .pg-set { display: grid; grid-template-columns: 26px 1fr 1fr 32px; gap: 7px; align-items: center; }
-.pg-shead { font-size: .68rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+.pg-shead { font-size: 0.69rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
 .pg-shead span:first-child { text-align: center; }
 .pg-set { margin-bottom: 6px; }
 .pg-n { font-size: .78rem; font-weight: 700; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
@@ -1112,10 +1122,10 @@ body.tm-open { overflow: hidden; }
 }
 .pr-card:active { transform: scale(.97); }
 .pr-card.fresh { border-color: var(--primary); background: var(--primary-soft); }
-.pr-card small { font-size: .66rem; color: var(--muted); }
+.pr-card small { font-size: 0.69rem; color: var(--muted); }
 .pr-card b { font-size: 1.16rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.pr-card b em { font-style: normal; font-size: .6rem; font-weight: 600; color: var(--muted); margin-inline-start: 4px; }
-.pr-when { font-size: .64rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pr-card b em { font-style: normal; font-size: 0.69rem; font-weight: 600; color: var(--muted); margin-inline-start: 4px; }
+.pr-when { font-size: 0.69rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .pr-card.fresh .pr-when { color: var(--primary-500); font-weight: 700; }
 
 /* ===== רצף שבועות ===== */
@@ -1130,7 +1140,7 @@ body.tm-open { overflow: hidden; }
 }
 .wst-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .wst-txt b { font-size: .84rem; font-weight: 700; }
-.wst-txt small { font-size: .68rem; color: var(--muted); }
+.wst-txt small { font-size: 0.69rem; color: var(--muted); }
 
 /* ===== בחירת תוכנית לאימון ===== */
 #pick-list { display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px; }
@@ -1146,7 +1156,7 @@ body.tm-open { overflow: hidden; }
 .pick-main small { font-size: .72rem; color: var(--muted); }
 .pick-exs { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-tag {
-  flex: none; font-style: normal; font-size: .66rem; font-weight: 800; color: #fff;
+  flex: none; font-style: normal; font-size: 0.69rem; font-weight: 800; color: #fff;
   background: var(--primary); border-radius: 999px; padding: 4px 9px;
 }
 
@@ -1198,7 +1208,7 @@ body.tm-open { overflow: hidden; }
   font-family: inherit; font-size: 1.34rem; font-weight: 800; color: var(--ink); line-height: 1.1;
   font-variant-numeric: tabular-nums; letter-spacing: -.02em; background: none; border: none; padding: 0;
 }
-.tm-fv small { font-size: .61rem; color: var(--muted); font-weight: 600; margin-top: 2px; white-space: nowrap; }
+.tm-fv small { font-size: 0.69rem; color: var(--muted); font-weight: 600; margin-top: 2px; white-space: nowrap; }
 button.tm-v:active { color: var(--primary-500); }
 .tm-kgin {
   width: 58px; padding: 2px; text-align: center; font: inherit; font-size: 1.28rem; font-weight: 800;
@@ -1215,7 +1225,7 @@ button.tm-v:active { color: var(--primary-500); }
 .tm-sets[data-n="1"] .tm-fv, .tm-sets[data-n="2"] .tm-fv { min-width: 52px; }
 .tm-sets[data-n="1"] .tm-fv b, .tm-sets[data-n="1"] .tm-v,
 .tm-sets[data-n="2"] .tm-fv b, .tm-sets[data-n="2"] .tm-v { font-size: 1.62rem; }
-.tm-sets[data-n="1"] .tm-fv small, .tm-sets[data-n="2"] .tm-fv small { font-size: .68rem; }
+.tm-sets[data-n="1"] .tm-fv small, .tm-sets[data-n="2"] .tm-fv small { font-size: 0.69rem; }
 .tm-sets[data-n="1"] .tm-n, .tm-sets[data-n="2"] .tm-n { font-size: .84rem; }
 .tm-sets[data-n="3"] .tm-set { gap: 12px; padding: 14px 13px; }
 .tm-sets[data-n="3"] .tm-pm { height: 44px; }
@@ -1253,7 +1263,7 @@ button.tm-v:active { color: var(--primary-500); }
   -webkit-backdrop-filter: saturate(160%) blur(12px); border-top: 1px solid var(--line);
 }
 #tm-note {
-  width: 100%; font: inherit; font-size: .85rem; color: var(--ink); margin-bottom: 9px;
+  width: 100%; font: inherit; font-size: 1rem; color: var(--ink); margin-bottom: 9px;
   padding: 10px 12px; border: 1px solid var(--border); border-radius: 11px; background: var(--surface-2);
 }
 #tm-note:focus { outline: none; border-color: var(--primary); background: var(--surface); }
@@ -1265,7 +1275,7 @@ button.tm-v:active { color: var(--primary-500); }
 .ts-tile { background: var(--surface-2); border-radius: var(--r-md); padding: 14px; text-align: center; }
 .ts-tile small { display: block; font-size: .74rem; color: var(--ink-2); font-weight: 600; }
 .ts-tile b { display: block; font-size: 1.5rem; font-weight: 800; margin: 3px 0 1px; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
-.ts-tile i { font-style: normal; font-size: .68rem; color: var(--muted); }
+.ts-tile i { font-style: normal; font-size: 0.69rem; color: var(--muted); }
 .ts-line { font-size: .86rem; color: var(--ink-2); line-height: 1.6; margin-bottom: 10px; }
 .ts-line b { color: var(--ink); font-weight: 800; }
 .ts-pr {
@@ -1299,7 +1309,7 @@ button.tm-v:active { color: var(--primary-500); }
   -webkit-appearance: none; appearance: none;
 }
 .pg-mgsec { margin-top: 8px; }
-.pg-mgsec small { display: block; font-size: .68rem; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
+.pg-mgsec small { display: block; font-size: 0.69rem; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
 .pg-mgchips { display: flex; flex-wrap: wrap; gap: 5px; }
 .pg-mgchip {
   border: 1px solid var(--border); border-radius: 999px; padding: 5px 11px; background: var(--surface);
@@ -1314,7 +1324,7 @@ button.tm-v:active { color: var(--primary-500); }
   border: 1.5px solid transparent;
 }
 .cov b { display: block; font-size: .82rem; font-weight: 800; }
-.cov small { display: block; font-size: .66rem; color: var(--muted); margin-top: 2px; }
+.cov small { display: block; font-size: 0.69rem; color: var(--muted); margin-top: 2px; }
 .cov.full { background: var(--primary-soft); border-color: transparent; }
 .cov.full b { color: var(--primary-500); }
 .cov.part { background: var(--surface-2); border-color: var(--border); }
@@ -1370,7 +1380,7 @@ button.tm-v:active { color: var(--primary-500); }
 .rk-btn:active { transform: scale(.95); }
 
 /* הערת גרף עם סייג קטן בשורה נפרדת */
-.tr-note small { display: block; margin-top: 3px; font-size: .68rem; color: var(--muted); }
+.tr-note small { display: block; margin-top: 3px; font-size: 0.69rem; color: var(--muted); }
 
 /* =========================================================================
  * כרטיס "היום" — ההמלצה היחידה שפותחת את מסך הבית
@@ -1381,7 +1391,7 @@ button.tm-v:active { color: var(--primary-500); }
 .today-card.tone-rest { border-inline-start-color: var(--alert); }
 .today-head { display: flex; gap: 12px; align-items: center; }
 .today-kicker {
-  display: block; font-size: .64rem; font-weight: 700; letter-spacing: .06em;
+  display: block; font-size: 0.69rem; font-weight: 700; letter-spacing: .06em;
   text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
 }
 /* session = שורת אימון אחת (ראשית או נוספת) */
@@ -1420,16 +1430,17 @@ button.tm-v:active { color: var(--primary-500); }
 }
 .ins-txt { font-size: .85rem; line-height: 1.6; color: var(--ink-2); }
 .ins-txt b { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
-.ins-meta { display: block; margin-top: 4px; font-size: .68rem; color: var(--muted); }
-.ins-note { margin-top: 10px; font-size: .68rem; color: var(--muted); line-height: 1.5; }
+.ins-meta { display: block; margin-top: 4px; font-size: 0.69rem; color: var(--muted); }
+.ins-note { margin-top: 10px; font-size: 0.69rem; color: var(--muted); line-height: 1.5; }
 
 /* =========================================================================
  * תיוג יום חריג — למה הוא היה חריג, כדי שלא יזהם את הבסיס
  * ========================================================================= */
 .anom-tag {
   flex: none; margin-inline-start: auto; align-self: center;
-  font-size: .69rem; font-weight: 700; white-space: nowrap;
+  font-size: .72rem; font-weight: 700; white-space: nowrap;
   padding: 4px 9px; border-radius: 999px;
+  min-height: 44px; display: inline-flex; align-items: center;
   background: rgba(255, 255, 255, .55); color: inherit; opacity: .8; transition: .15s;
 }
 .anom-tag.on { background: var(--ink); color: #fff; opacity: 1; }
@@ -1459,7 +1470,7 @@ button.tm-v:active { color: var(--primary-500); }
 .mdl-rank {
   width: 19px; height: 19px; border-radius: 6px; flex: none;
   display: grid; place-items: center; background: var(--surface-2);
-  font-size: .68rem; font-weight: 800; color: var(--ink-2);
+  font-size: 0.69rem; font-weight: 800; color: var(--ink-2);
 }
 .mdl-name { font-size: .88rem; font-weight: 700; }
 /* האחוז נדחף לקצה השורה כדי שכל האחוזים יתיישרו זה מתחת לזה */
@@ -1554,7 +1565,7 @@ button.tm-v:active { color: var(--primary-500); }
 .lab-row:first-of-type { border-top: 0; padding-top: 2px; }
 .lab-top { display: flex; align-items: center; gap: 8px; }
 .lab-tag {
-  flex: none; font-size: .67rem; font-weight: 800; padding: 3px 8px;
+  flex: none; font-size: 0.69rem; font-weight: 800; padding: 3px 8px;
   border-radius: 999px; background: var(--surface-2); color: var(--ink-2);
 }
 .lab-row.flat .lab-tag { background: #fbefd8; color: #8a6a1e; }
@@ -1586,10 +1597,10 @@ button.tm-v:active { color: var(--primary-500); }
 .rp { flex: 0 0 auto; padding: 6px 10px; border-radius: var(--r-md); background: var(--surface-2); font-size: .75rem; text-align: center; min-width: 70px; }
 .rp-active { background: var(--primary-500); color: #fff; }
 .rp-name { display: block; font-weight: 600; margin-bottom: 2px; }
-.rp-dates { display: block; font-size: .68rem; opacity: .8; }
-.rp-km { display: block; font-size: .68rem; margin-top: 2px; }
+.rp-dates { display: block; font-size: 0.69rem; opacity: .8; }
+.rp-km { display: block; font-size: 0.69rem; margin-top: 2px; }
 .phase-row { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
-.phase-row select, .phase-row input { font-size: .82rem; padding: 5px 6px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
+.phase-row select, .phase-row input { font-size: 1rem; padding: 5px 6px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--ink); }
 .phase-row select { width: 70px; }
 .phase-row input[type="date"] { width: 120px; }
 .phase-row input[type="number"] { width: 80px; }
@@ -1597,8 +1608,10 @@ button.tm-v:active { color: var(--primary-500); }
 /* =========================================================
  * גרפים מתכווצים
  * ========================================================= */
-.chart-fold .chart-body { overflow: hidden; transition: max-height .28s ease, opacity .2s ease; max-height: 400px; opacity: 1; }
+.chart-fold .chart-body { overflow: hidden; transition: max-height .28s ease, opacity .2s ease; max-height: 700px; opacity: 1; }
 .chart-fold.collapsed .chart-body { max-height: 0; opacity: 0; }
+.fold-toggle { cursor: pointer; min-height: 44px; }
+.fold-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 8px; }
 .fold-arrow { margin-inline-start: auto; font-size: 1.1rem; color: var(--ink-3); transition: transform .22s ease; display: inline-block; }
 .chart-fold.collapsed .fold-arrow { transform: rotate(180deg); }
 .fold-toggle { cursor: pointer; user-select: none; }
@@ -1614,7 +1627,7 @@ button.tm-v:active { color: var(--primary-500); }
 /* מודאל תוכנית — קבוצות HIG */
 .plan-section { margin-bottom: 20px; }
 .plan-section-title {
-  font-size: .68rem; font-weight: 600; letter-spacing: .04em;
+  font-size: 0.69rem; font-weight: 600; letter-spacing: .04em;
   text-transform: uppercase; color: var(--ink-3);
   padding: 0 4px; margin-bottom: 6px;
 }
@@ -1891,12 +1904,12 @@ button.tm-v:active { color: var(--primary-500); }
 .ins-delta-fill  { height: 100%; border-radius: 2px; transition: width .8s ease; }
 /* שיאים — תאריך כסאבטייטל */
 .ins-rec-right   { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
-.ins-rec-date    { font-size: .68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ins-rec-date    { font-size: 0.69rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 /* קורלציות — strength bar */
 .ins-corr-strength { flex: none; width: 44px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 3px; }
 .ins-corr-bar { width: 100%; height: 48px; border-radius: 3px; background: var(--line); overflow: hidden; display: flex; align-items: flex-end; }
 .ins-corr-bar > div { width: 100%; background: linear-gradient(180deg, var(--primary-400), var(--primary-500)); border-radius: 3px; transition: height .6s ease; }
-.ins-corr-label { font-size: .6rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.ins-corr-label { font-size: 0.69rem; font-weight: 700; color: var(--muted); white-space: nowrap; }
 
 /* תרשים עומס */
 .load-chart {
@@ -1930,7 +1943,7 @@ button.tm-v:active { color: var(--primary-500); }
   transition: height .3s;
 }
 .load-readiness { font-size: .72rem; font-weight: 600; }
-.load-label     { font-size: .65rem; color: var(--ink-3); }
+.load-label     { font-size: 0.69rem; color: var(--ink-3); }
 
 /* ===== נגישות: focus-visible ===== */
 :focus-visible {
@@ -1955,7 +1968,9 @@ button:focus-visible { border-radius: var(--r-sm); }
 .btn-customize {
   font-size: .8rem;
   font-weight: 600;
-  padding: 5px 11px;
+  padding: 5px 14px;
+  min-height: 44px;
+  display: inline-flex; align-items: center; gap: 4px;
   border-radius: 20px;
   border: 1.5px solid var(--primary);
   background: transparent;
@@ -2018,5 +2033,5 @@ button:focus-visible { border-radius: var(--r-sm); }
   white-space: nowrap;
 }
 .vol-table td b { font-size: .95rem; font-variant-numeric: tabular-nums; }
-.vol-table td small { display: block; font-size: .68rem; color: var(--muted); line-height: 1.4; }
+.vol-table td small { display: block; font-size: 0.69rem; color: var(--muted); line-height: 1.4; }
 .vol-table .muted { color: var(--muted); }

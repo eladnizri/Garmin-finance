@@ -3,6 +3,15 @@
 /* =========================================================================
  * common.js — קוד משותף לכל העמודים (דשבורד + ניתוח)
  * ========================================================================= */
+
+/* חסימת זום — iOS Safari מתעלם מ-user-scalable=no מאז iOS 10 */
+['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+  document.addEventListener(ev, e => e.preventDefault(), { passive: false })
+);
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
 const SLEEP_GOAL_HOURS = 8;
 const STEPS_GOAL = 10000;
 

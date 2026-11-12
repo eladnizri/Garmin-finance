@@ -2,7 +2,7 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#eaf5ef">
   <title>בריאות וכושר</title>
 
@@ -65,10 +65,10 @@
 
         <div class="ob-field-group">
           <div class="ob-field-label">גיל</div>
-          <div class="ob-stepper">
-            <button class="ob-stepper-btn" type="button" data-target="ob-age" data-delta="-1" aria-label="הפחת">−</button>
+          <div class="ob-stepper" dir="ltr">
+            <button class="ob-stepper-btn" type="button" data-target="ob-age" data-delta="-1" aria-label="הפחת גיל">−</button>
             <input type="number" id="ob-age" value="30" min="10" max="100" inputmode="numeric" aria-label="גיל">
-            <button class="ob-stepper-btn" type="button" data-target="ob-age" data-delta="1" aria-label="הוסף">+</button>
+            <button class="ob-stepper-btn" type="button" data-target="ob-age" data-delta="1" aria-label="הוסף גיל">+</button>
           </div>
         </div>
 
@@ -236,9 +236,9 @@
         <div id="sleep-rec"></div>
         <div id="sleep-consistency"></div>
         <div data-sleep-sec="sleep_hours">
-          <article class="card chart-fold collapsed">
-            <div class="card-head fold-toggle"><h2 class="ct" data-info="sleep_hours">שעות שינה<span class="info-i">ⓘ</span></h2><span class="unit" id="u-sleep"></span><span class="fold-arrow">‹</span></div>
-            <div class="chart-body">
+          <article class="card chart-fold">
+            <div class="card-head fold-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="fold-sleep"><h2 class="ct" data-info="sleep_hours">שעות שינה<span class="info-i">ⓘ</span></h2><span class="unit" id="u-sleep"></span><span class="fold-arrow">‹</span></div>
+            <div class="chart-body" id="fold-sleep">
               <div class="legend" id="legend-sleep"></div>
               <div class="chart-wrap" dir="ltr"><canvas id="chart-sleep"></canvas></div>
               <div id="tip-sleep"></div>
@@ -246,9 +246,9 @@
           </article>
         </div>
         <div data-sleep-sec="stages">
-          <article class="card chart-fold collapsed">
-            <div class="card-head fold-toggle"><h2 class="ct" data-info="stages">שלבי שינה<span class="info-i">ⓘ</span></h2><span class="unit">שעות לפי שלב</span><span class="fold-arrow">‹</span></div>
-            <div class="chart-body">
+          <article class="card chart-fold">
+            <div class="card-head fold-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="fold-stages"><h2 class="ct" data-info="stages">שלבי שינה<span class="info-i">ⓘ</span></h2><span class="unit">שעות לפי שלב</span><span class="fold-arrow">‹</span></div>
+            <div class="chart-body" id="fold-stages">
               <div class="legend" id="legend-stages"></div>
               <div class="chart-wrap" dir="ltr"><canvas id="chart-stages"></canvas></div>
               <div id="tip-stages"></div>
@@ -261,17 +261,17 @@
         </div>
         <div data-sleep-sec="hrv">
           <div id="heart-hero" class="stat-hero"></div>
-          <article class="card chart-fold collapsed">
-            <div class="card-head fold-toggle"><h2 class="ct" data-info="rhr">דופק מנוחה<span class="info-i">ⓘ</span></h2><span class="unit" id="u-rhr">bpm</span><span class="fold-arrow">‹</span></div>
-            <div class="chart-body">
+          <article class="card chart-fold">
+            <div class="card-head fold-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="fold-rhr"><h2 class="ct" data-info="rhr">דופק מנוחה<span class="info-i">ⓘ</span></h2><span class="unit" id="u-rhr">bpm</span><span class="fold-arrow">‹</span></div>
+            <div class="chart-body" id="fold-rhr">
               <div class="legend" id="legend-rhr"></div>
               <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-rhr"></canvas></div>
               <div id="tip-rhr"></div>
             </div>
           </article>
-          <article class="card chart-fold collapsed">
-            <div class="card-head fold-toggle"><h2 class="ct" data-info="hrv">שונות דופק (HRV)<span class="info-i">ⓘ</span></h2><span class="unit" id="u-hrv">ms</span><span class="fold-arrow">‹</span></div>
-            <div class="chart-body">
+          <article class="card chart-fold">
+            <div class="card-head fold-toggle" role="button" tabindex="0" aria-expanded="true" aria-controls="fold-hrv"><h2 class="ct" data-info="hrv">שונות דופק (HRV)<span class="info-i">ⓘ</span></h2><span class="unit" id="u-hrv">ms</span><span class="fold-arrow">‹</span></div>
+            <div class="chart-body" id="fold-hrv">
               <div class="legend" id="legend-hrv"></div>
               <div class="chart-wrap chart-sm" dir="ltr"><canvas id="chart-hrv"></canvas></div>
               <div id="tip-hrv"></div>
