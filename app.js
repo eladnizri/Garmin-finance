@@ -910,7 +910,7 @@ function applySleepPrefs() {
   // append wrappers in order after consistencyDiv
   for (const key of order) {
     const el = page.querySelector(`[data-sleep-sec="${key}"]`);
-    if (el) page.insertBefore(el, $('insights-card'));
+    if (el) page.appendChild(el);
   }
 }
 
