@@ -82,12 +82,34 @@ async function _pullSettingsFromCloud() {
   const { data } = await sb.from('user_settings')
     .select('key, value')
     .eq('user_id', _currentUser.id);
-  if (!data) return;
-  for (const row of data) {
+
+  const cloudKeys = new Set((data || []).map(r => r.key));
+
+  // Pull cloud → localStorage
+  for (const row of (data || [])) {
     try {
       const val = typeof row.value === 'string' ? row.value : JSON.stringify(row.value);
       _origSetItem(row.key, val);
     } catch {}
+  }
+
+  // Push any local keys missing from cloud (first login migration)
+  const pushes = [];
+  for (const key of SYNCED_KEYS) {
+    if (cloudKeys.has(key)) continue;
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw == null) continue;
+      let jsonVal;
+      try { jsonVal = JSON.parse(raw); } catch { jsonVal = raw; }
+      pushes.push({
+        user_id: _currentUser.id, key, value: jsonVal,
+        updated_at: new Date().toISOString(),
+      });
+    } catch {}
+  }
+  if (pushes.length) {
+    await sb.from('user_settings').upsert(pushes, { onConflict: 'user_id,key' });
   }
 }
 
