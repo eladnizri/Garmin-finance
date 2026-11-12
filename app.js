@@ -696,18 +696,19 @@ function renderCharts() {
 /* =========================================================================
  * מסקנה מאוחדת לכל עמוד (מחליפה שלושה כרטיסי תובנה נפרדים)
  * ========================================================================= */
-function verdictCard(elId, title, keys) {
+function verdictHtml(title, keys) {
   const lines = keys.map(key => {
     const s = statusOf(key);
     if (!s) return null;
     const d = METRICS[key];
     const color = s.level === 'alert' ? 'var(--alert)' : s.level === 'watch' ? 'var(--watch)' : s.level === 'ok' ? 'var(--ok)' : 'var(--muted)';
-    // הטיפים עצמם חיים מתחת לגרפים (renderChartTips) — כאן רק סיכום סטטוס
     return `<div class="vline"><span class="vdot" style="background:${color}"></span>
       <span><b>${d.label} ${valueText(key, s.value)}</b> — ${s.text}.</span></div>`;
   }).filter(Boolean);
-  $(elId).innerHTML = lines.length
-    ? `<div class="verdict-card"><h3>${title}</h3>${lines.join('')}</div>` : '';
+  return lines.length ? `<div class="verdict-card"><h3>${title}</h3>${lines.join('')}</div>` : '';
+}
+function verdictCard(elId, title, keys) {
+  $(elId).innerHTML = verdictHtml(title, keys);
 }
 
 /* =========================================================================
@@ -794,15 +795,14 @@ const SLEEP_SECTIONS = [
   { key: 'stages',    label: 'שלבי שינה',          desc: 'גרף ופירוט שלבי שינה עמוקה / קלה / REM' },
   { key: 'breathing', label: 'שינה ונשימה',         desc: 'ניתוח רמת חמצן ואירועי נשימה' },
   { key: 'hrv',       label: 'לב ו-HRV',            desc: 'דופק מנוחה, שונות דופק ורזרבת לב' },
-  { key: 'records',   label: 'שיאים',               desc: 'רצף לילות שינה טובה' },
 ];
 function loadSleepPrefs() {
   try {
     const s = localStorage.getItem(SLEEP_PREFS_KEY);
     const saved = s ? JSON.parse(s) : {};
-    const defaults = { stages: true, breathing: true, hrv: true, records: true };
+    const defaults = { stages: true, breathing: true, hrv: true };
     return Object.assign(defaults, saved);
-  } catch { return { stages: true, breathing: true, hrv: true, records: true }; }
+  } catch { return { stages: true, breathing: true, hrv: true }; }
 }
 function saveSleepPrefs(p) { try { localStorage.setItem(SLEEP_PREFS_KEY, JSON.stringify(p)); } catch {} }
 
@@ -814,7 +814,7 @@ function openSleepCustomize() {
     <div class="modal-sheet">
       <div class="modal-head"><h2>התאמה אישית — שינה ולב</h2>
         <button class="close-btn" aria-label="סגירה">✕</button></div>
-      <p style="font-size:.85rem;color:var(--ink-2);margin-bottom:12px;">בחר אילו חלקים יוצגו בעמוד השינה:</p>
+      <p class="cust-hint">בחר אילו חלקים יוצגו בעמוד השינה:</p>
       <div class="plan-grouped-list">
         ${SLEEP_SECTIONS.map(s => `
           <label class="plan-grouped-row" style="cursor:pointer;gap:12px;">
@@ -856,8 +856,6 @@ function applySleepPrefs() {
   if (hrvChart) hrvChart.style.display = prefs.hrv ? '' : 'none';
   const heartInsight = $('heart-insight');
   if (heartInsight) heartInsight.style.display = prefs.hrv ? '' : 'none';
-  const sleepRecords = $('sleep-records');
-  if (sleepRecords) sleepRecords.style.display = prefs.records ? '' : 'none';
 }
 
 /* =========================================================================
@@ -3680,7 +3678,6 @@ function renderAll() {
   renderSleepRec();
   renderSleepConsistency();
   renderSleepAnalysis();
-  statHero('sleep-hero', 'sleep_hours');
   renderCharts();
   renderBreathing();
 
@@ -3688,7 +3685,6 @@ function renderAll() {
   statHero('heart-hero', 'hrv', hrvExtra());
   renderHrZones();
 
-  verdictCard('sleep-insight', 'מה זה אומר', ['sleep_hours', 'sleep_score']);
   verdictCard('heart-insight', 'מה זה אומר', ['rhr', 'hrv', 'stress_avg']);
 
   // כפתור התאמה אישית שינה
@@ -3698,12 +3694,6 @@ function renderAll() {
 
   // תובנות
   if (typeof renderInsightsPage === 'function') renderInsightsPage();
-
-  const rows = visibleRows();
-  const sleepStreak = trailingStreak(rows, r => r.sleep_score != null && r.sleep_score >= 80);
-  renderRecords('sleep-records', [
-    sleepStreak >= 2 && recCard(icon('flame', 22), `${sleepStreak}`, 'רצף לילות 80+'),
-  ]);
 
 }
 

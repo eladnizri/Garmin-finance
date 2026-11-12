@@ -627,12 +627,14 @@ function initInsights() {
  * עמוד תובנות — 7 רכיבים + התאמה אישית
  * ========================================================================= */
 const INSIGHTS_PREFS_KEY = 'insights_prefs_v1';
+const INSIGHTS_ORDER_KEY = 'insights_order_v1';
 const INSIGHTS_SECTIONS = [
   { key: 'correlations', label: 'קורלציות אישיות',    desc: 'קשרים שנמצאו בנתונים שלך' },
   { key: 'trends',       label: 'מגמות חודשיות',      desc: 'שינוי ממוצעים ב-30 יום' },
   { key: 'records',      label: 'שיאים אישיים',       desc: 'ערכי שיא בכל מדד' },
   { key: 'consistency',  label: 'עקביות',              desc: 'אחוז השבועות שעמדת ביעד' },
-  { key: 'load',         label: 'עומס vs התאוששות',   desc: 'עומס אימונים מול מוכנות' },
+  { key: 'volume',       label: 'נפחי אימון',          desc: 'ק״מ לפי ספורט ותקופה' },
+  { key: 'sleep_verdict',label: 'מה הנתונים אומרים',  desc: 'ניתוח שינה, לב ו-HRV' },
   { key: 'anomalies',    label: 'ימים חריגים',         desc: 'ימים שחרגו מהרגיל' },
   { key: 'forecast',     label: 'תחזית שבועית',        desc: 'הערכה להמשך השבוע' },
 ];
@@ -646,6 +648,21 @@ function loadInsightsPrefs() {
 }
 function saveInsightsPrefs(p) {
   try { localStorage.setItem(INSIGHTS_PREFS_KEY, JSON.stringify(p)); } catch {}
+}
+function loadInsightsOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(INSIGHTS_ORDER_KEY));
+    if (Array.isArray(saved) && saved.length) {
+      const keys = new Set(INSIGHTS_SECTIONS.map(s => s.key));
+      const ordered = saved.filter(k => keys.has(k));
+      const missing = INSIGHTS_SECTIONS.map(s => s.key).filter(k => !ordered.includes(k));
+      return [...ordered, ...missing];
+    }
+  } catch {}
+  return INSIGHTS_SECTIONS.map(s => s.key);
+}
+function saveInsightsOrder(order) {
+  try { localStorage.setItem(INSIGHTS_ORDER_KEY, JSON.stringify(order)); } catch {}
 }
 
 function insightsTrends() {
@@ -757,164 +774,237 @@ function insightsForecast() {
 
 function openInsightsCustomize() {
   const prefs = loadInsightsPrefs();
+  let order = loadInsightsOrder();
+  const sectionMap = Object.fromEntries(INSIGHTS_SECTIONS.map(s => [s.key, s]));
+
   const modal = document.createElement('div');
   modal.className = 'modal';
+
+  const buildRows = () => order.map((key, i) => {
+    const s = sectionMap[key];
+    if (!s) return '';
+    return `<div class="cust-row" data-key="${key}">
+      <div class="cust-order">
+        <button class="cust-arrow" data-dir="-1" data-key="${key}" ${i === 0 ? 'disabled' : ''} aria-label="הזז למעלה">▲</button>
+        <button class="cust-arrow" data-dir="1"  data-key="${key}" ${i === order.length - 1 ? 'disabled' : ''} aria-label="הזז למטה">▼</button>
+      </div>
+      <div class="plan-grouped-label">${s.label}<small>${s.desc}</small></div>
+      <input type="checkbox" name="${key}" ${prefs[key] ? 'checked' : ''}
+        style="width:20px;height:20px;accent-color:var(--primary-500);">
+    </div>`;
+  }).join('');
+
   modal.innerHTML = `<div class="modal-backdrop"></div>
     <div class="modal-sheet">
-      <div class="modal-head"><h2>התאמה אישית</h2>
+      <div class="modal-head"><h2>התאמה אישית — תובנות</h2>
         <button class="close-btn" aria-label="סגירה">✕</button></div>
-      <p style="font-size:.85rem;color:var(--ink-2);margin-bottom:12px;">בחר אילו חלקים יוצגו בעמוד התובנות:</p>
-      <div class="plan-grouped-list">
-        ${INSIGHTS_SECTIONS.map(s => `
-          <label class="plan-grouped-row" style="cursor:pointer;gap:12px;">
-            <div class="plan-grouped-label">${s.label}<small>${s.desc}</small></div>
-            <input type="checkbox" name="${s.key}" ${prefs[s.key] ? 'checked' : ''}
-              style="width:20px;height:20px;accent-color:var(--primary-500);">
-          </label>`).join('')}
-      </div>
+      <p class="cust-hint">סמן להצגה / הסתר. לחץ ▲▼ לשינוי סדר:</p>
+      <div class="plan-grouped-list" id="cust-list">${buildRows()}</div>
       <div class="modal-actions">
         <button type="button" class="btn-primary" id="insights-prefs-save">שמור</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
+
+  const list = modal.querySelector('#cust-list');
   const close = () => modal.remove();
   modal.querySelector('.close-btn').onclick = close;
   modal.querySelector('.modal-backdrop').onclick = close;
+
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('.cust-arrow');
+    if (!btn) return;
+    const key = btn.dataset.key, dir = Number(btn.dataset.dir);
+    const idx = order.indexOf(key);
+    if (idx < 0) return;
+    const swap = idx + dir;
+    if (swap < 0 || swap >= order.length) return;
+    [order[idx], order[swap]] = [order[swap], order[idx]];
+    // read current checkbox states before re-render
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { prefs[cb.name] = cb.checked; });
+    list.innerHTML = buildRows();
+    // restore checkbox states
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = !!prefs[cb.name]; });
+  });
+
   modal.querySelector('#insights-prefs-save').onclick = () => {
     const newPrefs = {};
-    INSIGHTS_SECTIONS.forEach(s => { newPrefs[s.key] = modal.querySelector(`[name="${s.key}"]`)?.checked || false; });
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { newPrefs[cb.name] = cb.checked; });
     saveInsightsPrefs(newPrefs);
+    saveInsightsOrder(order);
     close();
     renderInsightsPage();
   };
+}
+
+function insightsVolumeCard() {
+  const data = state.data || [];
+  const RUNNING = new Set(['running','treadmill_running','trail_running']);
+  const SWIMMING = new Set(['lap_swimming','open_water_swimming']);
+  const CYCLING  = new Set(['cycling','road_biking','mountain_biking','indoor_cycling']);
+  const categories = [
+    { label: 'ריצה',   keys: RUNNING,  unit: 'ק״מ', field: 'km' },
+    { label: 'שחייה',  keys: SWIMMING, unit: 'ק״מ', field: 'km' },
+    { label: 'רכיבה',  keys: CYCLING,  unit: 'ק״מ', field: 'km' },
+  ];
+  const periods = [
+    { label: 'חודש', days: 30 },
+    { label: '2 חודש', days: 60 },
+    { label: '6 חודש', days: 180 },
+    { label: 'שנה', days: 365 },
+  ];
+  const today = todayISO();
+  const rows = categories.map(cat => {
+    const cells = periods.map(p => {
+      const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() - p.days);
+      const cutStr = cutoff.toISOString().slice(0,10);
+      let total = 0, sessions = 0;
+      for (const r of data) {
+        if (r.date < cutStr) continue;
+        for (const w of (r.workouts || [])) {
+          if (cat.keys.has(w.type_key) && w[cat.field]) { total += w[cat.field]; sessions++; }
+        }
+      }
+      return { total: +total.toFixed(1), sessions };
+    });
+    return { label: cat.label, unit: cat.unit, cells };
+  }).filter(row => row.cells.some(c => c.sessions > 0));
+  if (!rows.length) return '';
+  const header = periods.map(p => `<th>${p.label}</th>`).join('');
+  const body = rows.map(row => {
+    const cells = row.cells.map(c =>
+      `<td>${c.sessions ? `<b>${c.total}</b><small> ${row.unit}<br>${c.sessions} אימונים</small>` : '<span class="muted">—</span>'}</td>`
+    ).join('');
+    return `<tr><td class="vol-cat">${row.label}</td>${cells}</tr>`;
+  }).join('');
+  return `<article class="card"><div class="card-head"><h2>נפחי אימון</h2><span class="unit">לפי תקופה</span></div>
+    <div class="vol-table-wrap"><table class="vol-table"><thead><tr><th></th>${header}</tr></thead><tbody>${body}</tbody></table></div></article>`;
 }
 
 function renderInsightsPage() {
   const el = $('insights-page');
   if (!el) return;
   const prefs = loadInsightsPrefs();
+  const order = loadInsightsOrder();
 
   let html = `<article class="card" style="padding:14px 16px 12px;">
     <div class="card-head">
       <h2>${icon('bulb', 18)} תובנות</h2>
-      <button class="btn-ghost" id="insights-customize" style="font-size:.8rem;padding:5px 10px;">התאמה אישית ⚙</button>
+      <button class="btn-customize" id="insights-customize">התאמה אישית ⚙</button>
     </div>
   </article>`;
 
   let hasContent = false;
 
-  if (prefs.correlations) {
-    const found = allFindings();
-    if (found.length) {
-      hasContent = true;
-      const items = found.slice(0, 5).map(f => {
-        const strength = f.r !== null ? Math.abs(f.r) : 0;
-        const strengthPct = Math.round(strength * 100);
-        const strengthLabel = strength >= 0.6 ? 'חזק' : strength >= 0.4 ? 'בינוני' : 'עדין';
-        return `<div class="ins-row">
-          <div class="ins-corr-strength"><div class="ins-corr-bar"><div style="width:${strengthPct}%"></div></div><span class="ins-corr-label">${strengthLabel}</span></div>
-          <div><p class="ins-txt">${f.text}</p>
-            <span class="ins-meta">${f.n} ימים${f.r !== null ? ` · r=${fmt(Math.abs(f.r), 2)}` : ''}</span></div>
-        </div>`;
-      }).join('');
-      html += `<article class="card"><div class="card-head"><h2>קורלציות אישיות</h2><span class="unit">${found.length} ממצאים</span></div>
-        ${items}<p class="ins-note">מוצג רק מה שעבר בדיקת מובהקות סטטיסטית על ההיסטוריה שלך.</p></article>`;
-    }
-  }
-
-  if (prefs.trends) {
-    const trends = insightsTrends();
-    if (trends.length) {
-      hasContent = true;
-      const rows = trends.map(t => {
-        const arrow = t.up ? '↑' : '↓';
-        const color = t.good ? 'var(--ok)' : 'var(--alert)';
-        const pctTxt = t.pct !== null ? `${t.pct > 0 ? '+' : ''}${t.pct}%` : '';
-        const barW = t.pct !== null ? Math.min(Math.abs(t.pct) * 8, 100) : 0;
-        return `<div class="ins-trend-row">
-          <span class="ins-trend-label">${t.label}</span>
-          <div class="ins-trend-right">
-            <div class="ins-trend-top">
-              <span class="ins-trend-val">${fmt(t.avg, t.dec)} ${t.unit}</span>
-              <span class="ins-trend-delta" style="color:${color}">${arrow} ${pctTxt}</span>
+  const renderSection = key => {
+    if (!prefs[key]) return;
+    switch (key) {
+      case 'correlations': {
+        const found = allFindings();
+        if (!found.length) return;
+        hasContent = true;
+        const items = found.slice(0, 5).map(f => {
+          const strength = f.r !== null ? Math.abs(f.r) : 0;
+          const strengthPct = Math.round(strength * 100);
+          const strengthLabel = strength >= 0.6 ? 'חזק' : strength >= 0.4 ? 'בינוני' : 'עדין';
+          return `<div class="ins-row">
+            <div class="ins-corr-strength"><div class="ins-corr-bar"><div style="height:${strengthPct}%"></div></div><span class="ins-corr-label">${strengthLabel}</span></div>
+            <div><p class="ins-txt">${f.text}</p>
+              <span class="ins-meta">${f.n} ימים${f.r !== null ? ` · r=${fmt(Math.abs(f.r), 2)}` : ''}</span></div>
+          </div>`;
+        }).join('');
+        html += `<article class="card"><div class="card-head"><h2>קורלציות אישיות</h2><span class="unit">${found.length} ממצאים</span></div>
+          ${items}<p class="ins-note">מוצג רק מה שעבר בדיקת מובהקות סטטיסטית על ההיסטוריה שלך.</p></article>`;
+        break;
+      }
+      case 'trends': {
+        const trends = insightsTrends();
+        if (!trends.length) return;
+        hasContent = true;
+        const rows = trends.map(t => {
+          const arrow = t.up ? '↑' : '↓';
+          const color = t.good ? 'var(--ok)' : 'var(--alert)';
+          const pctTxt = t.pct !== null ? `${t.pct > 0 ? '+' : ''}${t.pct}%` : '';
+          const barW = t.pct !== null ? Math.min(Math.abs(t.pct) * 8, 100) : 0;
+          return `<div class="ins-trend-row">
+            <span class="ins-trend-label">${t.label}</span>
+            <div class="ins-trend-right">
+              <div class="ins-trend-top">
+                <span class="ins-trend-val">${fmt(t.avg, t.dec)} ${t.unit}</span>
+                <span class="ins-trend-delta" style="color:${color}">${arrow} ${pctTxt}</span>
+              </div>
+              <div class="ins-delta-bar"><div class="ins-delta-fill" style="width:${barW}%;background:${color}"></div></div>
             </div>
-            <div class="ins-delta-bar"><div class="ins-delta-fill" style="width:${barW}%;background:${color}"></div></div>
+          </div>`;
+        }).join('');
+        html += `<article class="card"><div class="card-head"><h2>מגמות 30 יום</h2><span class="unit">מול 30 הימים הקודמים</span></div>${rows}</article>`;
+        break;
+      }
+      case 'records': {
+        const recs = insightsRecords();
+        if (!recs.length) return;
+        hasContent = true;
+        const rows = recs.map(r => `<div class="ins-trend-row">
+          <span class="ins-trend-label">${r.label}</span>
+          <div class="ins-rec-right">
+            <span class="ins-trend-val" style="font-weight:700;color:var(--primary-500)">${fmt(r.value, r.dec)} ${r.unit}</span>
+            <span class="ins-rec-date">${typeof shortDate === 'function' ? shortDate(r.date) : r.date}</span>
           </div>
-        </div>`;
-      }).join('');
-      html += `<article class="card"><div class="card-head"><h2>מגמות 30 יום</h2><span class="unit">מול 30 הימים הקודמים</span></div>${rows}</article>`;
+        </div>`).join('');
+        html += `<article class="card"><div class="card-head"><h2>שיאים אישיים</h2></div>${rows}</article>`;
+        break;
+      }
+      case 'consistency': {
+        const cons = insightsConsistency();
+        if (!cons.length) return;
+        hasContent = true;
+        const rows = cons.map(c => {
+          const color = c.pct >= 75 ? 'var(--ok)' : c.pct >= 50 ? 'var(--watch)' : 'var(--alert)';
+          return `<div class="plan-sport">
+            <div class="plan-sport-top">
+              <span class="plan-sport-name">${c.label}</span>
+              <span class="plan-sport-num" style="color:${color}">${c.pct}% (${c.met}/${c.total} שבועות)</span>
+            </div>
+            <div class="plan-bar"><i style="width:${c.pct}%;background:${color}"></i></div>
+          </div>`;
+        }).join('');
+        html += `<article class="card"><div class="card-head"><h2>עקביות</h2><span class="unit">12 שבועות אחרונים</span></div><div class="plan-aero">${rows}</div></article>`;
+        break;
+      }
+      case 'volume': {
+        const v = insightsVolumeCard();
+        if (!v) return;
+        hasContent = true;
+        html += v;
+        break;
+      }
+      case 'sleep_verdict': {
+        if (typeof verdictHtml !== 'function') return;
+        const sv = verdictHtml('שינה ולב — מה זה אומר', ['sleep_hours', 'sleep_score', 'rhr', 'hrv', 'stress_avg']);
+        if (!sv) return;
+        hasContent = true;
+        html += `<article class="card">${sv}</article>`;
+        break;
+      }
+      case 'anomalies': {
+        const anom = $('anomalies');
+        if (!anom || !anom.innerHTML.trim()) return;
+        hasContent = true;
+        html += `<article class="card"><div class="card-head"><h2>ימים חריגים</h2></div>${anom.innerHTML}</article>`;
+        break;
+      }
+      case 'forecast': {
+        const lines = insightsForecast();
+        if (!lines) return;
+        hasContent = true;
+        const listHtml = lines.map(l => `<div class="ins-row"><span class="ins-dot"></span><p class="ins-txt">${l}</p></div>`).join('');
+        html += `<article class="card"><div class="card-head"><h2>תחזית שבועית</h2></div>${listHtml}</article>`;
+        break;
+      }
     }
-  }
+  };
 
-  if (prefs.records) {
-    const recs = insightsRecords();
-    if (recs.length) {
-      hasContent = true;
-      const rows = recs.map(r => `<div class="ins-trend-row">
-        <span class="ins-trend-label">${r.label}</span>
-        <div class="ins-rec-right">
-          <span class="ins-trend-val" style="font-weight:700;color:var(--primary-500)">${fmt(r.value, r.dec)} ${r.unit}</span>
-          <span class="ins-rec-date">${typeof shortDate === 'function' ? shortDate(r.date) : r.date}</span>
-        </div>
-      </div>`).join('');
-      html += `<article class="card"><div class="card-head"><h2>שיאים אישיים</h2></div>${rows}</article>`;
-    }
-  }
-
-  if (prefs.consistency) {
-    const cons = insightsConsistency();
-    if (cons.length) {
-      hasContent = true;
-      const rows = cons.map(c => {
-        const color = c.pct >= 75 ? 'var(--ok)' : c.pct >= 50 ? 'var(--watch)' : 'var(--alert)';
-        return `<div class="plan-sport">
-          <div class="plan-sport-top">
-            <span class="plan-sport-name">${c.label}</span>
-            <span class="plan-sport-num" style="color:${color}">${c.pct}% (${c.met}/${c.total} שבועות)</span>
-          </div>
-          <div class="plan-bar"><i style="width:${c.pct}%;background:${color}"></i></div>
-        </div>`;
-      }).join('');
-      html += `<article class="card"><div class="card-head"><h2>עקביות</h2><span class="unit">12 שבועות אחרונים</span></div><div class="plan-aero">${rows}</div></article>`;
-    }
-  }
-
-  if (prefs.load) {
-    const weeks = insightsLoadRecovery();
-    if (weeks.length >= 3) {
-      hasContent = true;
-      const maxW = Math.max(...weeks.map(w => w.workouts), 1);
-      const bars = weeks.map((w, i) => {
-        const hPct = Math.round(w.workouts / maxW * 100);
-        const rPct = w.readiness;
-        const rColor = rPct === null ? 'var(--ink-3)' : rPct >= 70 ? 'var(--ok)' : rPct >= 50 ? 'var(--watch)' : 'var(--alert)';
-        return `<div class="load-week-col">
-          <div class="load-bar-wrap"><div class="load-bar" style="height:${hPct}%"></div></div>
-          <div class="load-readiness" style="color:${rColor}">${rPct !== null ? rPct : '—'}</div>
-          <div class="load-label">${w.isCurrent ? 'עכשיו' : `שב׳ ${i + 1}`}</div>
-        </div>`;
-      }).join('');
-      html += `<article class="card"><div class="card-head"><h2>עומס vs התאוששות</h2><span class="unit">עמודות=אימונים · מספר=מוכנות</span></div>
-        <div class="load-chart">${bars}</div></article>`;
-    }
-  }
-
-  if (prefs.anomalies) {
-    const anom = $('anomalies');
-    if (anom && anom.innerHTML.trim()) {
-      hasContent = true;
-      html += `<article class="card"><div class="card-head"><h2>ימים חריגים</h2></div>${anom.innerHTML}</article>`;
-    }
-  }
-
-  if (prefs.forecast) {
-    const lines = insightsForecast();
-    if (lines) {
-      hasContent = true;
-      const listHtml = lines.map(l => `<div class="ins-row"><span class="ins-dot"></span><p class="ins-txt">${l}</p></div>`).join('');
-      html += `<article class="card"><div class="card-head"><h2>תחזית שבועית</h2></div>${listHtml}</article>`;
-    }
-  }
+  for (const key of order) renderSection(key);
 
   if (!hasContent) {
     html += `<article class="card"><p class="tr-empty">כל הסעיפים מוסתרים או אין עדיין מספיק נתונים. לחץ "התאמה אישית" להפעיל.</p></article>`;
