@@ -18,7 +18,14 @@ const AERO_SPORTS = [
 function getActiveSports() {
   const selected = typeof getSelectedSports === 'function' ? getSelectedSports() : null;
   if (!selected) return AERO_SPORTS;
-  return AERO_SPORTS.filter(s => selected.includes(s.key));
+  // include sports explicitly selected + any sport that already has plan data
+  const plan = loadPlan();
+  const aeroPlan = loadAeroPlan();
+  return AERO_SPORTS.filter(s =>
+    selected.includes(s.key) ||
+    plan.aerobic[s.key] > 0 ||
+    aeroPlan.some(p => p.sport === s.key)
+  );
 }
 
 const AERO_PLAN_KEY = 'aero_plan_v1';

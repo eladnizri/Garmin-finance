@@ -3574,6 +3574,7 @@ function openProfile() {
 function closeProfile() { $('profile-modal').classList.add('hidden'); }
 
 $('profile-btn').addEventListener('click', openProfile);
+document.addEventListener('click', e => { if (e.target.closest('#manage-sports-btn')) openProfile(); });
 $('profile-modal').addEventListener('click', e => { if (e.target.closest('[data-close]')) closeProfile(); });
 $('profile-form').addEventListener('submit', e => {
   e.preventDefault();
