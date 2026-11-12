@@ -791,50 +791,94 @@ function renderRecords(id, items) {
  * התאמה אישית — שינה
  * ========================================================================= */
 const SLEEP_PREFS_KEY = 'sleep_prefs_v1';
+const SLEEP_ORDER_KEY = 'sleep_order_v1';
 const SLEEP_SECTIONS = [
-  { key: 'stages',    label: 'שלבי שינה',          desc: 'גרף ופירוט שלבי שינה עמוקה / קלה / REM' },
-  { key: 'breathing', label: 'שינה ונשימה',         desc: 'ניתוח רמת חמצן ואירועי נשימה' },
-  { key: 'hrv',       label: 'לב ו-HRV',            desc: 'דופק מנוחה, שונות דופק ורזרבת לב' },
+  { key: 'sleep_hours', label: 'שעות שינה',   desc: 'גרף שעות שינה יומיות' },
+  { key: 'stages',      label: 'שלבי שינה',   desc: 'גרף ופירוט שלבי שינה עמוקה / קלה / REM' },
+  { key: 'breathing',   label: 'שינה ונשימה', desc: 'ניתוח רמת חמצן ואירועי נשימה' },
+  { key: 'hrv',         label: 'לב ו-HRV',    desc: 'דופק מנוחה, שונות דופק ורזרבת לב' },
 ];
 function loadSleepPrefs() {
   try {
     const s = localStorage.getItem(SLEEP_PREFS_KEY);
     const saved = s ? JSON.parse(s) : {};
-    const defaults = { stages: true, breathing: true, hrv: true };
+    const defaults = { sleep_hours: true, stages: true, breathing: true, hrv: true };
     return Object.assign(defaults, saved);
-  } catch { return { stages: true, breathing: true, hrv: true }; }
+  } catch { return { sleep_hours: true, stages: true, breathing: true, hrv: true }; }
 }
 function saveSleepPrefs(p) { try { localStorage.setItem(SLEEP_PREFS_KEY, JSON.stringify(p)); } catch {} }
+function loadSleepOrder() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SLEEP_ORDER_KEY));
+    if (Array.isArray(saved) && saved.length) {
+      const keys = new Set(SLEEP_SECTIONS.map(s => s.key));
+      const ordered = saved.filter(k => keys.has(k));
+      const missing = SLEEP_SECTIONS.map(s => s.key).filter(k => !ordered.includes(k));
+      return [...ordered, ...missing];
+    }
+  } catch {}
+  return SLEEP_SECTIONS.map(s => s.key);
+}
+function saveSleepOrder(order) { try { localStorage.setItem(SLEEP_ORDER_KEY, JSON.stringify(order)); } catch {} }
 
 function openSleepCustomize() {
   const prefs = loadSleepPrefs();
+  let order = loadSleepOrder();
+  const sectionMap = Object.fromEntries(SLEEP_SECTIONS.map(s => [s.key, s]));
+
   const modal = document.createElement('div');
   modal.className = 'modal';
+
+  const buildRows = () => order.map((key, i) => {
+    const s = sectionMap[key];
+    if (!s) return '';
+    return `<div class="cust-row" data-key="${key}">
+      <div class="cust-order">
+        <button class="cust-arrow" data-dir="-1" data-key="${key}" ${i === 0 ? 'disabled' : ''} aria-label="הזז למעלה">▲</button>
+        <button class="cust-arrow" data-dir="1"  data-key="${key}" ${i === order.length - 1 ? 'disabled' : ''} aria-label="הזז למטה">▼</button>
+      </div>
+      <div class="plan-grouped-label">${s.label}<small>${s.desc}</small></div>
+      <input type="checkbox" name="${key}" ${prefs[key] !== false ? 'checked' : ''}
+        style="width:20px;height:20px;accent-color:var(--primary-500);">
+    </div>`;
+  }).join('');
+
   modal.innerHTML = `<div class="modal-backdrop"></div>
     <div class="modal-sheet">
       <div class="modal-head"><h2>התאמה אישית — שינה ולב</h2>
         <button class="close-btn" aria-label="סגירה">✕</button></div>
-      <p class="cust-hint">בחר אילו חלקים יוצגו בעמוד השינה:</p>
-      <div class="plan-grouped-list">
-        ${SLEEP_SECTIONS.map(s => `
-          <label class="plan-grouped-row" style="cursor:pointer;gap:12px;">
-            <div class="plan-grouped-label">${s.label}<small>${s.desc}</small></div>
-            <input type="checkbox" name="${s.key}" ${prefs[s.key] ? 'checked' : ''}
-              style="width:20px;height:20px;accent-color:var(--primary-500);">
-          </label>`).join('')}
-      </div>
+      <p class="cust-hint">סמן להצגה / הסתר. לחץ ▲▼ לשינוי סדר:</p>
+      <div class="plan-grouped-list" id="sleep-cust-list">${buildRows()}</div>
       <div class="modal-actions">
         <button type="button" class="btn-primary" id="sleep-prefs-save">שמור</button>
       </div>
     </div>`;
   document.body.appendChild(modal);
+
+  const list = modal.querySelector('#sleep-cust-list');
   const close = () => modal.remove();
   modal.querySelector('.close-btn').onclick = close;
   modal.querySelector('.modal-backdrop').onclick = close;
+
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('.cust-arrow');
+    if (!btn) return;
+    const key = btn.dataset.key, dir = Number(btn.dataset.dir);
+    const idx = order.indexOf(key);
+    if (idx < 0) return;
+    const swap = idx + dir;
+    if (swap < 0 || swap >= order.length) return;
+    [order[idx], order[swap]] = [order[swap], order[idx]];
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { prefs[cb.name] = cb.checked; });
+    list.innerHTML = buildRows();
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { cb.checked = prefs[cb.name] !== false; });
+  });
+
   modal.querySelector('#sleep-prefs-save').onclick = () => {
     const newPrefs = {};
-    SLEEP_SECTIONS.forEach(s => { newPrefs[s.key] = modal.querySelector(`[name="${s.key}"]`)?.checked || false; });
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => { newPrefs[cb.name] = cb.checked; });
     saveSleepPrefs(newPrefs);
+    saveSleepOrder(order);
     close();
     applySleepPrefs();
   };
@@ -842,20 +886,32 @@ function openSleepCustomize() {
 
 function applySleepPrefs() {
   const prefs = loadSleepPrefs();
-  const stagesChart = document.querySelector('[data-info="stages"]')?.closest('article');
-  if (stagesChart) stagesChart.style.display = prefs.stages ? '' : 'none';
-  const stagesAnalysis = $('stages-analysis');
-  if (stagesAnalysis) stagesAnalysis.style.display = prefs.stages ? '' : 'none';
-  const breathing = $('sleep-breathing');
-  if (breathing) breathing.style.display = prefs.breathing ? '' : 'none';
-  const heartHero = $('heart-hero');
-  if (heartHero) heartHero.style.display = prefs.hrv ? '' : 'none';
-  const rhrChart = document.querySelector('[data-info="rhr"]')?.closest('article');
-  if (rhrChart) rhrChart.style.display = prefs.hrv ? '' : 'none';
-  const hrvChart = document.querySelector('[data-info="hrv"]')?.closest('article');
-  if (hrvChart) hrvChart.style.display = prefs.hrv ? '' : 'none';
-  const heartInsight = $('heart-insight');
-  if (heartInsight) heartInsight.style.display = prefs.hrv ? '' : 'none';
+  const order = loadSleepOrder();
+  // find the anchor: the fixed elements before the sections (sleep-rec, sleep-consistency header card)
+  const page = document.querySelector('[data-title="שינה ולב"]');
+  if (!page) return;
+  // show/hide each wrapper
+  SLEEP_SECTIONS.forEach(s => {
+    const el = page.querySelector(`[data-sleep-sec="${s.key}"]`);
+    if (el) el.style.display = prefs[s.key] !== false ? '' : 'none';
+  });
+  // reorder: move wrappers in stored order after the fixed top cards
+  const anchor = $('sleep-consistency')?.parentElement; // the fixed section element
+  if (!anchor) return;
+  // find the last fixed node (sleep-consistency div itself, which is a direct child)
+  const consistencyDiv = $('sleep-consistency');
+  if (!consistencyDiv) return;
+  let ref = consistencyDiv.nextSibling;
+  // skip non-wrapper nodes before first section wrapper
+  while (ref && !(ref.dataset && ref.dataset.sleepSec !== undefined) && !( ref.nodeType === 1 && ref.hasAttribute('data-sleep-sec'))) {
+    if (ref.nodeType === 1 && ref.hasAttribute('data-sleep-sec')) break;
+    ref = ref.nextSibling;
+  }
+  // append wrappers in order after consistencyDiv
+  for (const key of order) {
+    const el = page.querySelector(`[data-sleep-sec="${key}"]`);
+    if (el) page.insertBefore(el, $('insights-card'));
+  }
 }
 
 /* =========================================================================
@@ -3685,7 +3741,6 @@ function renderAll() {
   statHero('heart-hero', 'hrv', hrvExtra());
   renderHrZones();
 
-  verdictCard('heart-insight', 'מה זה אומר', ['rhr', 'hrv', 'stress_avg']);
 
   // כפתור התאמה אישית שינה
   const sleepCustomBtn = $('sleep-customize');
