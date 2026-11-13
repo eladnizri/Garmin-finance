@@ -99,6 +99,14 @@ function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); retu
 
 /* --- Data fetching ----------------------------------------------------- */
 
+function toArray(r) {
+  if (Array.isArray(r)) return r;
+  if (r && typeof r === 'object') {
+    for (const v of Object.values(r)) { if (Array.isArray(v)) return v; }
+  }
+  return [];
+}
+
 async function fetchGarminDailySummaries(start, end) {
   const chunks = [];
   let cursor = new Date(start);
@@ -107,14 +115,13 @@ async function fetchGarminDailySummaries(start, end) {
     const chunkEnd = new Date(Math.min(addDays(cursor, 364).getTime(), endDate.getTime()));
     chunks.push(garminFetch(
       `/usersummary-service/v2/dailysummaries?startDate=${isoDate(cursor)}&endDate=${isoDate(chunkEnd)}`
-    ).then(r => (r && r.data) || []));
+    ).then(toArray));
     cursor = addDays(chunkEnd, 1);
   }
   return (await Promise.all(chunks)).flat();
 }
 
 async function fetchGarminSleep(start, end) {
-  // max 31 days per request
   const chunks = [];
   let cursor = new Date(start);
   const endDate = new Date(end);
@@ -122,17 +129,16 @@ async function fetchGarminSleep(start, end) {
     const chunkEnd = new Date(Math.min(addDays(cursor, 30).getTime(), endDate.getTime()));
     chunks.push(garminFetch(
       `/sleep-service/sleep/dailySleepSummariesByDate?startDate=${isoDate(cursor)}&endDate=${isoDate(chunkEnd)}`
-    ));
+    ).then(toArray));
     cursor = addDays(chunkEnd, 1);
   }
   return (await Promise.all(chunks)).flat();
 }
 
 async function fetchGarminHRV(start, end) {
-  // HRV supports up to 365 days
   const s = isoDate(new Date(start)), e = isoDate(new Date(end));
   const r = await garminFetch(`/hrv-service/hrv/daily/${s}/${e}`);
-  return Array.isArray(r) ? r : (r && r.hrvSummaries) || [];
+  return toArray(r);
 }
 
 async function fetchGarminActivities(start, end) {
@@ -140,10 +146,11 @@ async function fetchGarminActivities(start, end) {
   const all = [];
   let page = 0;
   while (true) {
-    const batch = await garminFetch(
+    const raw = await garminFetch(
       `/activitylist-service/activities/search/activities?startDate=${isoDate(new Date(start))}&endDate=${isoDate(new Date(end))}&start=${page * 20}&limit=20`
     );
-    if (!Array.isArray(batch) || batch.length === 0) break;
+    const batch = toArray(raw);
+    if (batch.length === 0) break;
     all.push(...batch);
     if (batch.length < 20) break;
     page++;
@@ -160,7 +167,7 @@ async function fetchGarminSteps(start, end) {
     const chunkEnd = new Date(Math.min(addDays(cursor, 27).getTime(), endDate.getTime()));
     chunks.push(garminFetch(
       `/usersummary-service/stats/steps/daily/${isoDate(cursor)}/${isoDate(chunkEnd)}`
-    ));
+    ).then(toArray));
     cursor = addDays(chunkEnd, 1);
   }
   return (await Promise.all(chunks)).flat();
@@ -204,6 +211,7 @@ async function syncGarminData(onProgress, backfillDays) {
     fetchGarminSteps(start, today),
     fetchGarminFitnessAge(),
   ]);
+  console.log('[garmin-sync]', { dailies: dailies.length, sleep: sleepData.length, hrv: hrvData.length, activities: activities.length, steps: stepsData.length });
 
   // Index sleep and HRV by date for merging
   const sleepByDate = {};
