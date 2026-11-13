@@ -3534,6 +3534,10 @@ function fillProfileForm() {
   const f = $('profile-form');
   PROFILE_FIELDS.forEach(k => { if (f[k]) f[k].value = profile[k] ?? ''; });
   if (f.sex) f.sex.value = profile.sex || '';
+  if (f.runGoalPace && profile.runGoalPace) {
+    const s = Number(profile.runGoalPace);
+    f.runGoalPace.value = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  }
 }
 
 /* תצוגה מקדימה חיה של הסיווג — בלעדיה כוונון הספים הוא ניחוש עיוור:
