@@ -37,36 +37,42 @@ function _cachedToken() {
   return null;
 }
 
+let _tokenPromise = null;
 async function getAccessToken() {
   const cached = _cachedToken();
   if (cached) return cached;
+  if (_tokenPromise) return _tokenPromise;
 
-  const proxy = garminProxy();
-  const key = garminApiKey();
-  if (!proxy || !key) throw new Error('SETUP');
+  _tokenPromise = (async () => {
+    const proxy = garminProxy();
+    const key = garminApiKey();
+    if (!proxy || !key) throw new Error('SETUP');
 
-  const res = await fetch(`${proxy}/personal-token`, {
-    method: 'POST',
-    headers: { 'Authorization': `ApiKey ${key}` },
-  });
+    const res = await fetch(`${proxy}/personal-token`, {
+      method: 'POST',
+      headers: { 'Authorization': `ApiKey ${key}` },
+    });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    if (res.status === 401 || res.status === 403) throw new Error('INVALID_KEY');
-    throw new Error(`TOKEN_${res.status}: ${text.slice(0, 200)}`);
-  }
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      if (res.status === 401 || res.status === 403) throw new Error('INVALID_KEY');
+      throw new Error(`TOKEN_${res.status}: ${text.slice(0, 200)}`);
+    }
 
-  const accessToken = (await res.text()).trim();
-  if (!accessToken) throw new Error('EMPTY_TOKEN');
+    const accessToken = (await res.text()).trim();
+    if (!accessToken) throw new Error('EMPTY_TOKEN');
 
-  try {
-    localStorage.setItem(GARMIN_TOKEN_LS, JSON.stringify({
-      access_token: accessToken,
-      expires_at: Date.now() + 23 * 3600_000, // refresh ~1h before expiry
-    }));
-  } catch {}
+    try {
+      localStorage.setItem(GARMIN_TOKEN_LS, JSON.stringify({
+        access_token: accessToken,
+        expires_at: Date.now() + 23 * 3600_000,
+      }));
+    } catch {}
 
-  return accessToken;
+    return accessToken;
+  })().finally(() => { _tokenPromise = null; });
+
+  return _tokenPromise;
 }
 
 function clearGarminToken() {

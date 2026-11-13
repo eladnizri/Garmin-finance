@@ -3962,8 +3962,12 @@ async function syncNow() {
     const data = await syncGarminData(msg => msg ? toast(msg, true) : null);
     state.data = data;
     renderAll();
+    if (!data || data.length === 0) {
+      toast('הסנכרון הצליח אבל לא נמצאו נתונים — בדוק שיש נתונים ב-Garmin Connect');
+      return;
+    }
     const last = lastRow().date;
-    toast(`הנתונים עודכנו · אחרון ${last ? shortDate(last) : ''}`);
+    toast(`הנתונים עודכנו · ${data.length} ימים · אחרון ${last ? shortDate(last) : ''}`);
   } catch (e) {
     if (e.message === 'SETUP') { openSetup(); }
     else if (e.message === 'INVALID_KEY') { toast('מפתח ה-API לא תקין — בדוק ונסה שוב'); openSetup(); }
