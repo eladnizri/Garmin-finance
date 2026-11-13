@@ -517,7 +517,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .backup-row .btn-ghost { flex: 1; font-size: .82rem; padding: 10px; }
 .page-sport-header { display: flex; justify-content: flex-end; padding: 4px 0 0; }
 .sport-select-row { flex-direction: column; align-items: flex-start; gap: 10px; }
-.sport-select-label { font-size: .82rem; font-weight: 600; color: var(--ink-2); }
+.sport-select-label { font-size: .82rem; font-weight: 600; color: var(--ink-2); display: flex; align-items: center; gap: 5px; }
+.sport-select-label .ic { color: var(--ink-2); }
 
 /* =========================================================================
  * גיליון פירוט ריצה — שני מצבים: הצצה (peek) ומסך מלא, בגרירה
@@ -985,12 +986,15 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .ob-sport-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; width: 100%; }
 .ob-sport-chip {
   position: relative;
-  padding: 16px 12px; border-radius: 16px; min-height: 56px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 14px 12px; border-radius: 16px; min-height: 56px;
   border: 1.5px solid var(--border); background: var(--surface);
   color: var(--ink); font: 600 .95rem/1.2 'Rubik', sans-serif;
   cursor: pointer; transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
   text-align: center;
 }
+.ob-sport-chip .ic { flex: none; color: var(--ink-2); transition: color .15s; }
+.ob-sport-chip-sel .ic { color: var(--primary); }
 .ob-sport-chip:active { transform: scale(.96); }
 .ob-sport-chip-sel {
   border-color: var(--primary); background: var(--primary-soft);
