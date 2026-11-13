@@ -3155,7 +3155,8 @@ function weekWorkouts(rows, auto) {
     for (const w of (r.workouts || [])) {
       if (STRENGTH_TYPES.has(w.type_key)) continue;   // כבר נספר בכוח
       other++;
-      byType[w.type] = (byType[w.type] || 0) + 1;
+      const label = w.type || (w.type_key === 'running' ? 'ריצה' : CARDIO_LABEL[w.type_key]) || 'אחר';
+      byType[label] = (byType[label] || 0) + 1;
     }
   const parts = [];
   if (strength) parts.push(`${strength} כוח`);
@@ -4124,12 +4125,17 @@ function showOnboarding(startStep = 1) {
     step = i;
     steps.forEach((s, idx) => s.classList.toggle('hidden', idx !== i));
 
+    const head = $('ob-head');
+    const count = $('ob-step-count');
     if (i === 0) {
       navRow.classList.add('hidden');
       skipBtn.classList.add('hidden');
+      head?.classList.add('hidden');
       bar.style.width = '0%';
     } else {
       navRow.classList.remove('hidden');
+      head?.classList.remove('hidden');
+      if (count) count.textContent = `שלב ${i} מתוך ${steps.length - 1}`;
       // progress: step 1 of 3 already shows a third filled
       bar.style.width = `${(i / (steps.length - 1)) * 100}%`;
       backBtn.classList.toggle('hidden', i === 1);
@@ -4319,4 +4325,7 @@ document.addEventListener('keydown', e => {
   toggleFold(toggle);
 });
 
-init();
+/* init רק אחרי שכל סקריפטי ה-defer רצו (planner/training/goals נטענים אחרי app.js).
+ * בזמן ריצת סקריפט defer ה-readyState הוא 'interactive' ו-DOMContentLoaded טרם נורה. */
+if (document.readyState === 'complete') init();
+else document.addEventListener('DOMContentLoaded', init);

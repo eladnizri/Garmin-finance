@@ -726,8 +726,24 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .modal-head h2 { font-size: 1.15rem; font-weight: 700; }
 .modal-note { font-size: .75rem; color: var(--ink-2); background: var(--surface-2); border-radius: 10px; padding: 9px 11px; margin-bottom: 13px; line-height: 1.5; }
-.token-steps { font-size: .82rem; color: var(--ink-2); line-height: 1.8; margin: 0 0 14px; padding-inline-start: 20px; }
-.token-steps a { color: var(--primary-500); font-weight: 600; }
+.token-steps {
+  font-size: .84rem; color: var(--ink-2); line-height: 1.5;
+  margin: 0 0 16px; padding: 0; list-style: none;
+  counter-reset: tsteps;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.token-steps li {
+  counter-increment: tsteps;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2); border-radius: 12px; padding: 11px 12px;
+}
+.token-steps li::before {
+  content: counter(tsteps);
+  width: 22px; height: 22px; border-radius: 50%; flex: none;
+  background: var(--primary); color: #fff;
+  font-size: .72rem; font-weight: 800; line-height: 22px; text-align: center;
+}
+.token-steps a { color: var(--primary); font-weight: 600; }
 .field-row { display: flex; gap: 10px; margin-bottom: 11px; }
 .field { flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: .78rem; font-weight: 600; color: var(--ink-2); }
 .field input, .field select {
@@ -786,46 +802,84 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 /* ===== אשף כניסה ראשונה ===== */
 .onboarding {
   position: fixed; inset: 0; z-index: 45; background: var(--bg);
-  display: flex; align-items: flex-start; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   padding: 16px; overflow-y: auto;
 }
 .ob-container {
-  width: 100%; max-width: 420px;
+  width: 100%; max-width: 440px;
   display: flex; flex-direction: column; gap: 20px;
-  padding: 8px 0 32px;
-  min-height: calc(100dvh - 32px);
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: 24px;
+  box-shadow: var(--shadow);
+  padding: 28px 24px calc(24px + env(safe-area-inset-bottom));
+  min-height: min(620px, calc(100dvh - 32px));
+  margin: auto;
+  animation: obIn .4s cubic-bezier(.22, 1, .36, 1);
 }
+@keyframes obIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 /* הניווט נדחף לאזור האגודל גם כשהשלב קצר */
 .ob-container > .ob-nav { margin-top: auto; }
+.ob-head { display: flex; flex-direction: column; gap: 8px; }
 .ob-progress {
-  height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden;
+  height: 5px; border-radius: 999px; background: var(--surface-2); overflow: hidden;
 }
 .ob-bar {
   height: 100%; width: 0%; background: var(--primary);
-  border-radius: 2px; transition: width .35s ease;
+  border-radius: 999px; transition: width .35s ease;
 }
+.ob-step-count { font-size: .74rem; font-weight: 600; color: var(--muted); }
 
 /* שלב 0: לוגין */
 .ob-step-login {
   display: flex; flex-direction: column; align-items: center; gap: 12px;
-  padding-top: 40px; text-align: center;
+  padding-top: 16px; text-align: center;
 }
-.ob-logo { width: 80px; height: 80px; border-radius: 20px; }
-.ob-google-btn { margin-top: 8px; min-width: 220px; justify-content: center; }
+.ob-logo {
+  width: 84px; height: 84px; border-radius: 22px;
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .14);
+  margin-bottom: 2px;
+}
+.ob-google-btn { margin-top: 12px; min-width: 240px; justify-content: center; }
+
+/* רשימת יתרונות במסך הפתיחה */
+.ob-features {
+  list-style: none; margin: 10px 0 0; padding: 0;
+  display: flex; flex-direction: column; gap: 10px;
+  width: 100%; text-align: start;
+}
+.ob-features li {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface-2); border-radius: 14px; padding: 12px 14px;
+}
+.ob-features b { display: block; font-size: .88rem; font-weight: 700; color: var(--ink); }
+.ob-features small { font-size: .76rem; color: var(--ink-2); line-height: 1.4; }
+.ob-feat-ic {
+  width: 38px; height: 38px; border-radius: 11px; flex: none;
+  display: grid; place-items: center;
+}
+.ob-feat-ic svg {
+  width: 20px; height: 20px; fill: none; stroke: currentColor;
+  stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+}
+.ob-feat-ic.ic-sleep   { background: rgba(48, 176, 199, .12); color: var(--c-teal); }
+.ob-feat-ic.ic-train   { background: rgba(0, 122, 255, .10);  color: var(--primary); }
+.ob-feat-ic.ic-insight { background: rgba(255, 149, 0, .12);  color: var(--c-orange); }
 
 /* שלבים 1–3 */
 .ob-step { text-align: start; }
 .ob-title {
-  font-size: 1.8rem; font-weight: 700; margin: 0 0 8px;
-  text-align: center;
-  background: linear-gradient(135deg, var(--primary), var(--c-teal));
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.7rem; font-weight: 800; letter-spacing: -.02em; margin: 0 0 4px;
+  text-align: center; color: var(--ink);
 }
-.ob-step-title { font-size: 1.25rem; font-weight: 700; margin: 0 0 4px; }
-.ob-desc { font-size: .88rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 8px; }
+.ob-step-title { font-size: 1.35rem; font-weight: 800; letter-spacing: -.01em; margin: 0 0 4px; }
+.ob-desc { font-size: .88rem; color: var(--ink-2); line-height: 1.6; margin: 0 0 14px; }
 .ob-small { font-size: .78rem; color: var(--muted); }
-.ob-garmin-icon { text-align: center; margin-bottom: 8px; }
+.ob-garmin-icon {
+  width: 72px; height: 72px; border-radius: 20px; margin: 0 auto 14px;
+  background: var(--primary-soft); color: var(--primary);
+  display: grid; place-items: center;
+}
+.ob-garmin-icon svg { stroke: var(--primary) !important; width: 36px; height: 36px; }
 
 /* field group */
 .ob-field-group { margin-bottom: 20px; }
@@ -928,18 +982,27 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 }
 
 /* sport chip selector (multi-select) */
-.ob-sport-chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.ob-sport-chips { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; width: 100%; }
 .ob-sport-chip {
-  flex: 1 1 calc(33% - 10px); min-width: 90px;
-  padding: 14px 8px; border-radius: 14px;
-  border: 1.5px solid var(--border); background: var(--surface-2);
-  color: var(--ink); font: 600 1rem/1.2 'Rubik', sans-serif;
-  cursor: pointer; transition: border-color .15s, background .15s, transform .1s;
+  position: relative;
+  padding: 16px 12px; border-radius: 16px; min-height: 56px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--ink); font: 600 .95rem/1.2 'Rubik', sans-serif;
+  cursor: pointer; transition: border-color .15s, background .15s, transform .1s, box-shadow .15s;
+  text-align: center;
 }
 .ob-sport-chip:active { transform: scale(.96); }
 .ob-sport-chip-sel {
-  border-color: var(--primary-500); background: color-mix(in srgb, var(--primary-500) 12%, var(--surface-2));
-  color: var(--primary-500);
+  border-color: var(--primary); background: var(--primary-soft);
+  color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset;
+}
+.ob-sport-chip-sel::after {
+  content: '✓';
+  position: absolute; top: -7px; inset-inline-end: -7px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  font-size: .68rem; font-weight: 800; line-height: 20px; text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
 }
 
 /* text input (garmin) */
@@ -954,7 +1017,8 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .ob-nav {
   display: flex; gap: 12px; justify-content: center;
 }
-.ob-nav .btn-primary { min-width: 140px; }
+.ob-nav .btn-primary { min-width: 140px; border-radius: 999px; min-height: 50px; font-size: 1rem; }
+.ob-nav .btn-ghost { border-radius: 999px; min-height: 50px; }
 .ob-skip {
   font-size: .88rem; color: var(--muted);
   text-decoration: underline; text-underline-offset: 3px;

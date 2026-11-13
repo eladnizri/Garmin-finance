@@ -35,13 +35,30 @@
   <!-- ===== אשף כניסה ראשונה ===== -->
   <div id="onboarding" class="onboarding hidden">
     <div class="ob-container">
-      <div class="ob-progress"><div class="ob-bar" id="ob-bar"></div></div>
+      <div class="ob-head" id="ob-head">
+        <div class="ob-progress"><div class="ob-bar" id="ob-bar"></div></div>
+        <div class="ob-step-count" id="ob-step-count"></div>
+      </div>
 
       <!-- שלב 0: כניסה עם Google -->
       <div class="ob-step ob-step-login" data-step="0">
         <img src="icons/icon-192.png" alt="" class="ob-logo">
         <h1 class="ob-title">בריאות וכושר</h1>
-        <p class="ob-desc">מעקב חכם אחרי השינה, הדופק, האימונים והריצות שלך — ישירות מהשעון של Garmin.</p>
+        <p class="ob-desc">כל נתוני ה-Garmin שלך — שינה, דופק, אימונים וריצות — במקום אחד, עם תובנות חכמות.</p>
+        <ul class="ob-features">
+          <li>
+            <span class="ob-feat-ic ic-sleep"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg></span>
+            <div><b>שינה ולב</b><small>HRV, דופק מנוחה ושלבי שינה</small></div>
+          </li>
+          <li>
+            <span class="ob-feat-ic ic-train"><svg viewBox="0 0 24 24"><path d="M6.5 6.5h11v11h-11z" opacity="0"/><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></svg></span>
+            <div><b>אימונים</b><small>תוכניות כוח ואירובי מותאמות אישית</small></div>
+          </li>
+          <li>
+            <span class="ob-feat-ic ic-insight"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 1 3.6 10.8c-.6.5-.6 1.2-.6 2.2h-6c0-1-.0-1.7-.6-2.2A6 6 0 0 1 12 3z"/></svg></span>
+            <div><b>תובנות</b><small>דפוסים וקשרים מתוך הנתונים שלך</small></div>
+          </li>
+        </ul>
         <button id="ob-google-btn" class="btn-google ob-google-btn" type="button">
           <svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
           התחבר עם Google
