@@ -3977,6 +3977,20 @@ async function syncNow() {
 }
 $('sync-btn').addEventListener('click', syncNow);
 
+// סנכרון אוטומטי — בפתיחה ובחזרה מהרקע (מינימום 30 דקות בין סנכרונים)
+const AUTO_SYNC_KEY = 'garmin_last_auto_sync';
+const AUTO_SYNC_INTERVAL = 30 * 60 * 1000;
+function autoSyncIfNeeded() {
+  if (!hasGarminSetup()) return;
+  const last = Number(localStorage.getItem(AUTO_SYNC_KEY) || 0);
+  if (Date.now() - last < AUTO_SYNC_INTERVAL) return;
+  localStorage.setItem(AUTO_SYNC_KEY, String(Date.now()));
+  syncNow();
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) autoSyncIfNeeded();
+});
+
 /* --- מודאל הגדרות חיבור גרמין --- */
 function openSetup() {
   $('setup-key').value = garminApiKey();
@@ -4228,6 +4242,8 @@ async function init() {
   renderAll();
   // התחלה בעמוד הבית (חשוב ב-RTL, שבו ההיסט ההתחלתי אינו בהכרח 0)
   requestAnimationFrame(() => snapToPage(0, false));
+  // סנכרון אוטומטי בטעינה ראשונה
+  setTimeout(autoSyncIfNeeded, 1500);
 }
 
 if ('serviceWorker' in navigator) {
