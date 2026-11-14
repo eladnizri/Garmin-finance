@@ -653,6 +653,11 @@ button { font: inherit; color: inherit; background: none; border: none; cursor: 
 .strength-count b { color: var(--ok); }
 
 /* ===== תוכנית שבועית (planner) ===== */
+.planner-week-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0 4px; margin-bottom: 4px; }
+.planner-week-nav .plan-week-nav-label { font-size: .82rem; color: var(--ink-2); font-weight: 500; text-align: center; flex: 1; }
+.plan-week-btn { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--ink-1); font-size: 1.1rem; line-height: 1; padding: 4px 10px; cursor: pointer; transition: background .15s; }
+.plan-week-btn:hover:not(:disabled) { background: var(--surface-2); }
+.plan-week-btn:disabled, .plan-week-btn.disabled { opacity: .35; cursor: default; }
 .plan-aero { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
 .plan-sport-top { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 4px; }
 .plan-sport-name { font-weight: 600; }

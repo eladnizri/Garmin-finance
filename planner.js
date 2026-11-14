@@ -56,11 +56,23 @@ function loadAeroPlan() {
 function saveAeroPlan(p) { try { localStorage.setItem(AERO_PLAN_KEY, JSON.stringify(p)); } catch {} }
 
 /* =========================================================================
- * נפח אירובי בפועל השבוע — מתוך workouts שגרמין שלח
+ * ניווט שבועי — offset מהשבוע הנוכחי
  * ========================================================================= */
-function weekAeroActuals() {
-  const ws = weekStartISO(new Date(todayISO()));
-  const rows = (state.data || []).filter(r => r.date >= ws);
+let plannerWeekOffset = 0;
+
+function plannerWeekStart() {
+  const d = new Date(weekStartISO(new Date(todayISO())));
+  d.setDate(d.getDate() + plannerWeekOffset * 7);
+  return d;
+}
+
+/* =========================================================================
+ * נפח אירובי בפועל — לשבוע נתון
+ * ========================================================================= */
+function weekAeroActuals(ws) {
+  const wsISO = ws.toISOString().slice(0, 10);
+  const weISO = new Date(ws.getTime() + 6 * 86400000).toISOString().slice(0, 10);
+  const rows = (state.data || []).filter(r => r.date >= wsISO && r.date <= weISO);
   const totals = {};
   for (const sport of AERO_SPORTS) totals[sport.key] = 0;
   for (const r of rows) {
@@ -82,115 +94,120 @@ function renderPlanner() {
   const plan = loadPlan();
   const aeroPlan = loadAeroPlan();
   const activeSports = getActiveSports();
-  const hasAnyPlan = AERO_SPORTS.some(s => plan.aerobic[s.key] > 0) || aeroPlan.length > 0;
 
-  if (!hasAnyPlan) {
+  // אין ספורטים פעילים — מצב ריק כללי
+  if (!activeSports.length) {
     el.innerHTML = `<article class="card">
       <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2></div>
-      <p class="tr-empty">תכנן את השבוע: הגדר נפח אירובי לפי ענף ותוכנית שבועית.</p>
-      <button class="btn-primary tr-wide" id="plan-setup">הגדרת תוכנית</button>
+      <p class="tr-empty">בחר סוגי ספורט בהגדרות כדי לתכנן.</p>
     </article>`;
     return;
   }
 
-  const actuals = weekAeroActuals();
+  const ws = plannerWeekStart();
   const today = new Date(todayISO());
-  const ws = new Date(weekStartISO(today));
-  const weekEnd = new Date(ws); weekEnd.setDate(ws.getDate() + 6);
+  const isCurrent = plannerWeekOffset === 0;
+  const isFuture = plannerWeekOffset > 0;
+  const weekEnd = new Date(ws.getTime() + 6 * 86400000);
   const fmtD = d => `${d.getDate()}/${d.getMonth() + 1}`;
   const weekRange = `${fmtD(ws)}–${fmtD(weekEnd)}`;
-  const garminDates = weekActivityDates();
+  const weekLabel = isCurrent ? 'שבוע נוכחי' : isFuture ? `+${plannerWeekOffset} שבועות` : `${plannerWeekOffset} שבועות`;
 
-  let html = '';
+  const actuals = weekAeroActuals(ws);
+  const garminDates = weekActivityDates(ws);
+
+  // כפתורי ניווט שבועי — משותפים לכל הכרטיסים
+  const navHtml = `<div class="planner-week-nav">
+    <button class="plan-week-btn" id="plan-prev-week" aria-label="שבוע קודם">‹</button>
+    <span class="plan-week-nav-label">${weekLabel} · ${weekRange}</span>
+    <button class="plan-week-btn${isCurrent ? ' disabled' : ''}" id="plan-next-week" aria-label="שבוע הבא" ${isCurrent ? 'disabled' : ''}>›</button>
+  </div>`;
+
+  let html = navHtml;
 
   for (const sport of activeSports) {
     const target = plan.aerobic[sport.key] || 0;
     const sportDays = aeroPlan.filter(s => s.sport === sport.key);
+    const hasConfig = target > 0 || sportDays.length > 0;
 
     let body = '';
 
-    // שורת נפח שבועי
-    if (target && sport.hasKm !== false) {
-      const actual = actuals[sport.key] || 0;
-      const pct = Math.min(actual / target * 100, 100);
-      const done = actual >= target;
-      body += `<div class="plan-aero"><div class="plan-sport${done ? ' done' : ''}">
-        <div class="plan-sport-top">
-          <span class="plan-sport-name">נפח שבועי</span>
-          <span class="plan-sport-num">${fmt(actual, 1)} / ${fmt(target, 0)} ק״מ</span>
-        </div>
-        <div class="plan-bar"><i style="width:${Math.round(pct)}%"></i></div>
-      </div></div>`;
-    } else if (target && sport.hasKm === false) {
-      // ספורט ללא ק״מ (פילאטיס) — ספירת ימים
-      const doneCount = [...garminDates].filter(iso => {
-        const day = new Date(`${iso}T12:00:00`).getDay();
-        return sportDays.some(s => s.day === day);
-      }).length;
-      body += `<div class="plan-aero"><div class="plan-sport">
-        <div class="plan-sport-top">
-          <span class="plan-sport-name">אימונים השבוע</span>
-          <span class="plan-sport-num">${doneCount} / ${target}</span>
-        </div>
-      </div></div>`;
-    }
-
-    // גריד ימים — רק ימים שתוכננו לענף זה
-    if (sportDays.length) {
-      const daySlots = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(ws);
-        d.setDate(ws.getDate() + i);
-        const iso = d.toISOString().slice(0, 10);
-        const isFuture = d > today;
-        const isToday = iso === todayISO();
-        const planned = sportDays.find(s => s.day === i);
-        const typeInfo = planned && AERO_WORKOUT_TYPES.find(t => t.key === planned.type);
-        const done = garminDates.has(iso) && !!planned;
-        const isRest = !planned;
-        const cls = [done ? 'done' : '', isToday ? 'today' : '', isFuture ? 'future' : ''].filter(Boolean).join(' ');
-        daySlots.push(`<div class="plan-day ${cls}">
-          <small>${SHORT_DAY_NAMES[i]}</small>
-          ${isRest
-            ? '<span class="plan-rest">—</span>'
-            : `<span class="plan-prog"><span class="plan-prog-line">${planned?.km ? `${fmt(planned.km, 1)} ק"מ` : ''}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
-          ${done ? '<i class="plan-check">✓</i>' : ''}
-        </div>`);
+    if (!hasConfig) {
+      body = `<p class="tr-empty">לחץ עריכה כדי להגדיר תוכנית.</p>`;
+    } else {
+      // שורת נפח שבועי
+      if (target && sport.hasKm !== false) {
+        const actual = actuals[sport.key] || 0;
+        const pct = Math.min(actual / target * 100, 100);
+        const done = actual >= target;
+        body += `<div class="plan-aero"><div class="plan-sport${done ? ' done' : ''}">
+          <div class="plan-sport-top">
+            <span class="plan-sport-name">נפח שבועי</span>
+            <span class="plan-sport-num">${fmt(actual, 1)} / ${fmt(target, 0)} ק״מ</span>
+          </div>
+          <div class="plan-bar"><i style="width:${Math.round(pct)}%"></i></div>
+        </div></div>`;
+      } else if (target && sport.hasKm === false) {
+        const doneCount = [...garminDates].filter(iso => {
+          const day = new Date(`${iso}T12:00:00`).getDay();
+          return sportDays.some(s => s.day === day);
+        }).length;
+        body += `<div class="plan-aero"><div class="plan-sport">
+          <div class="plan-sport-top">
+            <span class="plan-sport-name">אימונים השבוע</span>
+            <span class="plan-sport-num">${doneCount} / ${target}</span>
+          </div>
+        </div></div>`;
       }
-      body += `<div class="plan-aero-week"><div class="plan-week">${daySlots.join('')}</div></div>`;
-    }
 
-    if (!body) body = `<p class="tr-empty">לחץ עריכה כדי להגדיר תוכנית.</p>`;
+      // גריד ימים
+      if (sportDays.length) {
+        const daySlots = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(ws); d.setDate(ws.getDate() + i);
+          const iso = d.toISOString().slice(0, 10);
+          const isToday = iso === todayISO();
+          const isPast = d < today && !isToday;
+          const planned = sportDays.find(s => s.day === i);
+          const typeInfo = planned && AERO_WORKOUT_TYPES.find(t => t.key === planned.type);
+          const done = garminDates.has(iso) && !!planned;
+          const isRest = !planned;
+          const cls = [done ? 'done' : '', isToday ? 'today' : '', !isPast && !isToday ? 'future' : ''].filter(Boolean).join(' ');
+          daySlots.push(`<div class="plan-day ${cls}">
+            <small>${SHORT_DAY_NAMES[i]}</small>
+            ${isRest
+              ? '<span class="plan-rest">—</span>'
+              : `<span class="plan-prog"><span class="plan-prog-line">${planned?.km ? `${fmt(planned.km, 1)} ק"מ` : ''}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
+            ${done ? '<i class="plan-check">✓</i>' : ''}
+          </div>`);
+        }
+        body += `<div class="plan-aero-week"><div class="plan-week">${daySlots.join('')}</div></div>`;
+      }
+    }
 
     html += `<article class="card" data-sport="${sport.key}">
       <div class="card-head">
         <h2>${icon(sport.icon, 18)} ${sport.label}</h2>
         <button class="world-link plan-edit-btn">עריכה ‹</button>
       </div>
-      <div class="plan-week-header">
-        <span class="plan-week-label">שבוע נוכחי</span>
-        <span class="plan-week-dates">${weekRange}</span>
-      </div>
       ${body}
     </article>`;
   }
 
-  if (!html) {
-    // תוכנית קיימת אבל לא לאף ענף פעיל
-    html = `<article class="card">
-      <div class="card-head"><h2>${icon('calendar', 18)} תוכנית אירובית</h2></div>
-      <p class="tr-empty">הגדר תוכנית לסוגי הספורט שבחרת.</p>
-      <button class="btn-primary tr-wide" id="plan-setup">הגדרת תוכנית</button>
-    </article>`;
-  }
-
   el.innerHTML = html;
+
+  // אירועי ניווט
+  const prevBtn = $('plan-prev-week');
+  const nextBtn = $('plan-next-week');
+  if (prevBtn) prevBtn.onclick = () => { plannerWeekOffset--; renderPlanner(); };
+  if (nextBtn) nextBtn.onclick = () => { plannerWeekOffset++; renderPlanner(); };
 }
 
-function weekActivityDates() {
-  const ws = weekStartISO(new Date(todayISO()));
+function weekActivityDates(ws) {
+  const wsISO = (ws || new Date(todayISO())).toISOString().slice(0, 10);
+  const weISO = new Date(new Date(wsISO).getTime() + 6 * 86400000).toISOString().slice(0, 10);
   const s = new Set();
-  for (const r of (state.data || []).filter(r => r.date >= ws))
+  for (const r of (state.data || []).filter(r => r.date >= wsISO && r.date <= weISO))
     for (const w of (r.workouts || [])) {
       if (AERO_SPORTS.some(sp => sp.typeKeys.includes(w.type_key))) s.add(r.date);
     }
@@ -206,7 +223,7 @@ function openPlanSetup(sportKey) {
   const plan = loadPlan();
   const aeroPlan = loadAeroPlan();
   const todayDay = new Date(todayISO()).getDay();
-  const weekStart = new Date(weekStartISO(new Date(todayISO())));
+  const weekStart = plannerWeekStart();
 
   // If called without a sportKey (e.g. from the empty-state button), use first active sport
   const activeSports = getActiveSports();
