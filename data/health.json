@@ -1230,5 +1230,18 @@
   "vo2max": 52.5,
   "training_status": "RECOVERY_1",
   "training_load": 189
+ },
+ {
+  "date": "2026-11-14",
+  "rhr": null,
+  "stress_avg": null,
+  "body_battery_high": null,
+  "body_battery_low": null,
+  "body_battery_charged": null,
+  "body_battery_drained": null,
+  "steps": null,
+  "calories": null,
+  "floors": null,
+  "intensity_min": 0
  }
 ]
