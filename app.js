@@ -3732,6 +3732,46 @@ function importBackup(file) {
   reader.readAsText(file);
 }
 $('garmin-settings-btn').addEventListener('click', () => { closeProfile(); openSetup(); });
+
+// Apple Health modal
+$('apple-health-btn').addEventListener('click', async () => {
+  closeProfile();
+  const modal = $('apple-health-modal');
+  modal.classList.remove('hidden');
+  modal.querySelectorAll('[data-close]').forEach(el =>
+    el.addEventListener('click', () => modal.classList.add('hidden'), { once: true }));
+  const tokenEl = $('ah-token');
+  const statusEl = $('ah-status');
+  tokenEl.textContent = 'טוען…';
+  statusEl.textContent = '';
+  const user = typeof currentUser === 'function' ? currentUser() : null;
+  if (!user) { tokenEl.textContent = 'יש להתחבר עם Google קודם'; return; }
+  // Get or create personal token
+  let token = '';
+  try { token = localStorage.getItem('apple_health_token') || ''; } catch {}
+  if (!token) {
+    const arr = new Uint8Array(24);
+    crypto.getRandomValues(arr);
+    token = Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+    try { localStorage.setItem('apple_health_token', token); } catch {}
+    // Save to user_settings via Supabase
+    if (typeof sb !== 'undefined') {
+      await sb.from('user_settings').upsert({
+        user_id: user.id, key: 'apple_health_token', value: token,
+      }, { onConflict: 'user_id,key' });
+    }
+  }
+  tokenEl.textContent = token;
+  statusEl.innerHTML = `<small>User ID: <code style="direction:ltr;user-select:all">${user.id}</code></small>`;
+});
+$('ah-copy-token').addEventListener('click', () => {
+  const user = typeof currentUser === 'function' ? currentUser() : null;
+  const token = $('ah-token').textContent;
+  if (!token || token === 'טוען…' || !user) return;
+  const text = `TOKEN=${token}\nUSER_ID=${user.id}\nURL=https://gytxwjlicawlfdehszil.supabase.co/functions/v1/apple-health-ingest`;
+  navigator.clipboard.writeText(text).then(() => toast('הטוקן ופרטי החיבור הועתקו!'));
+});
+
 $('export-btn').addEventListener('click', exportBackup);
 $('import-btn').addEventListener('click', () => $('import-file').click());
 $('import-file').addEventListener('change', e => { if (e.target.files[0]) importBackup(e.target.files[0]); e.target.value = ''; });

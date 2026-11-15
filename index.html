@@ -311,6 +311,12 @@
         <div class="backup-row">
           <button type="button" class="btn-ghost" id="garmin-settings-btn">⚙️ הגדרות חיבור גרמין</button>
         </div>
+        <div class="backup-row">
+          <button type="button" class="btn-ghost" id="apple-health-btn">
+            <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            חיבור Apple Health
+          </button>
+        </div>
         <div class="backup-row sport-select-row">
           <div class="sport-select-label"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4a2 2 0 1 0 0 .01M6 21l3-5-2-3 1-4 4 2 2 3M9 13l-2 2"/></svg> סוגי הספורט שלי</div>
           <div class="ob-sport-chips" id="settings-sport-chips" role="group" aria-label="בחירת סוגי ספורט">
@@ -425,6 +431,40 @@
             <button type="submit" class="btn-primary">שמור וסנכרן</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- ===== חיבור Apple Health ===== -->
+    <div id="apple-health-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-sheet" role="dialog" aria-label="חיבור Apple Health">
+        <div class="modal-head">
+          <h2>
+            <svg class="ic" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            Apple Health
+          </h2>
+          <button class="icon-btn" data-close aria-label="סגור">✕</button>
+        </div>
+        <p class="modal-note">סנכרן נתוני בריאות מה-iPhone / Apple Watch באמצעות iOS Shortcuts — בחינם, ללא אפליקציה.</p>
+        <div class="apple-health-steps">
+          <h3>הגדרה (פעם אחת)</h3>
+          <ol class="token-steps">
+            <li>לחץ על הכפתור למטה כדי להוריד את ה-Shortcut</li>
+            <li>פתח את ה-Shortcut ב-iPhone והדבק את הטוקן שלך (למטה)</li>
+            <li>ב-Shortcuts → Automation → הגדר הפעלה אוטומטית כל בוקר</li>
+          </ol>
+          <div class="apple-health-token-box">
+            <label class="field">הטוקן שלך (להדבקה ב-Shortcut)</label>
+            <div class="apple-health-token-row">
+              <code id="ah-token" class="ah-token-display">טוען…</code>
+              <button type="button" class="btn-ghost" id="ah-copy-token">העתק</button>
+            </div>
+          </div>
+          <a id="ah-shortcut-link" class="btn-primary tr-wide" href="https://www.icloud.com/shortcuts/" target="_blank" rel="noopener">
+            הורד Shortcut ל-iPhone
+          </a>
+          <div class="apple-health-status" id="ah-status"></div>
+        </div>
       </div>
     </div>
 

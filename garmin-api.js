@@ -306,6 +306,7 @@ async function syncGarminData(onProgress, backfillDays) {
 
     // Activities
     if (actByDate[day]) record.workouts = actByDate[day];
+    record._source = 'garmin';
 
     rows.push(record);
   }
