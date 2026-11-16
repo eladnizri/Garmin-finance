@@ -111,7 +111,9 @@ function renderPlanner() {
   const weekEnd = new Date(ws.getTime() + 6 * 86400000);
   const fmtD = d => `${d.getDate()}/${d.getMonth() + 1}`;
   const weekRange = `${fmtD(ws)}–${fmtD(weekEnd)}`;
-  const weekLabel = isCurrent ? 'שבוע נוכחי' : isFuture ? `+${plannerWeekOffset} שבועות` : `${plannerWeekOffset} שבועות`;
+  const weekLabel = isCurrent ? 'שבוע נוכחי'
+    : isFuture ? `שבוע +${plannerWeekOffset}`
+    : plannerWeekOffset === -1 ? 'שבוע שעבר' : `שבוע ${plannerWeekOffset}`;
 
   const actuals = weekAeroActuals(ws);
   const garminDates = weekActivityDates(ws);
@@ -120,7 +122,7 @@ function renderPlanner() {
   const navHtml = `<div class="planner-week-nav">
     <button class="plan-week-btn" id="plan-prev-week" aria-label="שבוע קודם">‹</button>
     <span class="plan-week-nav-label">${weekLabel} · ${weekRange}</span>
-    <button class="plan-week-btn${isCurrent ? ' disabled' : ''}" id="plan-next-week" aria-label="שבוע הבא" ${isCurrent ? 'disabled' : ''}>›</button>
+    <button class="plan-week-btn" id="plan-next-week" aria-label="שבוע הבא">›</button>
   </div>`;
 
   let html = navHtml;

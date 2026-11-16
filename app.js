@@ -1246,6 +1246,163 @@ function totalRunCount() {
   return n;
 }
 
+/* =========================================================================
+ * renderSports — ניתוח אירובי לכל ספורט שאינו ריצה: שחייה, רכיבה, הליכה וכד'.
+ * מציג כרטיס נפרד לכל ספורט עם: אחרון, היסטוריה, גרף נפח שבועי.
+ * ========================================================================= */
+
+// ספורטים שיש להם ניתוח כרטיס — ריצה מקבל כרטיס נפרד ב-renderRuns
+const SPORT_CARDS = [
+  { key: 'swimming',  label: 'שחייה',   icon: 'swim',    typeKeys: ['lap_swimming', 'open_water_swimming'], unit: 'ק״מ', hasKm: true  },
+  { key: 'cycling',   label: 'רכיבה',   icon: 'bike',    typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], unit: 'ק״מ', hasKm: true  },
+  { key: 'walking',   label: 'הליכה',   icon: 'walk',    typeKeys: ['walking', 'hiking'],                  unit: 'ק״מ', hasKm: true  },
+  { key: 'pilates',   label: 'פילאטיס', icon: 'yoga',    typeKeys: ['pilates', 'yoga', 'fitness_equipment', 'strength_training', 'indoor_cardio'], unit: 'דק׳', hasKm: false },
+];
+
+function workoutsForSport(sport) {
+  const out = [];
+  for (const row of visibleRows()) {
+    (row.workouts || []).forEach((w, i) => {
+      if (sport.typeKeys.includes(w.type_key))
+        out.push({ ...w, date: row.date, _idx: i });
+    });
+  }
+  return out.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function renderSportCard(sport, container) {
+  const workouts = workoutsForSport(sport);
+  if (!workouts.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const last = workouts[workouts.length - 1];
+  const prev = workouts.slice(0, -1).reverse().find(w => w.type_key === last.type_key) || workouts[workouts.length - 2];
+
+  // השוואה לאימון קודם
+  let cmpHtml = '';
+  if (prev) {
+    const bits = [];
+    if (sport.hasKm && last.km && prev.km) {
+      const d = last.km - prev.km;
+      if (Math.abs(d) >= 0.1) bits.push(`${d > 0 ? '+' : ''}${fmt(d, 1)} ק״מ ממריחה קודמת`);
+    }
+    if (!sport.hasKm && last.minutes && prev.minutes) {
+      const d = last.minutes - prev.minutes;
+      if (Math.abs(d) >= 2) bits.push(`${d > 0 ? '+' : ''}${Math.round(d)} דק׳ מאימון קודם`);
+    }
+    if (last.avg_hr && prev.avg_hr) {
+      const d = last.avg_hr - prev.avg_hr;
+      if (Math.abs(d) >= 2) bits.push(`דופק ${d < 0 ? 'נמוך' : 'גבוה'} ב-${Math.abs(d)}`);
+    }
+    if (bits.length) cmpHtml = `<p class="run-cmp">מול האימון הקודם (${shortDateY(prev.date)}): ${bits.join(' · ')}.</p>`;
+  }
+
+  // כרטיס האחרון
+  const lastBits = [];
+  if (sport.hasKm && last.km)      lastBits.push(`${fmt(last.km, 2)} ק״מ`);
+  if (last.minutes)                 lastBits.push(`${last.minutes} דק׳`);
+  if (!sport.hasKm && last.km)     lastBits.push(`${fmt(last.km, 2)} ק״מ`);
+  if (last.avg_hr)                  lastBits.push(`דופק ${last.avg_hr}`);
+  if (last.pace_s && sport.hasKm)  lastBits.push(`${paceTxt(last.pace_s)} /ק״מ`);
+
+  // גרף נפח שבועי — 8 שבועות אחרונים
+  const chartId = `chart-sport-${sport.key}`;
+  const weekVolumes = (() => {
+    const weeks = [];
+    const today = new Date(todayISO());
+    for (let i = 7; i >= 0; i--) {
+      const ws = new Date(today); ws.setDate(ws.getDate() - ws.getDay() - i * 7);
+      const wsISO = ws.toISOString().slice(0, 10);
+      const weISO = new Date(ws.getTime() + 6 * 86400000).toISOString().slice(0, 10);
+      const val = workouts
+        .filter(w => w.date >= wsISO && w.date <= weISO)
+        .reduce((s, w) => s + (sport.hasKm ? (w.km || 0) : (w.minutes || 0)), 0);
+      weeks.push({ label: `${ws.getDate()}/${ws.getMonth() + 1}`, val: +val.toFixed(1) });
+    }
+    return weeks;
+  })();
+
+  // היסטוריה — 10 אחרונים
+  const shown = workouts.slice().reverse().slice(0, 12);
+  const histHtml = shown.map(w => {
+    const bits2 = [];
+    if (w.km)      bits2.push(`${fmt(w.km, 2)} ק״מ`);
+    if (w.minutes) bits2.push(`${w.minutes} דק׳`);
+    if (w.avg_hr)  bits2.push(`💓 ${w.avg_hr}`);
+    return `<div class="tr-row">
+      <span class="tr-d">${shortDateY(w.date)}</span>
+      <span class="tr-nm">${w.type || sport.label}</span>
+      <span class="tr-v">${bits2.join(' · ')}</span>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = `<article class="card">
+    <div class="card-head">
+      <h2>${sport.label}</h2>
+      <span class="unit">${workouts.length} אימונים בתקופה</span>
+    </div>
+    <div class="run-last">
+      <div class="rl-top">
+        <span class="rl-date">${longDateY(last.date)}</span>
+      </div>
+      <div class="rl-bits">${lastBits.join(' · ')}</div>
+    </div>
+    ${cmpHtml}
+    <div class="tr-sec">
+      <div class="tr-sec-head"><h3>נפח שבועי — 8 שבועות</h3></div>
+      <div class="chart-wrap chart-sm" dir="ltr"><canvas id="${chartId}"></canvas></div>
+    </div>
+    <div class="tr-sec"><h3>היסטוריה</h3>
+      <div class="tr-hist">${histHtml}</div>
+    </div>
+  </article>`;
+
+  // גרף עמודות פשוט
+  const ctx = document.getElementById(chartId);
+  if (ctx && typeof Chart !== 'undefined') {
+    if (ctx._chart) ctx._chart.destroy();
+    ctx._chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: weekVolumes.map(w => w.label),
+        datasets: [{ data: weekVolumes.map(w => w.val), backgroundColor: C.blue + 'bb', borderRadius: 4, borderSkipped: false }],
+      },
+      options: {
+        animation: chartAnim ? undefined : false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: C.grid }, border: { display: false } },
+        },
+      },
+    });
+  }
+}
+
+function renderSports() {
+  const el = $('sports-card');
+  if (!el) return;
+
+  // קבל ספורטים שנבחרו על ידי המשתמש
+  const selected = getSelectedSports() || [];
+
+  // סנן רק ספורטים שנבחרו ויש להם נתונים
+  const active = SPORT_CARDS.filter(s => selected.includes(s.key));
+
+  if (!active.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  // צור container לכל ספורט
+  el.innerHTML = active.map(s => `<div id="sport-card-${s.key}"></div>`).join('');
+  for (const sport of active) {
+    renderSportCard(sport, $(`sport-card-${sport.key}`));
+  }
+}
+
 function renderRuns() {
   const el = $('runs-card');
   const runs = runsInRange();
@@ -3827,8 +3984,9 @@ function renderAll() {
   // אירובי
   if (typeof renderPlanner === 'function') renderPlanner();
   renderRace();
-  renderCardioLog();
   renderRuns();
+  renderSports();
+  renderCardioLog();
 
   // שינה
   renderSleepRec();
