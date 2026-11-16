@@ -4,7 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#eaf5ef">
-  <title>בריאות וכושר</title>
+  <title>בריאות וכושר — מעקב Garmin, שינה ואימונים</title>
+  <meta name="description" content="אפליקציית בריאות אישית: מעקב נתוני Garmin, שינה, דופק, אימונים ותכנון שבועי — הכל במקום אחד.">
+
+  <!-- OG / Social -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="בריאות וכושר">
+  <meta property="og:description" content="מעקב בריאות אישי עם נתוני Garmin, שינה, דופק ואימונים.">
+  <meta property="og:image" content="icons/og-image.png">
+  <meta property="og:locale" content="he_IL">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="בריאות וכושר">
+  <meta name="twitter:description" content="מעקב בריאות אישי עם נתוני Garmin, שינה, דופק ואימונים.">
+  <meta name="twitter:image" content="icons/og-image.png">
 
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -14,6 +26,21 @@
   <link rel="icon" href="icons/icon-192.png">
 
   <link rel="stylesheet" href="style.css">
+
+  <!-- Error monitoring (Sentry free tier) -->
+  <script src="https://cdn.jsdelivr.net/npm/@sentry/browser@8.42.0/build/bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    if (typeof Sentry !== 'undefined') {
+      Sentry.init({
+        dsn: "https://7fabe20d0d3f20b01d9fa8c2f7f74b4c@o4509695049523200.ingest.sentry.io/4509695052603392",
+        release: "health-app@" + (navigator.serviceWorker ? document.querySelector('meta[name="app-version"]')?.content || '1' : '1'),
+        tracesSampleRate: 0.1,
+        replaysOnErrorSampleRate: 0,
+        integrations: [],
+      });
+    }
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
   <script src="vendor/chart.umd.min.js"></script>
   <script src="common.js" defer></script>
@@ -559,6 +586,31 @@
         <div id="ts-body"></div>
         <div class="modal-actions">
           <button type="button" class="btn-primary" data-close>סגירה</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== מה חדש (Changelog) ===== -->
+    <div id="changelog-modal" class="modal hidden">
+      <div class="modal-backdrop" data-close></div>
+      <div class="modal-sheet" role="dialog" aria-label="מה חדש">
+        <div class="modal-head">
+          <h2>✨ מה חדש</h2>
+          <button class="icon-btn" data-close aria-label="סגור">✕</button>
+        </div>
+        <div class="changelog-body">
+          <div class="changelog-version">גרסה נוכחית</div>
+          <ul class="changelog-list">
+            <li>🏊 שחייה ואופניים מוצגים עכשיו בתכנון האירובי</li>
+            <li>⬅️ ניווט שבועי בתכנון — ניתן לראות שבועות קודמים</li>
+            <li>🍎 תמיכה ב-Apple Health דרך iOS Shortcuts</li>
+            <li>💤 מעקב שינה: שלבים, ציון, SpO2 ונשימה</li>
+            <li>📊 ניתוח תובנות שבועיות ומגמות</li>
+            <li>🎯 מעקב יעדים אישיים עם התקדמות חזותית</li>
+          </ul>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-primary" data-close>הבנתי, מגניב!</button>
         </div>
       </div>
     </div>

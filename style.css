@@ -2138,3 +2138,9 @@ button:focus-visible { border-radius: var(--r-sm); }
 .vol-table td b { font-size: .95rem; font-variant-numeric: tabular-nums; }
 .vol-table td small { display: block; font-size: 0.69rem; color: var(--muted); line-height: 1.4; }
 .vol-table .muted { color: var(--muted); }
+
+/* ===== Changelog modal ===== */
+.changelog-body { padding: 4px 0 8px; }
+.changelog-version { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
+.changelog-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.changelog-list li { font-size: .92rem; line-height: 1.5; display: flex; align-items: flex-start; gap: 8px; }

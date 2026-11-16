@@ -4298,6 +4298,8 @@ async function init() {
   requestAnimationFrame(() => snapToPage(0, false));
   // סנכרון אוטומטי בטעינה ראשונה
   setTimeout(autoSyncIfNeeded, 1500);
+  // הצגת Changelog למשתמש מחובר בלבד
+  if (profile.age) maybeShowChangelog();
 }
 
 if ('serviceWorker' in navigator) {
@@ -4371,6 +4373,36 @@ document.addEventListener('keydown', e => {
   if (!toggle) return;
   e.preventDefault();
   toggleFold(toggle);
+});
+
+/* =========================================================================
+ * Changelog modal — show once per SW cache version
+ * ========================================================================= */
+const CHANGELOG_VER_KEY = 'changelog_seen_ver';
+const APP_VER = 'v116';
+
+function maybeShowChangelog() {
+  try {
+    if (localStorage.getItem(CHANGELOG_VER_KEY) === APP_VER) return;
+  } catch { return; }
+  // Small delay so app renders first
+  setTimeout(() => {
+    const modal = $('changelog-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    modal.querySelectorAll('[data-close]').forEach(el =>
+      el.addEventListener('click', () => {
+        modal.classList.add('hidden');
+        try { localStorage.setItem(CHANGELOG_VER_KEY, APP_VER); } catch {}
+      }, { once: true }));
+  }, 1800);
+}
+
+// Hook into SW_UPDATED message so changelog also fires after a silent update
+navigator.serviceWorker?.addEventListener('message', e => {
+  if (e.data?.type === 'SW_UPDATED') {
+    try { localStorage.removeItem(CHANGELOG_VER_KEY); } catch {}
+  }
 });
 
 /* init רק אחרי שכל סקריפטי ה-defer רצו (planner/training/goals נטענים אחרי app.js).
