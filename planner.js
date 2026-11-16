@@ -10,25 +10,30 @@ const PLAN_KEY = 'workout_plan_v1';
 const AERO_SPORTS = [
   { key: 'running',  label: 'ריצה',    typeKeys: ['running', 'treadmill_running', 'trail_running'], icon: 'run',  hasKm: true  },
   { key: 'walking',  label: 'הליכה',   typeKeys: ['walking', 'casual_walking', 'speed_walking'],    icon: 'walk', hasKm: true  },
-  { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'drop', hasKm: true  },
+  { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'drop', hasKm: true, meters: true },
   { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], icon: 'bike', hasKm: true  },
   { key: 'pilates',  label: 'פילאטיס', typeKeys: ['pilates', 'yoga', 'barre'],                     icon: 'yoga', hasKm: false },
 ];
+// שחייה: גרמין שומר ק״מ, התוכנית שומרת ק״מ — הצגה במטרים בלבד
+function sportDisplayKm(sport, km) { return sport.meters ? km * 1000 : km; }
+function sportDisplayUnit(sport) { return sport.meters ? 'מ׳' : 'ק״מ'; }
+function sportInputToKm(sport, val) { return sport.meters ? val / 1000 : val; }
+function sportKmToInput(sport, km) { return sport.meters ? Math.round(km * 1000) : km; }
 
 function getActiveSports() {
   const selected = typeof getSelectedSports === 'function' ? getSelectedSports() : null;
   if (!selected) return AERO_SPORTS;
-  // include sports explicitly selected + any sport that already has plan data
-  const plan = loadPlan();
-  const aeroPlan = loadAeroPlan();
+  const weekISO = plannerWeekStart().toISOString().slice(0, 10);
+  const { targets, days } = loadWeekPlan(weekISO);
   return AERO_SPORTS.filter(s =>
     selected.includes(s.key) ||
-    plan.aerobic[s.key] > 0 ||
-    aeroPlan.some(p => p.sport === s.key)
+    (targets[s.key] || 0) > 0 ||
+    days.some(p => p.sport === s.key)
   );
 }
 
-const AERO_PLAN_KEY = 'aero_plan_v1';
+const AERO_PLAN_KEY = 'aero_plan_v1';   // legacy key — read-only for migration
+const AERO_PLAN_V2_KEY = 'aero_plan_v2'; // per-week: { weekISO: { targets: {}, days: [] } }
 const AERO_WORKOUT_TYPES = [
   { key: 'easy',      label: 'קלה' },
   { key: 'technique', label: 'טכניקה' },
@@ -37,7 +42,6 @@ const AERO_WORKOUT_TYPES = [
   { key: 'volume',    label: 'נפח' },
   { key: 'rest',      label: 'מנוחה' },
 ];
-// backward compat alias
 const AERO_RUN_TYPES = AERO_WORKOUT_TYPES;
 
 function loadPlan() {
@@ -46,14 +50,42 @@ function loadPlan() {
 }
 function savePlan(p) { try { localStorage.setItem(PLAN_KEY, JSON.stringify(p)); } catch {} }
 
-function loadAeroPlan() {
-  try {
-    const raw = JSON.parse(localStorage.getItem(AERO_PLAN_KEY)) || [];
-    // migrate old format: { day, type } → { day, sport: 'running', type }
-    return raw.map(s => s.sport ? s : { ...s, sport: 'running' });
-  } catch { return []; }
+/* --- per-week storage ---------------------------------------------------- */
+function _allWeekPlans() {
+  try { return JSON.parse(localStorage.getItem(AERO_PLAN_V2_KEY)) || {}; } catch { return {}; }
 }
-function saveAeroPlan(p) { try { localStorage.setItem(AERO_PLAN_KEY, JSON.stringify(p)); } catch {} }
+function _saveAllWeekPlans(all) { try { localStorage.setItem(AERO_PLAN_V2_KEY, JSON.stringify(all)); } catch {} }
+
+function loadWeekPlan(weekISO) {
+  const all = _allWeekPlans();
+  if (all[weekISO]) return all[weekISO];
+
+  // First-time migration: carry v1 flat plan into the current week only
+  if (weekISO === weekStartISO(new Date(todayISO()))) {
+    try {
+      const v1Days = JSON.parse(localStorage.getItem(AERO_PLAN_KEY)) || [];
+      const v1Plan = JSON.parse(localStorage.getItem(PLAN_KEY)) || { aerobic: {} };
+      if (v1Days.length || Object.keys(v1Plan.aerobic || {}).length) {
+        const days = v1Days.map(s => s.sport ? s : { ...s, sport: 'running' });
+        const migrated = { targets: { ...v1Plan.aerobic }, days };
+        all[weekISO] = migrated;
+        _saveAllWeekPlans(all);
+        return migrated;
+      }
+    } catch {}
+  }
+  return { targets: {}, days: [] };
+}
+
+function saveWeekPlan(weekISO, data) {
+  const all = _allWeekPlans();
+  all[weekISO] = data;
+  _saveAllWeekPlans(all);
+}
+
+// legacy shims used elsewhere in this file
+function loadAeroPlan() { return loadWeekPlan(plannerWeekStart().toISOString().slice(0, 10)).days; }
+function saveAeroPlan() {} // no-op — use saveWeekPlan directly
 
 /* =========================================================================
  * ניווט שבועי — offset מהשבוע הנוכחי
@@ -91,8 +123,6 @@ function weekAeroActuals(ws) {
 function renderPlanner() {
   const el = $('planner-cards');
   if (!el) return;
-  const plan = loadPlan();
-  const aeroPlan = loadAeroPlan();
   const activeSports = getActiveSports();
 
   // אין ספורטים פעילים — מצב ריק כללי
@@ -105,6 +135,8 @@ function renderPlanner() {
   }
 
   const ws = plannerWeekStart();
+  const wsISO = ws.toISOString().slice(0, 10);
+  const { targets, days: aeroPlan } = loadWeekPlan(wsISO);
   const today = new Date(todayISO());
   const isCurrent = plannerWeekOffset === 0;
   const isFuture = plannerWeekOffset > 0;
@@ -128,9 +160,10 @@ function renderPlanner() {
   let html = navHtml;
 
   for (const sport of activeSports) {
-    const target = plan.aerobic[sport.key] || 0;
+    const target = targets[sport.key] || 0;
     const sportDays = aeroPlan.filter(s => s.sport === sport.key);
     const hasConfig = target > 0 || sportDays.length > 0;
+    const unit = sportDisplayUnit(sport);
 
     let body = '';
 
@@ -139,13 +172,15 @@ function renderPlanner() {
     } else {
       // שורת נפח שבועי
       if (target && sport.hasKm !== false) {
-        const actual = actuals[sport.key] || 0;
-        const pct = Math.min(actual / target * 100, 100);
-        const done = actual >= target;
+        const actualKm = actuals[sport.key] || 0;
+        const actual = sportDisplayKm(sport, actualKm);
+        const targetDisp = sportDisplayKm(sport, target);
+        const pct = Math.min(actual / targetDisp * 100, 100);
+        const done = actual >= targetDisp;
         body += `<div class="plan-aero"><div class="plan-sport${done ? ' done' : ''}">
           <div class="plan-sport-top">
             <span class="plan-sport-name">נפח שבועי</span>
-            <span class="plan-sport-num">${fmt(actual, 1)} / ${fmt(target, 0)} ק״מ</span>
+            <span class="plan-sport-num">${fmt(actual, sport.meters ? 0 : 1)} / ${fmt(targetDisp, 0)} ${unit}</span>
           </div>
           <div class="plan-bar"><i style="width:${Math.round(pct)}%"></i></div>
         </div></div>`;
@@ -175,11 +210,14 @@ function renderPlanner() {
           const done = garminDates.has(iso) && !!planned;
           const isRest = !planned;
           const cls = [done ? 'done' : '', isToday ? 'today' : '', !isPast && !isToday ? 'future' : ''].filter(Boolean).join(' ');
+          const kmLabel = planned?.km
+            ? `${fmt(sportDisplayKm(sport, planned.km), sport.meters ? 0 : 1)} ${unit}`
+            : '';
           daySlots.push(`<div class="plan-day ${cls}">
             <small>${SHORT_DAY_NAMES[i]}</small>
             ${isRest
               ? '<span class="plan-rest">—</span>'
-              : `<span class="plan-prog"><span class="plan-prog-line">${planned?.km ? `${fmt(planned.km, 1)} ק"מ` : ''}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
+              : `<span class="plan-prog"><span class="plan-prog-line">${kmLabel}</span>${typeInfo?.label ? `<small>${typeInfo.label}</small>` : ''}</span>`}
             ${done ? '<i class="plan-check">✓</i>' : ''}
           </div>`);
         }
@@ -222,10 +260,10 @@ function weekRunDates() { return weekActivityDates(); }
  * מודאל הגדרת תוכנית
  * ========================================================================= */
 function openPlanSetup(sportKey) {
-  const plan = loadPlan();
-  const aeroPlan = loadAeroPlan();
-  const todayDay = new Date(todayISO()).getDay();
   const weekStart = plannerWeekStart();
+  const wsISO = weekStart.toISOString().slice(0, 10);
+  const { targets, days: aeroPlan } = loadWeekPlan(wsISO);
+  const todayDay = new Date(todayISO()).getDay();
 
   // If called without a sportKey (e.g. from the empty-state button), use first active sport
   const activeSports = getActiveSports();
@@ -234,6 +272,7 @@ function openPlanSetup(sportKey) {
 
   // Days planned for this sport only
   const sportDayPlan = aeroPlan.filter(s => s.sport === sport.key);
+  const unit = sportDisplayUnit(sport);
 
   let dayRows = '';
   for (let i = 0; i < 7; i++) {
@@ -243,6 +282,7 @@ function openPlanSetup(sportKey) {
     const dateStr = `${d.getDate()}/${d.getMonth() + 1}`;
     const isToday = i === todayDay;
     const showKm = sport.hasKm !== false;
+    const inputVal = planned?.km ? sportKmToInput(sport, planned.km) : '';
     dayRows += `<div class="plan-day-row${isRest ? ' is-rest' : ''}">
       <div class="plan-day-badge${isToday ? ' today-badge' : ''}">${SHORT_DAY_NAMES[i]}</div>
       <div class="plan-day-body">
@@ -262,17 +302,18 @@ function openPlanSetup(sportKey) {
               `<option value="${t.key}" ${planned?.type === t.key ? 'selected' : ''}>${t.label}</option>`).join('')}
           </select>
           ${showKm ? `<div class="plan-km-inline">
-            <input type="number" name="akm_${i}" value="${planned?.km || ''}" min="0" step="0.5"
-              inputmode="decimal" placeholder="—" class="plan-km-input">
-            <span class="plan-km-unit">ק״מ</span>
+            <input type="number" name="akm_${i}" value="${inputVal}" min="0"
+              step="${sport.meters ? 50 : 0.5}" inputmode="decimal" placeholder="—" class="plan-km-input">
+            <span class="plan-km-unit">${unit}</span>
           </div>` : ''}
         </div>
       </div>
     </div>`;
   }
 
-  const targetLabel = sport.hasKm !== false ? 'ק״מ בשבוע' : 'אימונים בשבוע';
-  const targetVal = plan.aerobic[sport.key] || '';
+  const targetLabel = sport.hasKm !== false ? `${unit} בשבוע` : 'אימונים בשבוע';
+  const targetKm = targets[sport.key] || 0;
+  const targetVal = targetKm ? sportKmToInput(sport, targetKm) : '';
 
   const modal = document.createElement('div');
   modal.id = 'plan-modal';
@@ -320,29 +361,30 @@ function openPlanSetup(sportKey) {
   $('plan-form').onsubmit = e => {
     e.preventDefault();
     const f = e.target;
+    const current = loadWeekPlan(wsISO);
 
-    // Update only this sport's target, keep others
-    const newPlan = loadPlan();
-    const v = Number(f['aero_target']?.value);
-    if (v > 0) newPlan.aerobic[sport.key] = v;
-    else delete newPlan.aerobic[sport.key];
+    // Update target for this sport only
+    const rawTarget = Number(f['aero_target']?.value);
+    const targetKmNew = rawTarget > 0 ? sportInputToKm(sport, rawTarget) : 0;
+    if (targetKmNew > 0) current.targets[sport.key] = targetKmNew;
+    else delete current.targets[sport.key];
 
-    // Replace only this sport's days in aero_plan, keep other sports' days
-    const otherDays = loadAeroPlan().filter(s => s.sport !== sport.key);
+    // Replace only this sport's days, keep other sports' days
+    const otherDays = current.days.filter(s => s.sport !== sport.key);
     const thisDays = [];
     for (let i = 0; i < 7; i++) {
       const active = f[`aactive_${i}`]?.value;
       const type = f[`atype_${i}`]?.value;
       if (active && active !== 'rest') {
-        const kmVal = Number(f[`akm_${i}`]?.value);
+        const rawKm = Number(f[`akm_${i}`]?.value);
         const entry = { day: i, sport: sport.key, type: type || 'easy' };
-        if (kmVal > 0) entry.km = kmVal;
+        if (rawKm > 0) entry.km = sportInputToKm(sport, rawKm);
         thisDays.push(entry);
       }
     }
 
-    savePlan(newPlan);
-    saveAeroPlan([...otherDays, ...thisDays]);
+    current.days = [...otherDays, ...thisDays];
+    saveWeekPlan(wsISO, current);
     close();
     renderPlanner();
     toast('התוכנית נשמרה');

@@ -1253,7 +1253,7 @@ function totalRunCount() {
 
 // ספורטים שיש להם ניתוח כרטיס — ריצה מקבל כרטיס נפרד ב-renderRuns
 const SPORT_CARDS = [
-  { key: 'swimming',  label: 'שחייה',   icon: 'swim',    typeKeys: ['lap_swimming', 'open_water_swimming'], unit: 'ק״מ', hasKm: true  },
+  { key: 'swimming',  label: 'שחייה',   icon: 'swim',    typeKeys: ['lap_swimming', 'open_water_swimming'], unit: 'מ׳', hasKm: true, meters: true },
   { key: 'cycling',   label: 'רכיבה',   icon: 'bike',    typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], unit: 'ק״מ', hasKm: true  },
   { key: 'walking',   label: 'הליכה',   icon: 'walk',    typeKeys: ['walking', 'hiking'],                  unit: 'ק״מ', hasKm: true  },
   { key: 'pilates',   label: 'פילאטיס', icon: 'yoga',    typeKeys: ['pilates', 'yoga', 'fitness_equipment', 'strength_training', 'indoor_cardio'], unit: 'דק׳', hasKm: false },
@@ -1280,13 +1280,17 @@ function renderSportCard(sport, container) {
   const last = workouts[workouts.length - 1];
   const prev = workouts.slice(0, -1).reverse().find(w => w.type_key === last.type_key) || workouts[workouts.length - 2];
 
+  const dispKm = (km) => sport.meters ? Math.round(km * 1000) : km;
+  const unit = sport.unit || 'ק״מ';
+
   // השוואה לאימון קודם
   let cmpHtml = '';
   if (prev) {
     const bits = [];
     if (sport.hasKm && last.km && prev.km) {
-      const d = last.km - prev.km;
-      if (Math.abs(d) >= 0.1) bits.push(`${d > 0 ? '+' : ''}${fmt(d, 1)} ק״מ ממריחה קודמת`);
+      const d = dispKm(last.km) - dispKm(prev.km);
+      const threshold = sport.meters ? 25 : 0.1;
+      if (Math.abs(d) >= threshold) bits.push(`${d > 0 ? '+' : ''}${sport.meters ? Math.round(d) : fmt(d, 1)} ${unit} מאימון קודם`);
     }
     if (!sport.hasKm && last.minutes && prev.minutes) {
       const d = last.minutes - prev.minutes;
@@ -1301,11 +1305,10 @@ function renderSportCard(sport, container) {
 
   // כרטיס האחרון
   const lastBits = [];
-  if (sport.hasKm && last.km)      lastBits.push(`${fmt(last.km, 2)} ק״מ`);
+  if (sport.hasKm && last.km)      lastBits.push(`${sport.meters ? Math.round(dispKm(last.km)) : fmt(last.km, 2)} ${unit}`);
   if (last.minutes)                 lastBits.push(`${last.minutes} דק׳`);
-  if (!sport.hasKm && last.km)     lastBits.push(`${fmt(last.km, 2)} ק״מ`);
   if (last.avg_hr)                  lastBits.push(`דופק ${last.avg_hr}`);
-  if (last.pace_s && sport.hasKm)  lastBits.push(`${paceTxt(last.pace_s)} /ק״מ`);
+  if (last.pace_s && sport.hasKm && !sport.meters) lastBits.push(`${paceTxt(last.pace_s)} /ק״מ`);
 
   // גרף נפח שבועי — 8 שבועות אחרונים
   const chartId = `chart-sport-${sport.key}`;
@@ -1316,19 +1319,20 @@ function renderSportCard(sport, container) {
       const ws = new Date(today); ws.setDate(ws.getDate() - ws.getDay() - i * 7);
       const wsISO = ws.toISOString().slice(0, 10);
       const weISO = new Date(ws.getTime() + 6 * 86400000).toISOString().slice(0, 10);
-      const val = workouts
+      const rawVal = workouts
         .filter(w => w.date >= wsISO && w.date <= weISO)
         .reduce((s, w) => s + (sport.hasKm ? (w.km || 0) : (w.minutes || 0)), 0);
-      weeks.push({ label: `${ws.getDate()}/${ws.getMonth() + 1}`, val: +val.toFixed(1) });
+      const val = sport.meters ? Math.round(rawVal * 1000) : +rawVal.toFixed(1);
+      weeks.push({ label: `${ws.getDate()}/${ws.getMonth() + 1}`, val });
     }
     return weeks;
   })();
 
-  // היסטוריה — 10 אחרונים
+  // היסטוריה — 12 אחרונים
   const shown = workouts.slice().reverse().slice(0, 12);
   const histHtml = shown.map(w => {
     const bits2 = [];
-    if (w.km)      bits2.push(`${fmt(w.km, 2)} ק״מ`);
+    if (w.km)      bits2.push(`${sport.meters ? Math.round(dispKm(w.km)) : fmt(w.km, 2)} ${unit}`);
     if (w.minutes) bits2.push(`${w.minutes} דק׳`);
     if (w.avg_hr)  bits2.push(`💓 ${w.avg_hr}`);
     return `<div class="tr-row">
@@ -1374,7 +1378,7 @@ function renderSportCard(sport, container) {
         plugins: { legend: { display: false } },
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { beginAtZero: true, ticks: { font: { size: 10 } }, grid: { color: C.grid }, border: { display: false } },
+          y: { beginAtZero: true, ticks: { font: { size: 10 }, callback: v => `${v}${unit}` }, grid: { color: C.grid }, border: { display: false } },
         },
       },
     });
