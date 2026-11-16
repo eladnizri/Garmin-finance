@@ -1026,52 +1026,6 @@ function renderBreathing() {
     <span class="unit">מהמדידה האחרונה</span></div><ul class="rows">${rows.join('')}</ul></article>`;
 }
 
-/* =========================================================================
- * אופניים והליכה — רישום קל בלבד, בלי אזורי מאמץ או קצב: רק כמה וכמה זמן,
- * כדי שהאירובי הכללי יהיה גלוי בלי להתחרות בעומק שריצה מקבלת.
- * ========================================================================= */
-const CARDIO_LIGHT_TYPES = new Set(['walking', 'cycling', 'indoor_cycling']);
-const CARDIO_LABEL = { walking: 'הליכה', cycling: 'אופניים', indoor_cycling: 'אופניים' };
-const CARDIO_ICON = { walking: 'walk', cycling: 'bike', indoor_cycling: 'bike' };
-
-function renderCardioLog() {
-  const el = $('cardio-log');
-  const rows = visibleRows();
-  const all = [];
-  for (const r of rows) for (const w of (r.workouts || []))
-    if (CARDIO_LIGHT_TYPES.has(w.type_key)) all.push({ ...w, date: r.date });
-  if (!all.length) { el.innerHTML = ''; return; }
-  all.sort((a, b) => a.date.localeCompare(b.date));
-
-  // סה״כ השבוע הנוכחי — התשובה המהירה ל"כמה זזתי חוץ מריצה וכוח"
-  const weekStart = weekStartISO(new Date(todayISO()));
-  const totals = {};
-  for (const w of all) {
-    if (w.date < weekStart) continue;
-    const key = CARDIO_LABEL[w.type_key];
-    const t = totals[key] || (totals[key] = { km: 0, min: 0 });
-    t.km += w.km || 0; t.min += w.minutes || 0;
-  }
-  const chips = Object.keys(totals).map(k => {
-    const t = totals[k];
-    return `<div class="chip"><b>${t.km ? fmt(t.km, 1) + ' ק״מ' : fmt(t.min) + ' דק׳'}</b><small>${k} השבוע</small></div>`;
-  }).join('');
-
-  const recent = all.slice(-6).reverse();
-  const items = recent.map(w => {
-    const bits = [];
-    if (w.km) bits.push(`${fmt(w.km, 1)} ק״מ`);
-    if (w.minutes) bits.push(`${w.minutes} דק׳`);
-    return `<li><span class="r-ic">${icon(CARDIO_ICON[w.type_key] || 'walk', 18)}</span>
-      <span><span class="r-name">${CARDIO_LABEL[w.type_key]}</span><br>
-      <span class="r-sub">${shortDate(w.date)}${bits.length ? ' · ' + bits.join(' · ') : ''}</span></span></li>`;
-  }).join('');
-
-  el.innerHTML = `<article class="card">
-    <div class="card-head"><h2>אופניים והליכה</h2></div>
-    ${chips ? `<div class="chips" style="margin-bottom:10px">${chips}</div>` : ''}
-    <ul class="rows">${items}</ul></article>`;
-}
 
 /* =========================================================================
  * ניתוח ריצות — סיווג לפי אזור מאמץ, השוואה בין ריצות, וגרף שיפור.
@@ -1254,6 +1208,8 @@ function totalRunCount() {
 // ספורטים שיש להם ניתוח כרטיס — ריצה מקבל כרטיס נפרד ב-renderRuns
 const SPORT_CARDS = [
   { key: 'swimming',  label: 'שחייה',   icon: 'swim',    typeKeys: ['lap_swimming', 'open_water_swimming'], unit: 'מ׳', hasKm: true, meters: true },
+  { key: 'cycling',   label: 'רכיבה',   icon: 'bike',    typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], unit: 'ק״מ', hasKm: true  },
+  { key: 'walking',   label: 'הליכה',   icon: 'walk',    typeKeys: ['walking', 'hiking'],                  unit: 'ק״מ', hasKm: true  },
   { key: 'pilates',   label: 'פילאטיס', icon: 'yoga',    typeKeys: ['pilates', 'yoga', 'fitness_equipment', 'strength_training', 'indoor_cardio'], unit: 'דק׳', hasKm: false },
 ];
 
@@ -4039,7 +3995,6 @@ function renderAll() {
   renderRace();
   renderRuns();
   renderSports();
-  renderCardioLog();
 
   // שינה
   renderSleepRec();
