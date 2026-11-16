@@ -187,6 +187,7 @@ const ACTIVITY_NAMES = {
   indoor_cycling: 'אופני כושר', lap_swimming: 'שחייה', open_water_swimming: 'שחייה במים פתוחים',
   strength_training: 'אימון כוח', indoor_cardio: 'קרדיו', elliptical: 'אליפטי',
   yoga: 'יוגה', pilates: 'פילאטיס', fitness_equipment: 'מכשירי כושר',
+  multi_sport: 'ספורט משולב',
 };
 
 /* --- Main sync --------------------------------------------------------- */
@@ -240,6 +241,8 @@ async function syncGarminData(onProgress, backfillDays) {
     const day = (a.startTimeLocal || a.startTimeGMT || '').split(/[ T]/)[0];
     if (!day) continue;
     const typeKey = a.activityType?.typeKey || a.typeKey || 'other';
+    // multi_sport is an aggregate; individual sport segments appear as separate activities
+    if (typeKey === 'multi_sport') continue;
     const entry = {
       type: ACTIVITY_NAMES[typeKey] || a.activityName || typeKey,
       type_key: typeKey,

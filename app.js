@@ -1254,8 +1254,6 @@ function totalRunCount() {
 // ספורטים שיש להם ניתוח כרטיס — ריצה מקבל כרטיס נפרד ב-renderRuns
 const SPORT_CARDS = [
   { key: 'swimming',  label: 'שחייה',   icon: 'swim',    typeKeys: ['lap_swimming', 'open_water_swimming'], unit: 'מ׳', hasKm: true, meters: true },
-  { key: 'cycling',   label: 'רכיבה',   icon: 'bike',    typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], unit: 'ק״מ', hasKm: true  },
-  { key: 'walking',   label: 'הליכה',   icon: 'walk',    typeKeys: ['walking', 'hiking'],                  unit: 'ק״מ', hasKm: true  },
   { key: 'pilates',   label: 'פילאטיס', icon: 'yoga',    typeKeys: ['pilates', 'yoga', 'fitness_equipment', 'strength_training', 'indoor_cardio'], unit: 'דק׳', hasKm: false },
 ];
 
@@ -1342,10 +1340,12 @@ function renderSportCard(sport, container) {
     </div>`;
   }).join('');
 
-  container.innerHTML = `<article class="card">
-    <div class="card-head">
-      <h2>${sport.label}</h2>
-      <span class="unit">${workouts.length} אימונים בתקופה</span>
+  const foldKey = `sport-${sport.key}`;
+  container.innerHTML = `<article class="card chart-fold">
+    <div class="card-head fold-toggle" role="button" tabindex="0" aria-expanded="true">
+      <h2 class="ct" data-info="${foldKey}">${sport.label}</h2>
+      <span class="unit">${workouts.length} אימונים</span>
+      <span class="fold-arrow">‹</span>
     </div>
     <div class="run-last">
       <div class="rl-top">
@@ -1405,6 +1405,7 @@ function renderSports() {
   for (const sport of active) {
     renderSportCard(sport, $(`sport-card-${sport.key}`));
   }
+  restoreFolds();
 }
 
 function renderRuns() {
@@ -3507,14 +3508,60 @@ function raceTimeTxt(sec) {
 }
 function raceTargetPace() { return race && race.km ? race.timeSec / race.km : null; }
 
+// כל הספורטים הזמינים למירוץ: ריצה + ספורטים שנבחרו בפרופיל
+function raceAvailableSports() {
+  const selected = getSelectedSports() || [];
+  const sports = [{ key: 'running', label: 'ריצה', meters: false }];
+  for (const s of SPORT_CARDS) {
+    if (selected.includes(s.key)) sports.push(s);
+  }
+  return sports;
+}
+
+function raceSportObj() {
+  if (!race?.sport || race.sport === 'running') return { key: 'running', label: 'ריצה', meters: false, hasKm: true };
+  return SPORT_CARDS.find(s => s.key === race.sport) || { key: 'running', label: 'ריצה', meters: false, hasKm: true };
+}
+
+function raceDistDisplay() {
+  const s = raceSportObj();
+  if (!race?.km) return '';
+  if (s.meters) return `${Math.round(race.km * 1000)} מ׳`;
+  return `${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ`;
+}
+
+function raceTargetMetric() {
+  const s = raceSportObj();
+  if (!race?.km || !race?.timeSec) return '';
+  if (s.meters) {
+    // time per 100m
+    const per100 = race.timeSec / (race.km * 10);
+    return `${raceTimeTxt(per100)} /100מ׳`;
+  }
+  return `קצב ${paceTxt(raceTargetPace())}`;
+}
+
 function raceForm(prefill) {
   const r = prefill || {};
-  return `<div class="field-row">
+  const sports = raceAvailableSports();
+  const curSport = r.sport || 'running';
+  const sportSel = sports.length > 1
+    ? `<div class="field-row"><label class="field">סוג ספורט<select id="rc-sport">${
+        sports.map(s => `<option value="${s.key}"${s.key === curSport ? ' selected' : ''}>${s.label}</option>`).join('')
+      }</select></label></div>` : `<input type="hidden" id="rc-sport" value="${curSport}">`;
+  const isSport = s => curSport === s;
+  const isSwim = SPORT_CARDS.find(s => s.key === curSport)?.meters;
+  const distLabel = isSwim ? 'מרחק (מטרים)' : 'מרחק (ק״מ)';
+  const distStep = isSwim ? '50' : '0.1';
+  const distVal = r.km ? (isSwim ? Math.round(r.km * 1000) : r.km) : '';
+  const distPlaceholder = isSwim ? '1500' : '21.1';
+  return `${sportSel}
+    <div class="field-row">
       <label class="field">שם המירוץ<input type="text" id="rc-name" value="${r.name || ''}" placeholder="למשל: חצי מרתון תל אביב"></label>
     </div>
     <div class="field-row">
       <label class="field">תאריך<input type="date" id="rc-date" value="${r.date || ''}"></label>
-      <label class="field">מרחק (ק״מ)<input type="number" id="rc-km" min="0.1" step="0.1" value="${r.km || ''}" placeholder="21.1"></label>
+      <label class="field">${distLabel}<input type="number" id="rc-km" min="0.1" step="${distStep}" value="${distVal}" placeholder="${distPlaceholder}"></label>
     </div>
     <div class="field-row">
       <label class="field">זמן יעד (שעה:דקה:שנייה)<input type="text" id="rc-time" value="${r.timeSec ? raceTimeTxt(r.timeSec) : ''}" placeholder="1:45:00"></label>
@@ -3529,10 +3576,13 @@ function bindRaceForm() {
   save.onclick = () => {
     const name = $('rc-name').value.trim();
     const date = $('rc-date').value;
-    const km = Number($('rc-km').value);
+    const sport = $('rc-sport')?.value || 'running';
+    const rawDist = Number($('rc-km').value);
+    const sportObj = SPORT_CARDS.find(s => s.key === sport);
+    const km = sportObj?.meters ? rawDist / 1000 : rawDist;
     const timeSec = parseRaceTime($('rc-time').value);
     if (!date || !km || !timeSec) { toast('צריך תאריך, מרחק וזמן יעד'); return; }
-    race = { name, date, km, timeSec, phases: race?.phases || [] };
+    race = { name, date, km, timeSec, sport, phases: race?.phases || [] };
     saveRace(); renderRace(); toast('המירוץ נשמר ✓');
   };
   const del = $('rc-delete');
@@ -3646,11 +3696,10 @@ function renderRace() {
     $('rc-open-form').onclick = () => openRaceModal();
     return;
   }
-  const pace = raceTargetPace();
   el.innerHTML = `<button class="race-compact" id="rc-open-form">
     <span class="race-c-ic">${icon('trophy', 18)}</span>
     <span class="race-c-body"><b>${race.name || 'מירוץ יעד'}</b>
-      <small>${fmt(race.km, race.km % 1 ? 1 : 0)} ק״מ · ${daysLeft} ימים · קצב ${paceTxt(pace)}</small></span>
+      <small>${raceDistDisplay()} · ${daysLeft} ימים · ${raceTargetMetric()}</small></span>
     <span class="race-c-arrow">›</span>
   </button>`;
   $('rc-open-form').onclick = () => openRaceModal(race);
