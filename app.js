@@ -1208,7 +1208,7 @@ function totalRunCount() {
 // ספורטים שיש להם ניתוח כרטיס — ריצה מקבל כרטיס נפרד ב-renderRuns
 const SPORT_CARDS = [
   { key: 'swimming',  label: 'שחייה',   icon: 'swim',    typeKeys: ['lap_swimming', 'open_water_swimming'], unit: 'מ׳', hasKm: true, meters: true },
-  { key: 'cycling',   label: 'רכיבה',   icon: 'bike',    typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], unit: 'ק״מ', hasKm: true  },
+  { key: 'cycling',   label: 'רכיבה',   icon: 'bike',    typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling', 'virtual_ride', 'recumbent_cycling', 'gravel_cycling'], unit: 'ק״מ', hasKm: true  },
   { key: 'walking',   label: 'הליכה',   icon: 'walk',    typeKeys: ['walking', 'hiking'],                  unit: 'ק״מ', hasKm: true  },
   { key: 'pilates',   label: 'פילאטיס', icon: 'yoga',    typeKeys: ['pilates', 'yoga', 'fitness_equipment', 'strength_training', 'indoor_cardio'], unit: 'דק׳', hasKm: false },
 ];
@@ -3369,8 +3369,8 @@ function renderWeekSummary() {
   const kmC = weekRunKm(cur), kmP = weekRunKm(prev);
   const swimC = weekSportKm(cur, ['lap_swimming', 'open_water_swimming']);
   const swimP = weekSportKm(prev, ['lap_swimming', 'open_water_swimming']);
-  const bikeC = weekSportKm(cur, ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling']);
-  const bikeP = weekSportKm(prev, ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling']);
+  const bikeC = weekSportKm(cur, ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling', 'virtual_ride', 'recumbent_cycling', 'gravel_cycling']);
+  const bikeP = weekSportKm(prev, ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling', 'virtual_ride', 'recumbent_cycling', 'gravel_cycling']);
   const planAero = typeof loadPlan === 'function' ? loadPlan().aerobic : {};
   const actC = activeDays(cur), actP = activeDays(prev);
   const rhrC = avg(cur, 'rhr'), rhrP = avg(prev, 'rhr');

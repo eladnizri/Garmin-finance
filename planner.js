@@ -11,7 +11,7 @@ const AERO_SPORTS = [
   { key: 'running',  label: 'ריצה',    typeKeys: ['running', 'treadmill_running', 'trail_running'], icon: 'run',  hasKm: true  },
   { key: 'walking',  label: 'הליכה',   typeKeys: ['walking', 'casual_walking', 'speed_walking'],    icon: 'walk', hasKm: true  },
   { key: 'swimming', label: 'שחייה',   typeKeys: ['lap_swimming', 'open_water_swimming'],           icon: 'drop', hasKm: true, meters: true },
-  { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling'], icon: 'bike', hasKm: true  },
+  { key: 'cycling',  label: 'אופניים', typeKeys: ['cycling', 'road_biking', 'mountain_biking', 'indoor_cycling', 'virtual_ride', 'recumbent_cycling', 'gravel_cycling'], icon: 'bike', hasKm: true  },
   { key: 'pilates',  label: 'פילאטיס', typeKeys: ['pilates', 'yoga', 'barre'],                     icon: 'yoga', hasKm: false },
 ];
 // שחייה: גרמין שומר ק״מ, התוכנית שומרת ק״מ — הצגה במטרים בלבד
