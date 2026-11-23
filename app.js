@@ -3861,6 +3861,9 @@ function openProfile() {
   $('settings-sport-chips')?.querySelectorAll('.ob-sport-chip').forEach(btn => {
     btn.classList.toggle('ob-sport-chip-sel', sel.includes(btn.dataset.sport));
   });
+  // Sync no-garmin toggle state
+  const ngBtn = $('no-garmin-toggle');
+  if (ngBtn) ngBtn.setAttribute('aria-checked', String(isNoGarminMode()));
   $('profile-modal').classList.remove('hidden');
 }
 function closeProfile() { $('profile-modal').classList.add('hidden'); }
@@ -4169,15 +4172,57 @@ function setActive(idx) {
   }
 }
 
+/* =========================================================================
+ * מצב ללא גרמין — מציג רק כוח + הגדרות
+ * ========================================================================= */
+const NO_GARMIN_KEY = 'no_garmin_mode_v1';
+const tabSettings = $('tab-settings-nav');
+
+function isNoGarminMode() {
+  try { return localStorage.getItem(NO_GARMIN_KEY) === '1'; } catch { return false; }
+}
+
+function setNoGarminMode(on) {
+  try { if (on) localStorage.setItem(NO_GARMIN_KEY, '1'); else localStorage.removeItem(NO_GARMIN_KEY); } catch {}
+  applyNoGarminMode(on);
+  const btn = $('no-garmin-toggle');
+  if (btn) btn.setAttribute('aria-checked', String(on));
+}
+
+function applyNoGarminMode(on) {
+  // בטאב בר: מסתיר את כל הטאבים חוץ מכוח (1) + הגדרות
+  [0, 2, 3, 4].forEach(i => tabs[i]?.classList.toggle('tab-hidden', on));
+  if (tabSettings) tabSettings.classList.toggle('tab-hidden', !on);
+  // בעמודים: מסתיר הכל חוץ מכוח (1)
+  [0, 2, 3, 4].forEach(i => pages[i]?.classList.toggle('page-hidden', on));
+  if (on && state.page !== 1) goTo(1);
+}
+
+// כפתור הגדרות בטאב בר — פותח מודאל הפרופיל
+tabSettings?.addEventListener('click', () => openProfile());
+
+// כפתור הטוגל בתוך הפרופיל
+document.addEventListener('click', e => {
+  if (!e.target.closest('#no-garmin-toggle')) return;
+  const on = $('no-garmin-toggle').getAttribute('aria-checked') !== 'true';
+  setNoGarminMode(on);
+});
+
 function applyNavFromSports() {
+  if (isNoGarminMode()) {
+    applyNoGarminMode(true);
+    return;
+  }
   const sports = getSelectedSports() || [];
   const hasStrength = sports.includes('strength');
   const hasAerobic = sports.some(s => ['running', 'walking', 'swimming', 'cycling', 'pilates'].includes(s));
   tabs[1].classList.toggle('tab-hidden', !hasStrength);
   tabs[2].classList.toggle('tab-hidden', !hasAerobic);
+  if (tabSettings) tabSettings.classList.add('tab-hidden');
   pages[1].classList.toggle('page-hidden', !hasStrength);
   pages[2].classList.toggle('page-hidden', !hasAerobic);
-  // If current page became hidden, navigate to home
+  [0, 3, 4].forEach(i => pages[i]?.classList.remove('page-hidden'));
+  [0, 3, 4].forEach(i => tabs[i]?.classList.remove('tab-hidden'));
   if (state.page > 0 && pages[state.page]?.classList.contains('page-hidden')) {
     goTo(0);
   }
@@ -4569,16 +4614,22 @@ async function init() {
   }
 
   state.page = -1;
-  // דסקטופ: מאתחל את הדף הראשון כדף פעיל לפני setActive
-  if (window.innerWidth >= 768) {
-    pages.forEach((p, i) => p.classList.toggle('active-page', i === 0));
+  // מצב ללא גרמין — מאתחל לפני setActive כדי שהטאבים הנכונים יהיו גלויים
+  if (isNoGarminMode()) {
+    applyNoGarminMode(true);
+    setActive(1);
+    if (window.innerWidth >= 768) pages.forEach((p, i) => p.classList.toggle('active-page', i === 1));
+    requestAnimationFrame(() => snapToPage(1, false));
+  } else {
+    // דסקטופ: מאתחל את הדף הראשון כדף פעיל לפני setActive
+    if (window.innerWidth >= 768) pages.forEach((p, i) => p.classList.toggle('active-page', i === 0));
+    setActive(0);
   }
-  setActive(0);
   if (typeof initInsights === 'function') initInsights();
   if (typeof loadGoalAdapt === 'function') loadGoalAdapt();
   renderAll();
-  // התחלה בעמוד הבית (חשוב ב-RTL, שבו ההיסט ההתחלתי אינו בהכרח 0)
-  requestAnimationFrame(() => snapToPage(0, false));
+  // התחלה בעמוד הנכון (חשוב ב-RTL, שבו ההיסט ההתחלתי אינו בהכרח 0)
+  if (!isNoGarminMode()) requestAnimationFrame(() => snapToPage(0, false));
   // סנכרון אוטומטי בטעינה ראשונה
   setTimeout(autoSyncIfNeeded, 1500);
   // הצגת Changelog למשתמש מחובר בלבד

@@ -295,6 +295,9 @@
       <button class="tab" data-index="4" aria-label="תובנות">
         <svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 4 12.9V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.1A7 7 0 0 1 12 2z"/></svg><span>תובנות</span>
       </button>
+      <button class="tab tab-hidden" id="tab-settings-nav" aria-label="הגדרות">
+        <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>הגדרות</span>
+      </button>
     </nav>
   </div><!-- /#app -->
 
@@ -307,6 +310,13 @@
           <button class="icon-btn" data-close aria-label="סגור">✕</button>
         </div>
         <p class="modal-note">🔒 הנתונים נשמרים בענן בחשבון האישי שלך. כל השדות אופציונליים.</p>
+        <div class="no-garmin-toggle-row">
+          <div>
+            <div class="ng-label">מצב ללא גרמין</div>
+            <div class="ng-sub">הסתר את כל הנתוני גרמין — מציג כוח בלבד</div>
+          </div>
+          <button type="button" id="no-garmin-toggle" class="toggle-btn" role="switch" aria-checked="false"></button>
+        </div>
         <form id="profile-form">
           <div class="field-row">
             <label class="field">גיל<input type="number" name="age" min="10" max="120" inputmode="numeric" placeholder="35"></label>
