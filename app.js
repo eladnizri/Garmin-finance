@@ -4195,8 +4195,9 @@ function applyNoGarminMode(on) {
   if (tabSettings) tabSettings.classList.toggle('tab-hidden', !on);
   // בעמודים: מסתיר הכל חוץ מכוח (1)
   [0, 2, 3, 4].forEach(i => pages[i]?.classList.toggle('page-hidden', on));
-  // מסתיר כפתור סנכרון + שדות גרמיניים בפרופיל
+  // מסתיר כפתור סנכרון, פרופיל, ושדות גרמיניים בפרופיל
   $('sync-btn')?.classList.toggle('hidden', on);
+  $('profile-btn')?.classList.toggle('hidden', on);
   document.querySelectorAll('.garmin-only').forEach(el => el.classList.toggle('hidden', on));
   if (on && state.page !== 1) goTo(1);
 }
@@ -4209,6 +4210,7 @@ document.addEventListener('click', e => {
   if (!e.target.closest('#no-garmin-toggle')) return;
   const on = $('no-garmin-toggle').getAttribute('aria-checked') !== 'true';
   setNoGarminMode(on);
+  toast(on ? 'מצב ללא גרמין הופעל — מציג כוח בלבד' : 'מצב רגיל — כל העמודים זמינים');
 });
 
 function applyNavFromSports() {

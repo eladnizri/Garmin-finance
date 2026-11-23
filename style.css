@@ -2149,7 +2149,7 @@ button:focus-visible { border-radius: var(--r-sm); }
 .no-garmin-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--line); margin-bottom: 14px; }
 .ng-label { font-size: .95rem; font-weight: 600; color: var(--ink); }
 .ng-sub { font-size: .78rem; color: var(--muted); margin-top: 2px; }
-.toggle-btn { position: relative; width: 48px; height: 28px; border-radius: 14px; border: none; background: var(--line); cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.toggle-btn { position: relative; width: 48px; height: 28px; border-radius: 14px; border: none; background: var(--line); cursor: pointer; transition: background .2s; flex-shrink: 0; padding: 8px 0; box-sizing: content-box; }
 .toggle-btn::after { content: ''; position: absolute; top: 3px; right: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .2s; }
 .toggle-btn[aria-checked="true"] { background: var(--primary); }
 .toggle-btn[aria-checked="true"]::after { transform: translateX(-20px); }
