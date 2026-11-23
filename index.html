@@ -328,7 +328,7 @@
             <label class="field">גובה (ס״מ)<input type="number" name="heightCm" min="100" max="230" inputmode="numeric" placeholder="175"></label>
             <label class="field">משקל (ק״ג)<input type="number" name="weightKg" min="30" max="250" inputmode="numeric" placeholder="70"></label>
           </div>
-          <div class="field-row">
+          <div class="field-row garmin-only">
             <label class="field">יעד שינה (שעות)<input type="number" name="sleepGoal" min="4" max="12" step="0.5" inputmode="decimal" placeholder="8"></label>
             <label class="field">יעד צעדים<input type="number" name="stepsGoal" min="1000" max="30000" step="500" inputmode="numeric" placeholder="10000"></label>
           </div>
@@ -336,7 +336,7 @@
             <label class="field">יעד אימוני כוח בשבוע<input type="number" name="strengthGoal" min="1" max="7" inputmode="numeric" placeholder="3"></label>
             <label class="field">יעד משקל (ק״ג)<input type="number" name="weightGoal" min="30" max="250" step="0.1" inputmode="decimal" placeholder="72"></label>
           </div>
-          <div class="field-row">
+          <div class="field-row garmin-only">
             <label class="field">דופק מקסימלי אמיתי<input type="number" name="maxHrOverride" min="120" max="220" inputmode="numeric" placeholder="לא חובה — ברירת מחדל 220 פחות גיל"></label>
             <label class="field">קצב יעד ריצה<input type="text" name="runGoalPace" inputmode="decimal" placeholder="5:30 (דקות/ק״מ)"></label>
           </div>
@@ -346,16 +346,16 @@
             <button type="submit" class="btn-primary">שמירה</button>
           </div>
         </form>
-        <div class="backup-row">
+        <div class="backup-row garmin-only">
           <button type="button" class="btn-ghost" id="garmin-settings-btn">⚙️ הגדרות חיבור גרמין</button>
         </div>
-        <div class="backup-row">
+        <div class="backup-row garmin-only">
           <button type="button" class="btn-ghost" id="apple-health-btn">
             <svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
             חיבור Apple Health
           </button>
         </div>
-        <div class="backup-row sport-select-row">
+        <div class="backup-row sport-select-row garmin-only">
           <div class="sport-select-label"><svg class="ic" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4a2 2 0 1 0 0 .01M6 21l3-5-2-3 1-4 4 2 2 3M9 13l-2 2"/></svg> סוגי הספורט שלי</div>
           <div class="ob-sport-chips" id="settings-sport-chips" role="group" aria-label="בחירת סוגי ספורט">
             <button class="ob-sport-chip" type="button" data-sport="running"><svg class="ic" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4a2 2 0 1 0 0 .01M6 21l3-5-2-3 1-4 4 2 2 3M9 13l-2 2"/></svg> ריצה</button>

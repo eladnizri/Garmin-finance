@@ -4195,6 +4195,9 @@ function applyNoGarminMode(on) {
   if (tabSettings) tabSettings.classList.toggle('tab-hidden', !on);
   // בעמודים: מסתיר הכל חוץ מכוח (1)
   [0, 2, 3, 4].forEach(i => pages[i]?.classList.toggle('page-hidden', on));
+  // מסתיר כפתור סנכרון + שדות גרמיניים בפרופיל
+  $('sync-btn')?.classList.toggle('hidden', on);
+  document.querySelectorAll('.garmin-only').forEach(el => el.classList.toggle('hidden', on));
   if (on && state.page !== 1) goTo(1);
 }
 
